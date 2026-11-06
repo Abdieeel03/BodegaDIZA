@@ -135,14 +135,19 @@ El archivo `src/main/resources/application.properties` vincula las propiedades d
 
 ---
 
-## 🛡️ Estado de Spring Security (Deshabilitada Temporalmente)
+## 🛡️ Autenticación y seguridad
 
-Para facilitar el desarrollo y pruebas de los nuevos endpoints sin requerir tokens ni autenticación HTTP Basic previa, se agregó la clase `com.diza.api.config.SecurityConfig`:
+La API usa JWT Bearer stateless. Solo `POST /auth/login` es público; las demás rutas requieren un encabezado `Authorization: Bearer <token>` válido.
 
-- Se deshabilitó CSRF (`AbstractHttpConfigurer::disable`).
-- Se deshabilitó CORS restrictivo para desarrollo.
-- Se configuró `.authorizeHttpRequests(auth -> auth.anyRequest().permitAll())`.
-- Cuando se termine la implementación de los servicios de autenticación JWT, bastará con actualizar `SecurityConfig` para proteger las rutas deseadas y registrar el filtro JWT.
+- Las contraseñas se almacenan con BCrypt.
+- CSRF está deshabilitado porque la API no usa sesiones ni cookies de autenticación.
+- CORS permite únicamente `CORS_ALLOWED_ORIGIN` (por defecto, `http://localhost:5173`).
+- El secreto JWT no tiene un valor de respaldo: `JWT_SECRET` debe configurarse como Base64 de al menos 32 bytes.
+
+Endpoints disponibles:
+
+- `POST /auth/login`: recibe `email` y `password`; responde con `{ success, data: { token, user } }`.
+- `GET /auth/profile`: retorna el usuario asociado al JWT válido.
 
 ---
 

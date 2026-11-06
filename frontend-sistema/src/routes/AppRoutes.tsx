@@ -19,14 +19,10 @@ export const AppRoutes = () => {
           <Route path="/login" element={<LoginPage />} />
         </Route>
 
-        {/* Rutas de la Aplicación (con Layout Principal) */}
-        <Route element={<MainLayout />}>
-          {/* Páginas accesibles para testing y desarrollo */}
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/conexion-api" element={<ApiStatusPage />} />
-
-          {/* Rutas protegidas que requieren autenticación */}
-          <Route element={<ProtectedRoute />}>
+        <Route element={<ProtectedRoute />}>
+          <Route element={<MainLayout />}>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/conexion-api" element={<ApiStatusPage />} />
             <Route path="/inventario" element={<InventoryPage />} />
           </Route>
         </Route>

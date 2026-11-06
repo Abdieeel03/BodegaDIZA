@@ -273,6 +273,11 @@
   opacity: 0.9;
 }
 
+.btn-primary:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .btn-secondary {
   background: var(--code-bg);
   color: var(--text-h);
@@ -411,6 +416,11 @@
   color: var(--text);
   font-size: 0.9rem;
   margin-bottom: 1.5rem;
+}
+
+.login-form .auth-error {
+  margin-bottom: 1rem;
+  color: #b91c1c;
 }
 
 /* Not Found Page */

@@ -1,28 +1,32 @@
-import { useState, useEffect, type ReactNode } from 'react';
-import { setAuthToken, getAuthToken } from '../api/axios';
+import { useState, type ReactNode } from 'react';
+import { setAuthToken } from '../api/axios';
 import { AuthContext } from './authContextDef';
 import type { User } from '../types';
+import { authService, type LoginCredentials } from '../services/authService';
 
 interface AuthProviderProps {
   children: ReactNode;
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-  const [token, setTokenState] = useState<string | null>(() => getAuthToken());
-  const [user, setUser] = useState<User | null>(() => {
-    return token
-      ? { id: 1, nombre: 'Usuario Demostración', email: 'admin@bodegadiza.com', rol: 'ADMIN' }
-      : null;
-  });
+  const [token, setTokenState] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    setAuthToken(token);
-  }, [token]);
+  const login = async (credentials: LoginCredentials): Promise<void> => {
+    setIsLoading(true);
+    try {
+      const response = await authService.login(credentials);
+      if (!response.success || !response.data) {
+        throw new Error(response.message || 'No fue posible iniciar sesión');
+      }
 
-  const login = (newToken: string, newUser: User) => {
-    setTokenState(newToken);
-    setUser(newUser);
-    setAuthToken(newToken);
+      setTokenState(response.data.token);
+      setUser(response.data.user);
+      setAuthToken(response.data.token);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const logout = () => {
@@ -39,6 +43,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         user,
         token,
         isAuthenticated,
+        isLoading,
         login,
         logout,
       }}

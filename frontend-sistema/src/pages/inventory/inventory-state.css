@@ -1,0 +1,15 @@
+/* Mensaje recuperable cuando la búsqueda o categoría no encuentra productos. */
+.inventory-empty strong { display: block; margin-bottom: 6px; color: #0f1f41; }
+.inventory-empty p { margin: 0 0 12px; color: #64748b; font-size: 13px; }
+.inventory-clear-filters {
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.inventory-clear-filters:hover { background: #dbeafe; }

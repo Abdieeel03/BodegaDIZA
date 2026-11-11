@@ -1,9 +1,16 @@
 import axios, {
-  type AxiosError,
   type InternalAxiosRequestConfig,
 } from 'axios';
+import type { ApiResponse } from '../types';
+import { ApiError } from '../types';
 
 let jwtToken: string | null = null;
+const defaultApiBaseUrl = 'http://localhost:8080';
+
+const getApiBaseUrl = (): string => {
+  const configuredUrl = import.meta.env.VITE_API_BASE_URL?.trim();
+  return configuredUrl || defaultApiBaseUrl;
+};
 
 /**
  * Permite actualizar la variable del JWT desde cualquier módulo (por ejemplo, desde el AuthContext).
@@ -23,7 +30,7 @@ export const getAuthToken = (): string | null => {
  * Instancia central de Axios para la conexión a la API.
  */
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080',
+  baseURL: getApiBaseUrl(),
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
@@ -46,12 +53,35 @@ apiClient.interceptors.request.use(
 
     return config;
   },
-  (error: AxiosError) => Promise.reject(error)
+  (error: unknown) => Promise.reject(error)
 );
 
 apiClient.interceptors.response.use(
   (response) => response,
-  (error: AxiosError) => Promise.reject(error)
+  (error: unknown) => Promise.reject(toApiError(error))
 );
+
+const toApiError = (error: unknown): ApiError => {
+  if (!axios.isAxiosError<ApiResponse>(error)) {
+    return new ApiError('No fue posible conectar con la API.');
+  }
+
+  const status = error.response?.status;
+  const message = error.response?.data?.message || getDefaultErrorMessage(status);
+  return new ApiError(message, status);
+};
+
+const getDefaultErrorMessage = (status?: number): string => {
+  if (status === 401) {
+    return 'Credenciales inválidas o sesión expirada.';
+  }
+  if (status === 403) {
+    return 'No tienes permisos para realizar esta acción.';
+  }
+  if (status && status >= 500) {
+    return 'La API no está disponible en este momento.';
+  }
+  return 'No fue posible completar la solicitud.';
+};
 
 export default apiClient;

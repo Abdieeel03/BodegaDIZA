@@ -46,6 +46,7 @@ public class SecurityConfig {
                 .requestMatchers(
                     HttpMethod.POST,
                     "/auth/login",
+                    "/auth/register",
                     "/auth/recuperar-password",
                     "/auth/verificar-codigo",
                     "/auth/restablecer-password"

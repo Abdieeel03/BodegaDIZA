@@ -63,4 +63,22 @@ public class Usuario {
     public void setPassword(String password) {
         this.password = password;
     }
+
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public void setRol(Rol rol) {
+        this.rol = rol;
+    }
+
+    public void actualizar(String nombre, String email, Rol rol) {
+        this.nombre = nombre;
+        this.email = email;
+        this.rol = rol;
+    }
 }

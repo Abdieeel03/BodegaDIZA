@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -48,6 +49,31 @@ public class AuthService {
         );
         Usuario usuario = findByEmail(authentication.getName());
         String token = jwtService.generateToken((UserDetails) authentication.getPrincipal(), usuario.getRol().name());
+        return new AuthResponse(token, UserResponse.from(usuario));
+    }
+
+    @Transactional
+    public AuthResponse register(RegisterRequest request) {
+        String email = request.email().trim().toLowerCase();
+        if (usuarioRepository.existsByEmail(email)) {
+            throw new BusinessException("Ya existe un usuario registrado con el email: " + email);
+        }
+
+        com.diza.api.user.Rol rol = request.rol() != null ? request.rol() : com.diza.api.user.Rol.ADMIN;
+        Usuario usuario = new Usuario(
+            request.nombre().trim(),
+            email,
+            passwordEncoder.encode(request.password()),
+            rol
+        );
+        usuario = usuarioRepository.save(usuario);
+
+        UserDetails userDetails = User.withUsername(usuario.getEmail())
+            .password(usuario.getPassword())
+            .authorities("ROLE_" + usuario.getRol().name())
+            .build();
+        String token = jwtService.generateToken(userDetails, usuario.getRol().name());
+
         return new AuthResponse(token, UserResponse.from(usuario));
     }
 

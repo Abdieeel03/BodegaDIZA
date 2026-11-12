@@ -28,12 +28,12 @@ Todos los endpoints devuelven un objeto JSON unificado con la siguiente estructu
 ```
 
 ### Seguridad y Autenticación
-- A excepción de `POST /auth/login`, `POST /auth/recuperar-password`, `POST /auth/verificar-codigo` y `POST /auth/restablecer-password`, **todos los demás endpoints requieren autenticación mediante JWT**.
+- A excepción de `POST /auth/login`, `POST /auth/register`, `POST /auth/recuperar-password`, `POST /auth/verificar-codigo` y `POST /auth/restablecer-password`, **todos los demás endpoints requieren autenticación mediante JWT**.
 - Se debe enviar el encabezado HTTP:
   ```http
   Authorization: Bearer <TOKEN_JWT>
   ```
-- El token incluye la identidad del usuario y su rol (`ADMIN`), lo que permite registrar automáticamente la auditoría de quién realizó cada venta, ingreso o ajuste de inventario.
+- El token incluye la identidad del usuario y su rol (`ADMIN` o `CAJERO`), lo que permite registrar automáticamente la auditoría de quién realizó cada venta, ingreso o ajuste de inventario.
 
 ---
 
@@ -42,10 +42,15 @@ Todos los endpoints devuelven un objeto JSON unificado con la siguiente estructu
 | Módulo | Método | Endpoint | Descripción |
 | :--- | :--- | :--- | :--- |
 | **Auth** | `POST` | `/auth/login` | Iniciar sesión y obtener token JWT |
+| | `POST` | `/auth/register` | Registrar nuevo usuario y obtener token JWT |
 | | `GET` | `/auth/profile` | Obtener perfil del usuario autenticado |
 | | `POST` | `/auth/recuperar-password` | Solicitar código de recuperación por correo |
 | | `POST` | `/auth/verificar-codigo` | Validar código de recuperación de 6 dígitos |
 | | `POST` | `/auth/restablecer-password` | Actualizar contraseña con código verificado |
+| **Usuarios** | `GET` | `/usuarios` | Listar todos los usuarios del sistema |
+| | `GET` | `/usuarios/{id}` | Obtener detalle de un usuario por ID |
+| | `POST` | `/usuarios` | Crear usuario con rol (`ADMIN` o `CAJERO`) |
+| | `PUT` | `/usuarios/{id}` | Actualizar datos o rol de usuario |
 | **Categorías** | `GET` | `/categorias` | Listar categorías (`?soloActivas=true/false`) |
 | | `GET` | `/categorias/{id}` | Obtener categoría por ID |
 | | `POST` | `/categorias` | Registrar nueva categoría |
@@ -102,6 +107,40 @@ Permite a los administradores o empleados autenticarse con email y contraseña.
       "nombre": "Administrador Diza",
       "email": "admin@diza.pe",
       "rol": "ADMIN"
+    }
+  },
+  "message": null
+}
+```
+
+---
+
+### `POST /auth/register`
+Permite registrar un nuevo usuario en la base de datos y genera inmediatamente su token JWT.
+- **Acceso:** Público
+
+#### Request Body
+```json
+{
+  "nombre": "Carlos Cajero",
+  "email": "carlos.cajero@bodegadiza.com",
+  "password": "PasswordCajero123",
+  "rol": "CAJERO"
+}
+```
+> *Nota: El campo `rol` es opcional; si se omite, se asigna `ADMIN` por defecto.*
+
+#### Response Body (`201 Created`)
+```json
+{
+  "success": true,
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiJ9...",
+    "user": {
+      "id": 2,
+      "nombre": "Carlos Cajero",
+      "email": "carlos.cajero@bodegadiza.com",
+      "rol": "CAJERO"
     }
   },
   "message": null
@@ -731,3 +770,100 @@ Genera un balance y resumen estadístico de ventas para el corte de caja o anál
   "message": null
 }
 ```
+
+---
+
+## 👥 8. Módulo de Usuarios (`/usuarios`)
+
+### `GET /usuarios`
+Lista todos los usuarios del sistema ordenados por nombre.
+- **Acceso:** Autenticado (`Authorization: Bearer <token>`)
+
+#### Response Body (`200 OK`)
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "nombre": "Administrador Diza",
+      "email": "admin@bodegadiza.com",
+      "rol": "ADMIN"
+    },
+    {
+      "id": 2,
+      "nombre": "Carlos Cajero",
+      "email": "carlos.cajero@bodegadiza.com",
+      "rol": "CAJERO"
+    }
+  ],
+  "message": null
+}
+```
+
+---
+
+### `GET /usuarios/{id}`
+Obtiene el detalle de un usuario por su ID.
+- **Acceso:** Autenticado
+
+#### Response Body (`200 OK`)
+```json
+{
+  "success": true,
+  "data": {
+    "id": 2,
+    "nombre": "Carlos Cajero",
+    "email": "carlos.cajero@bodegadiza.com",
+    "rol": "CAJERO"
+  },
+  "message": null
+}
+```
+
+---
+
+### `POST /usuarios`
+Crea un nuevo usuario (útil para que administradores den de alta a nuevos cajeros o administradores desde el panel).
+- **Acceso:** Autenticado
+
+#### Request Body
+```json
+{
+  "nombre": "Carlos Cajero",
+  "email": "carlos.cajero@bodegadiza.com",
+  "password": "PasswordCajero123",
+  "rol": "CAJERO"
+}
+```
+
+#### Response Body (`201 Created`)
+```json
+{
+  "success": true,
+  "data": {
+    "id": 2,
+    "nombre": "Carlos Cajero",
+    "email": "carlos.cajero@bodegadiza.com",
+    "rol": "CAJERO"
+  },
+  "message": null
+}
+```
+
+---
+
+### `PUT /usuarios/{id}`
+Actualiza el nombre, email o rol de un usuario existente. Si el campo `password` se envía con texto, se actualizará también la contraseña; si se omite o viene vacío, se mantiene la actual.
+- **Acceso:** Autenticado
+
+#### Request Body
+```json
+{
+  "nombre": "Carlos Cajero Pérez",
+  "email": "carlos.cajero@bodegadiza.com",
+  "rol": "CAJERO",
+  "password": ""
+}
+```
+

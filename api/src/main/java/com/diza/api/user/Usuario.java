@@ -59,4 +59,8 @@ public class Usuario {
     public Rol getRol() {
         return rol;
     }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
 }

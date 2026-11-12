@@ -28,7 +28,7 @@ Todos los endpoints devuelven un objeto JSON unificado con la siguiente estructu
 ```
 
 ### Seguridad y Autenticación
-- A excepción de `POST /auth/login`, **todos los endpoints requieren autenticación mediante JWT**.
+- A excepción de `POST /auth/login`, `POST /auth/recuperar-password`, `POST /auth/verificar-codigo` y `POST /auth/restablecer-password`, **todos los demás endpoints requieren autenticación mediante JWT**.
 - Se debe enviar el encabezado HTTP:
   ```http
   Authorization: Bearer <TOKEN_JWT>
@@ -43,6 +43,9 @@ Todos los endpoints devuelven un objeto JSON unificado con la siguiente estructu
 | :--- | :--- | :--- | :--- |
 | **Auth** | `POST` | `/auth/login` | Iniciar sesión y obtener token JWT |
 | | `GET` | `/auth/profile` | Obtener perfil del usuario autenticado |
+| | `POST` | `/auth/recuperar-password` | Solicitar código de recuperación por correo |
+| | `POST` | `/auth/verificar-codigo` | Validar código de recuperación de 6 dígitos |
+| | `POST` | `/auth/restablecer-password` | Actualizar contraseña con código verificado |
 | **Categorías** | `GET` | `/categorias` | Listar categorías (`?soloActivas=true/false`) |
 | | `GET` | `/categorias/{id}` | Obtener categoría por ID |
 | | `POST` | `/categorias` | Registrar nueva categoría |
@@ -120,6 +123,75 @@ Retorna los datos del usuario correspondiente al token Bearer enviado.
     "email": "admin@diza.pe",
     "rol": "ADMIN"
   },
+  "message": null
+}
+```
+
+---
+
+### `POST /auth/recuperar-password`
+Genera un código de 6 dígitos numéricos, lo asocia a la cuenta con una vigencia de **15 minutos** y lo envía por correo electrónico mediante Google SMTP.
+- **Acceso:** Público
+
+#### Request Body
+```json
+{
+  "email": "admin@diza.pe"
+}
+```
+
+#### Response Body (`200 OK`)
+```json
+{
+  "success": true,
+  "data": "Se ha enviado un código de verificación de 6 dígitos a su correo electrónico",
+  "message": null
+}
+```
+
+---
+
+### `POST /auth/verificar-codigo`
+Valida si el código de 6 dígitos ingresado por el usuario es correcto, no ha expirado y no ha sido utilizado previamente.
+- **Acceso:** Público
+
+#### Request Body
+```json
+{
+  "email": "admin@diza.pe",
+  "codigo": "489215"
+}
+```
+
+#### Response Body (`200 OK`)
+```json
+{
+  "success": true,
+  "data": "Código de verificación válido",
+  "message": null
+}
+```
+
+---
+
+### `POST /auth/restablecer-password`
+Actualiza la contraseña del usuario tras verificar el código. La nueva contraseña se encripta de forma segura con BCrypt y el código queda marcado como utilizado.
+- **Acceso:** Público
+
+#### Request Body
+```json
+{
+  "email": "admin@diza.pe",
+  "codigo": "489215",
+  "nuevaPassword": "MiNuevaPasswordSegura2026"
+}
+```
+
+#### Response Body (`200 OK`)
+```json
+{
+  "success": true,
+  "data": "La contraseña ha sido restablecida exitosamente. Ahora puede iniciar sesión con su nueva contraseña.",
   "message": null
 }
 ```

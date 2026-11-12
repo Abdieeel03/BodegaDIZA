@@ -43,7 +43,13 @@ public class SecurityConfig {
             .cors(cors -> {})
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
+                .requestMatchers(
+                    HttpMethod.POST,
+                    "/auth/login",
+                    "/auth/recuperar-password",
+                    "/auth/verificar-codigo",
+                    "/auth/restablecer-password"
+                ).permitAll()
                 .anyRequest().authenticated()
             )
             .exceptionHandling(exceptions -> exceptions

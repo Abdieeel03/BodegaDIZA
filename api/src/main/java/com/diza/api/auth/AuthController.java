@@ -29,4 +29,26 @@ public class AuthController {
     public ResponseEntity<ApiResponse<UserResponse>> profile(Authentication authentication) {
         return ResponseEntity.ok(ApiResponse.success(authService.profile(authentication.getName())));
     }
+
+    @PostMapping("/recuperar-password")
+    public ResponseEntity<ApiResponse<String>> solicitarRecuperacion(
+        @Valid @RequestBody SolicitudRecuperacionRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(authService.solicitarRecuperacion(request)));
+    }
+
+    @PostMapping("/verificar-codigo")
+    public ResponseEntity<ApiResponse<String>> verificarCodigo(
+        @Valid @RequestBody VerificarCodigoRequest request
+    ) {
+        authService.verificarCodigo(request);
+        return ResponseEntity.ok(ApiResponse.success("Código de verificación válido"));
+    }
+
+    @PostMapping("/restablecer-password")
+    public ResponseEntity<ApiResponse<String>> restablecerPassword(
+        @Valid @RequestBody RestablecerPasswordRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(authService.restablecerPassword(request)));
+    }
 }

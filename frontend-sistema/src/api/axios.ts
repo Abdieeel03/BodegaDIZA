@@ -47,6 +47,10 @@ apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
     const token = getAuthToken();
 
+    if (config.data instanceof FormData) {
+      config.headers.delete('Content-Type');
+    }
+
     if (token) {
       config.headers.set('Authorization', `Bearer ${token}`);
     }

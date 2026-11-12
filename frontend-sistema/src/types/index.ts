@@ -2,6 +2,7 @@ export * from './auth';
 export * from './category';
 export * from './common';
 export * from './inventory';
+export * from './ml';
 export * from './product';
 export * from './purchase';
 export * from './sale';

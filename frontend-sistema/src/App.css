@@ -423,6 +423,10 @@
   color: #b91c1c;
 }
 
+.prediction-form {
+  max-width: 560px;
+}
+
 /* Not Found Page */
 .not-found-container {
   display: flex;
@@ -573,8 +577,8 @@
   }
 
   .sidebar-link.active {
-    color: #2563eb;
-    background: #eff6ff;
+    color: #0d5c3b;
+    background: #e5f6eb;
     font-weight: 700;
   }
 

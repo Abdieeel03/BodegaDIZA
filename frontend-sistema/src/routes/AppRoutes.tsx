@@ -8,10 +8,10 @@ import { ProtectedRoute } from './ProtectedRoute';
 import { DashboardPage } from '../pages/dashboard/DashboardPage';
 import { SalesPage } from '../pages/sales/SalesPage';
 import { InventoryPage } from '../pages/inventory/InventoryPage';
-import { PredictionPage } from '../pages/prediction/PredictionPage';
 import { ApiStatusPage } from '../pages/api-status/ApiStatusPage';
 import { LoginPage } from '../pages/auth/LoginPage';
 import { NotFoundPage } from '../pages/not-found/NotFoundPage';
+import { PredictionsPage } from '../pages/predictions/PredictionsPage';
 
 export const AppRoutes = () => {
   return (
@@ -31,10 +31,8 @@ export const AppRoutes = () => {
               element={<SalesPage />}
             />
             <Route path="/inventario" element={<InventoryPage />} />
-            <Route
-              path="/prediccion-demanda"
-              element={<PredictionPage />}
-            />
+            <Route path="/predicciones" element={<PredictionsPage />} />
+            <Route path="/prediccion-demanda" element={<Navigate to="/predicciones" replace />} />
             <Route
               path="/conexion-api"
               element={<ApiStatusPage />}

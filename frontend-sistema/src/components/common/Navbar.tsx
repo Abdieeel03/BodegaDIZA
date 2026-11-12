@@ -1,11 +1,13 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { UiIcon } from './UiIcon';
+import { BrandMark } from './BrandMark';
 
 const titulos: Record<string, string> = {
   '/': 'Inicio',
   '/inventario': 'Inventario',
   '/prediccion-demanda': 'Predicción de demanda',
+  '/predicciones': 'Predicción de demanda',
   '/conexion-api': 'Estado API y JWT',
 };
 
@@ -25,11 +27,7 @@ export const Navbar = () => {
     <header className="diza-topbar">
       <div className="diza-topbar-left">
         <Link className="diza-mobile-brand" to="/" aria-label="BodegaDIZA, ir al inicio">
-          <span className="diza-brand-monogram">BD</span>
-          <span>
-            <strong>BodegaDIZA</strong>
-            <small>Tu bodega, mejor gestionada</small>
-          </span>
+          <BrandMark compact />
         </Link>
         <nav className="diza-breadcrumb" aria-label="Ruta de navegación">
           <Link to="/">BodegaDIZA</Link>

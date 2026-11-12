@@ -1,5 +1,6 @@
 import { Link, NavLink } from 'react-router-dom';
 import { UiIcon, type UiIconName } from './UiIcon';
+import { BrandMark } from './BrandMark';
 
 type MenuItem = {
   label: string;
@@ -15,7 +16,7 @@ const menuItems: MenuItem[] = [
   { to: 'ventas', label: 'Ventas', mobileLabel: 'Ventas', icon: 'sales' },
   { to: '/inventario', label: 'Inventario', mobileLabel: 'Inventario', icon: 'inventory' },
   {
-    to: '/prediccion-demanda',
+    to: '/predicciones',
     label: 'Predicción de demanda',
     mobileLabel: 'Predicción',
     icon: 'prediction',
@@ -34,11 +35,7 @@ export const Sidebar = ({ collapsed, onToggle }: SidebarProps) => (
     <aside className="diza-sidebar" aria-label="Menú principal">
       <div className="diza-sidebar-header">
         <Link className="diza-sidebar-brand" to="/" title="Ir al inicio">
-          <span className="diza-brand-monogram">BD</span>
-          <span className="diza-sidebar-brand-text">
-            <strong>BodegaDIZA</strong>
-            <small>Tu bodega, mejor gestionada</small>
-          </span>
+          <BrandMark inverse compact={collapsed} />
         </Link>
         <button
           type="button"
@@ -83,7 +80,7 @@ export const Sidebar = ({ collapsed, onToggle }: SidebarProps) => (
 
       <div className="diza-sidebar-footer" title="Bodega DIZA · Panel de gestión">
         <UiIcon name="store" size={18} />
-        <span className="diza-sidebar-footer-text">Panel de gestión</span>
+          <span className="diza-sidebar-footer-text">Gestión inteligente</span>
       </div>
     </aside>
 

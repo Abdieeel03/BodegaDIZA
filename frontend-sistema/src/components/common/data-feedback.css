@@ -12,11 +12,11 @@
 .diza-data-feedback p { margin: 0; max-width: 450px; color: #64748b; font-size: 13px; line-height: 1.5; }
 .diza-data-symbol { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; font-size: 26px; font-weight: 700; }
 .diza-data-symbol--error { color: #dc2626; background: #fee2e2; }
-.diza-data-symbol--empty { color: #2563eb; background: #dbeafe; }
-.diza-data-retry { margin-top: 19px; padding: 10px 16px; border: 0; border-radius: 8px; background: #2563eb; color: white; cursor: pointer; font-weight: 700; }
+.diza-data-symbol--empty { color: #0d5c3b; background: #dff5e8; }
+.diza-data-retry { margin-top: 19px; padding: 10px 16px; border: 0; border-radius: 8px; background: #0d5c3b; color: white; cursor: pointer; font-weight: 700; }
 .diza-data-retry:hover { background: #1d4ed8; }
 .diza-data-retry:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }
-.diza-data-spinner { width: 34px; height: 34px; border: 3px solid #dbeafe; border-top-color: #2563eb; border-radius: 50%; animation: diza-spin .8s linear infinite; }
+.diza-data-spinner { width: 34px; height: 34px; border: 3px solid #dff5e8; border-top-color: #0d5c3b; border-radius: 50%; animation: diza-spin .8s linear infinite; }
 .diza-data-skeletons { display: grid; gap: 10px; width: min(500px,100%); margin-top: 22px; }
 .diza-data-skeletons span { height: 36px; border-radius: 8px; background: linear-gradient(90deg,#f1f5f9 25%,#e8eef9 50%,#f1f5f9 75%); background-size: 200% 100%; animation: diza-shimmer 1.4s linear infinite; }
 @keyframes diza-spin { to { transform: rotate(360deg); } }

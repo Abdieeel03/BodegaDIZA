@@ -1,19 +1,11 @@
 export const SalesPage = () => {
   return (
-    <div className="page-container">
-      <div className="page-header">
-        <h1>Ventas </h1>
-        <p>
-          Consulta las ventas de BodegaDIZA.
-        </p>
+    <section className="app-placeholder">
+      <div>
+        <span className="app-placeholder-icon">⌁</span>
+        <h1>Ventas</h1>
+        <p>Este espacio reunirá el historial de ventas, productos más vendidos y el comportamiento que alimenta las predicciones de demanda.</p>
       </div>
-
-      <div className="card">
-        <h2>Módulo en desarrollo</h2>
-        <p>
-          Próximamente se mostrarán las ventas
-        </p>
-      </div>
-    </div>
+    </section>
   );
 };

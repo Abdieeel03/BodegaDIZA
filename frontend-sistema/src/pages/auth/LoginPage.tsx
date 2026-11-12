@@ -57,9 +57,10 @@ export const LoginPage = () => {
         />
       </div>
 
-      <button type="submit" className="btn-primary btn-block" disabled={isLoading}>
+       <button type="submit" className="btn-primary btn-block" disabled={isLoading}>
         {isLoading ? 'Ingresando...' : 'Entrar al Sistema'}
-      </button>
+       </button>
+      <p className="auth-note">Gestiona ventas, inventario y decisiones de reposición en un solo lugar.</p>
     </form>
   );
 };

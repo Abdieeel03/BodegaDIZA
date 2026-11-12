@@ -1,247 +1,157 @@
-
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import type { DemandPrediction, ReplenishmentRecommendation } from '../../types';
+import { mlService } from '../../services/mlService';
 import './dashboard.css';
 
-const indicadores = [
-  {
-    titulo: 'Ventas del día',
-    valor: 'S/ 840.50',
-    detalle: '▲ +12.4% vs. ayer',
-    icono: '▦',
-    estado: 'positivo',
-  },
-  {
-    titulo: 'Unidades vendidas',
-    valor: '142 uds',
-    detalle: '▲ +18 uds',
-    icono: '▣',
-    estado: 'neutro',
-  },
-  {
-    titulo: 'En riesgo',
-    valor: '8 SKUs',
-    detalle: '✕ Stock crítico',
-    icono: '⚠',
-    estado: 'peligro',
-  },
-  {
-    titulo: 'Cobertura promedio',
-    valor: '14 días',
-    detalle: '✓ Estable',
-    icono: '▤',
-    estado: 'positivo',
-  },
-];
+const chartX = (index: number, total: number) => 55 + index * (545 / Math.max(total - 1, 1));
 
-const productos = [
-  { nombre: 'Arroz Costeño 1kg', ventas: 48, estado: 'Óptimo', tipo: 'positivo' },
-  { nombre: 'Leche Gloria Azul 400g', ventas: 42, estado: 'Bajo', tipo: 'advertencia' },
-  { nombre: 'Inca Kola 1.5L', ventas: 36, estado: 'Normal', tipo: 'positivo' },
-  { nombre: 'Aceite Primor 1L', ventas: 28, estado: 'Normal', tipo: 'positivo' },
-  { nombre: 'Fideos Don Vittorio', ventas: 24, estado: 'Crítico', tipo: 'peligro' },
-];
+type DashboardData = {
+  predictions: DemandPrediction[];
+  replenishments: ReplenishmentRecommendation[];
+};
 
-const horas = ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00', '22:00'];
+function DemandChart({ dailyDemand }: { dailyDemand: number[] }) {
+  const maximum = Math.max(...dailyDemand, 1);
+  const y = (value: number) => 225 - (value / maximum) * 190;
+  const points = dailyDemand.map((value, index) => `${chartX(index, dailyDemand.length)},${y(value)}`).join(' ');
 
-const reales = [80, 250, 560, 840];
-const estimados = [80, 220, 510, 790, 840, 900, 960, 1020];
-
-const x = (indice: number) => 55 + indice * 76;
-const y = (valor: number) => 225 - (valor / 1200) * 190;
-
-const puntos = (valores: number[], inicio = 0) =>
-  valores
-    .map((valor, i) => `${x(i + inicio)},${y(valor)}`)
-    .join(' ');
-
-function GraficoVentas() {
   return (
     <div className="diza-chart-card">
       <div className="diza-chart-header">
-        <h3>Ventas vs. predicciones — Hoy, por hora</h3>
+        <h3>Demanda prevista por día</h3>
         <div className="diza-legend">
-          <span><i className="diza-real" /> Ventas</span>
-          <span><i className="diza-estimado" /> Estimado</span>
+          <span><i className="diza-estimado" /> Próximos 7 días</span>
         </div>
       </div>
-
       <div className="diza-chart-container">
-        <svg
-          viewBox="0 0 640 280"
-          role="img"
-          aria-label="Gráfico demostrativo de ventas y estimación de demanda por hora"
-        >
-          {[0, 200, 400, 600, 800, 1000, 1200].map((valor) => (
-            <g key={valor}>
-              <line
-                x1="55"
-                y1={y(valor)}
-                x2="600"
-                y2={y(valor)}
-                stroke="#e4e9f2"
-              />
-              <text x="47" y={y(valor) + 4} textAnchor="end" fontSize="11" fill="#66738d">
-                {valor === 0 ? 'S/ 0' : `S/ ${valor}`}
+        {dailyDemand.some((value) => value > 0) ? (
+          <svg viewBox="0 0 640 280" role="img" aria-label="Demanda prevista para los próximos siete días">
+            {[0, 0.25, 0.5, 0.75, 1].map((ratio) => (
+              <g key={ratio}>
+                <line x1="55" y1={y(maximum * ratio)} x2="600" y2={y(maximum * ratio)} stroke="#e4e9f2" />
+                <text x="47" y={y(maximum * ratio) + 4} textAnchor="end" fontSize="11" fill="#66738d">
+                  {(maximum * ratio).toFixed(0)}
+                </text>
+              </g>
+            ))}
+            {dailyDemand.map((_, index) => (
+              <text key={index} x={chartX(index, dailyDemand.length)} y="254" textAnchor="middle" fontSize="11" fill="#66738d">
+                Día {index + 1}
               </text>
-            </g>
-          ))}
-
-          {horas.map((hora, i) => (
-            <text
-              key={hora}
-              x={x(i)}
-              y="254"
-              textAnchor="middle"
-              fontSize="11"
-              fill="#66738d"
-            >
-              {hora}
-            </text>
-          ))}
-
-          <line
-            x1={x(3)}
-            x2={x(3)}
-            y1={y(840)}
-            y2="225"
-            stroke="#294c9c"
-            strokeDasharray="3 4"
-          />
-
-          <polyline
-            fill="none"
-            stroke="#8da0c3"
-            strokeWidth="2"
-            strokeDasharray="5 5"
-            strokeLinejoin="round"
-            points={puntos(estimados)}
-          />
-
-          <polyline
-            fill="none"
-            stroke="#244695"
-            strokeWidth="3"
-            strokeLinejoin="round"
-            strokeLinecap="round"
-            points={puntos(reales)}
-          />
-
-          {reales.map((valor, i) => (
-            <circle
-              key={i}
-              cx={x(i)}
-              cy={y(valor)}
-              r="5"
-              fill="#fff"
+            ))}
+            <polyline
+              fill="none"
               stroke="#244695"
               strokeWidth="3"
+              strokeLinejoin="round"
+              strokeLinecap="round"
+              points={points}
             />
-          ))}
-
-          <rect
-            x={x(3) - 78}
-            y={y(840) - 37}
-            width="156"
-            height="25"
-            rx="5"
-            fill="#101a32"
-          />
-          <text
-            x={x(3)}
-            y={y(840) - 20}
-            textAnchor="middle"
-            fontSize="10"
-            fill="#fff"
-            fontWeight="bold"
-          >
-            Ventas de ejemplo: S/ 840.50
-          </text>
-        </svg>
+            {dailyDemand.map((value, index) => (
+              <circle key={index} cx={chartX(index, dailyDemand.length)} cy={y(value)} r="5" fill="#fff" stroke="#244695" strokeWidth="3" />
+            ))}
+          </svg>
+        ) : (
+          <p>No hay una predicción entrenada todavía.</p>
+        )}
       </div>
-
       <div className="diza-chart-footer">
-        <span>↗ Crecimiento estimado en bebidas y abarrotes.</span>
-        <strong>Meta estimada: S/ 1,020.00</strong>
+        <span>Demanda agregada de todos los productos.</span>
+        <strong>{dailyDemand.reduce((total, value) => total + value, 0).toFixed(0)} unidades estimadas</strong>
       </div>
     </div>
   );
 }
 
-function RankingProductos() {
+function ReplenishmentRanking({ items }: { items: ReplenishmentRecommendation[] }) {
+  const maximum = Math.max(...items.map((item) => item.recommendedReplenishment), 1);
+  const chipClass = (alert: ReplenishmentRecommendation['alertStatus']) => {
+    if (alert === 'ROJO') return 'peligro';
+    if (alert === 'AMARILLO') return 'advertencia';
+    return 'positivo';
+  };
+
   return (
     <section className="diza-ranking">
       <div className="diza-ranking-header">
-        <h3>Ranking de productos</h3>
-        <span>Top 5 del día</span>
+        <h3>Reposición prioritaria</h3>
+        <span>Top 5 recomendado</span>
       </div>
-
       <div className="diza-ranking-list">
-        {productos.map((producto, i) => (
-          <div className="diza-ranking-item" key={producto.nombre}>
-            <span className="diza-ranking-number">{i + 1}</span>
-
+        {items.length ? items.slice(0, 5).map((item, index) => (
+          <div className="diza-ranking-item" key={item.productId}>
+            <span className="diza-ranking-number">{index + 1}</span>
             <div className="diza-ranking-info">
-              <strong title={producto.nombre}>{producto.nombre}</strong>
-              <small>{producto.ventas} uds vendidas</small>
+              <strong title={item.productName}>{item.productName}</strong>
+              <small>Reponer {item.recommendedReplenishment.toFixed(0)} uds</small>
               <div className="diza-ranking-track">
-                <div style={{ width: `${producto.ventas / 48 * 100}%` }} />
+                <div style={{ width: `${(item.recommendedReplenishment / maximum) * 100}%` }} />
               </div>
             </div>
-
-            <span className={`diza-chip diza-${producto.tipo}`}>
-              {producto.estado}
-            </span>
+            <span className={`diza-chip diza-${chipClass(item.alertStatus)}`}>{item.alertStatus}</span>
           </div>
-        ))}
+        )) : <p>No hay recomendaciones disponibles.</p>}
       </div>
-
-      <Link to="/inventario" className="diza-ranking-link">
-        Ver inventario completo <span aria-hidden="true">→</span>
+      <Link to="/predicciones" className="diza-ranking-link">
+        Entrenar o actualizar modelo <span aria-hidden="true">→</span>
       </Link>
     </section>
   );
 }
 
 export const DashboardPage = () => {
+  const [data, setData] = useState<DashboardData>({ predictions: [], replenishments: [] });
+
+  useEffect(() => {
+    Promise.all([mlService.getLatestPredictions(), mlService.getLatestReplenishments()])
+      .then(([predictions, replenishments]) => setData({ predictions, replenishments }))
+      .catch(() => setData({ predictions: [], replenishments: [] }));
+  }, []);
+
+  const predictedDemand = data.predictions.reduce((total, item) => total + item.predictedDemand7Days, 0);
+  const recommendedUnits = data.replenishments.reduce((total, item) => total + item.recommendedReplenishment, 0);
+  const criticalProducts = data.replenishments.filter((item) => item.alertStatus === 'ROJO').length;
+  const dailyDemand = Array.from({ length: 7 }, (_, index) => data.predictions.reduce(
+    (total, item) => total + (item.dailyPredictions[index] || 0),
+    0
+  ));
+  const indicators = [
+    { title: 'Demanda estimada', value: `${predictedDemand.toFixed(0)} uds`, detail: 'Próximos 7 días', icon: '▦', status: 'neutro' },
+    { title: 'Productos analizados', value: data.predictions.length.toString(), detail: 'Con pronóstico activo', icon: '▣', status: 'positivo' },
+    { title: 'En riesgo', value: `${criticalProducts} SKUs`, detail: 'Stock crítico', icon: '⚠', status: 'peligro' },
+    { title: 'Reposición sugerida', value: `${recommendedUnits.toFixed(0)} uds`, detail: 'Unidades a reponer', icon: '▤', status: 'advertencia' },
+  ];
+
   return (
     <div className="diza-dashboard">
       <div className="diza-dashboard-heading">
         <div>
           <p className="diza-location">BODEGA DIZA · VILLA EL SALVADOR</p>
           <h1>Dashboard</h1>
-          <p>Resumen de la operación de tu bodega</p>
+          <p>Resumen de la operación y demanda estimada.</p>
         </div>
-        <span className="diza-demo">● Datos de demostración</span>
+        <span className="diza-demo">● {data.predictions.length ? 'Predicción actualizada' : 'Modelo pendiente'}</span>
       </div>
-
       <section className="diza-indicators" aria-label="Resumen de indicadores">
-        {indicadores.map((item) => (
-          <article
-            key={item.titulo}
-            className={`diza-kpi ${item.estado === 'peligro' ? 'diza-kpi-risk' : ''}`}
-          >
-            <span className="diza-kpi-icon" aria-hidden="true">{item.icono}</span>
+        {indicators.map((item) => (
+          <article key={item.title} className={`diza-kpi ${item.status === 'peligro' ? 'diza-kpi-risk' : ''}`}>
+            <span className="diza-kpi-icon" aria-hidden="true">{item.icon}</span>
             <div className="diza-kpi-info">
-              <span className="diza-kpi-title">{item.titulo}</span>
-              <strong className="diza-kpi-value">{item.valor}</strong>
-              <span className={`diza-chip diza-${item.estado}`}>
-                {item.detalle}
-              </span>
+              <span className="diza-kpi-title">{item.title}</span>
+              <strong className="diza-kpi-value">{item.value}</strong>
+              <span className={`diza-chip diza-${item.status}`}>{item.detail}</span>
             </div>
           </article>
         ))}
       </section>
-
-      <h2 className="diza-section-title">¿Qué se está vendiendo?</h2>
-
+      <h2 className="diza-section-title">Proyección de inventario</h2>
       <div className="diza-analytics">
-        <GraficoVentas />
-        <RankingProductos />
+        <DemandChart dailyDemand={dailyDemand} />
+        <ReplenishmentRanking items={data.replenishments} />
       </div>
-
       <p className="diza-disclaimer">
-        Las cifras y predicciones mostradas son ejemplos de diseño.
-        Se reemplazarán al conectar los servicios reales del sistema.
+        Las estimaciones se actualizan al entrenar el modelo con los CSV de ventas y productos.
       </p>
     </div>
   );

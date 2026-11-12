@@ -457,3 +457,17 @@
   }
 }
 
+/* Green BodegaDIZA theme overrides */
+.diza-dashboard { color: #102018; }
+.diza-dashboard-heading h1, .diza-section-title, .diza-chart-header h3, .diza-ranking-header h3, .diza-kpi-value, .diza-ranking-info strong { color: #102018; }
+.diza-location, .diza-chart-footer strong { color: #0d5c3b !important; }
+.diza-demo, .diza-kpi-icon, .diza-ranking-number { color: #0d5c3b; background: #dff5e8; }
+.diza-kpi, .diza-chart-card, .diza-ranking { border-color: #dce5de; }
+.diza-chip.diza-neutro { color: #0d5c3b; background: #e5f6eb; }
+.diza-legend i { border-top-color: #0d5c3b; }
+.diza-ranking-track { background: #e8f0ea; }
+.diza-ranking-track > div { background: #1f9d62; }
+.diza-ranking-item:first-child .diza-ranking-number { background: #0d5c3b; }
+.diza-ranking-link { color: #0d5c3b; background: #e5f6eb; }
+.diza-ranking-link:hover { background: #d4f0df; }
+

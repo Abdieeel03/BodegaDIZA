@@ -77,4 +77,32 @@ public class DetalleVenta {
         this.precioUnitario = precioUnitario;
         this.subtotal = subtotal;
     }
+
+    public Long getId() {
+        return id;
+    }
+
+    public Venta getVenta() {
+        return venta;
+    }
+
+    public Producto getProducto() {
+        return producto;
+    }
+
+    public LoteProducto getLote() {
+        return lote;
+    }
+
+    public BigDecimal getCantidad() {
+        return cantidad;
+    }
+
+    public BigDecimal getPrecioUnitario() {
+        return precioUnitario;
+    }
+
+    public BigDecimal getSubtotal() {
+        return subtotal;
+    }
 }

@@ -32,6 +32,13 @@ public class Categoria {
     public Categoria(String nombre, String descripcion) {
         this.nombre = nombre;
         this.descripcion = descripcion;
+        this.activa = true;
+    }
+
+    public Categoria(String nombre, String descripcion, boolean activa) {
+        this.nombre = nombre;
+        this.descripcion = descripcion;
+        this.activa = activa;
     }
 
     public Long getId() {
@@ -40,5 +47,22 @@ public class Categoria {
 
     public String getNombre() {
         return nombre;
+    }
+
+    public String getDescripcion() {
+        return descripcion;
+    }
+
+    public boolean isActiva() {
+        return activa;
+    }
+
+    public void actualizar(String nombre, String descripcion) {
+        this.nombre = nombre;
+        this.descripcion = descripcion;
+    }
+
+    public void setActiva(boolean activa) {
+        this.activa = activa;
     }
 }

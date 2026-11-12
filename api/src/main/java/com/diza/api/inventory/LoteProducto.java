@@ -1,5 +1,6 @@
 package com.diza.api.inventory;
 
+import com.diza.api.common.BusinessException;
 import com.diza.api.product.Producto;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -78,7 +79,47 @@ public class LoteProducto {
         return id;
     }
 
+    public Producto getProducto() {
+        return producto;
+    }
+
+    public String getCodigoLote() {
+        return codigoLote;
+    }
+
     public BigDecimal getCantidadDisponible() {
         return cantidadDisponible;
+    }
+
+    public LocalDate getFechaIngreso() {
+        return fechaIngreso;
+    }
+
+    public LocalDate getFechaVencimiento() {
+        return fechaVencimiento;
+    }
+
+    public void incrementarStock(BigDecimal cantidad) {
+        if (cantidad == null || cantidad.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessException("La cantidad a incrementar debe ser mayor a 0");
+        }
+        this.cantidadDisponible = this.cantidadDisponible.add(cantidad);
+    }
+
+    public void descontarStock(BigDecimal cantidad) {
+        if (cantidad == null || cantidad.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessException("La cantidad a descontar debe ser mayor a 0");
+        }
+        if (this.cantidadDisponible.compareTo(cantidad) < 0) {
+            throw new BusinessException("Stock insuficiente en el lote " + this.codigoLote);
+        }
+        this.cantidadDisponible = this.cantidadDisponible.subtract(cantidad);
+    }
+
+    public void ajustarStock(BigDecimal nuevaCantidad) {
+        if (nuevaCantidad == null || nuevaCantidad.compareTo(BigDecimal.ZERO) < 0) {
+            throw new BusinessException("La nueva cantidad disponible no puede ser negativa");
+        }
+        this.cantidadDisponible = nuevaCantidad;
     }
 }

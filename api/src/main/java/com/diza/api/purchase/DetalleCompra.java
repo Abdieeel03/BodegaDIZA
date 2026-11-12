@@ -77,4 +77,32 @@ public class DetalleCompra {
         this.costoUnitario = costoUnitario;
         this.subtotal = subtotal;
     }
+
+    public Long getId() {
+        return id;
+    }
+
+    public Compra getCompra() {
+        return compra;
+    }
+
+    public Producto getProducto() {
+        return producto;
+    }
+
+    public LoteProducto getLote() {
+        return lote;
+    }
+
+    public BigDecimal getCantidad() {
+        return cantidad;
+    }
+
+    public BigDecimal getCostoUnitario() {
+        return costoUnitario;
+    }
+
+    public BigDecimal getSubtotal() {
+        return subtotal;
+    }
 }

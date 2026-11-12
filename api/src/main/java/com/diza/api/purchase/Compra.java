@@ -57,4 +57,28 @@ public class Compra {
     public Long getId() {
         return id;
     }
+
+    public Proveedor getProveedor() {
+        return proveedor;
+    }
+
+    public LocalDateTime getFecha() {
+        return fecha;
+    }
+
+    public EstadoCompra getEstado() {
+        return estado;
+    }
+
+    public void setEstado(EstadoCompra estado) {
+        this.estado = estado;
+    }
+
+    public BigDecimal getTotal() {
+        return total;
+    }
+
+    public void setTotal(BigDecimal total) {
+        this.total = total;
+    }
 }

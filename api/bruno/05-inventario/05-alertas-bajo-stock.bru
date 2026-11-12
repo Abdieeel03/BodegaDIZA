@@ -1,0 +1,15 @@
+meta {
+  name: Alertas de Productos con Bajo Stock
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/inventario/alertas/bajo-stock
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}

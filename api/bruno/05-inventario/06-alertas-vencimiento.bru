@@ -1,0 +1,19 @@
+meta {
+  name: Alertas de Lotes por Vencer o Vencidos
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/inventario/alertas/vencimiento?dias=30
+  body: none
+  auth: bearer
+}
+
+params:query {
+  dias: 30
+}
+
+auth:bearer {
+  token: {{token}}
+}

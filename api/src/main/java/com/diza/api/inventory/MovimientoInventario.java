@@ -99,4 +99,44 @@ public class MovimientoInventario {
         this.compra = compra;
         this.venta = venta;
     }
+
+    public Long getId() {
+        return id;
+    }
+
+    public Producto getProducto() {
+        return producto;
+    }
+
+    public LoteProducto getLote() {
+        return lote;
+    }
+
+    public TipoMovimientoInventario getTipo() {
+        return tipo;
+    }
+
+    public BigDecimal getCantidad() {
+        return cantidad;
+    }
+
+    public LocalDateTime getFecha() {
+        return fecha;
+    }
+
+    public String getMotivo() {
+        return motivo;
+    }
+
+    public Usuario getUsuario() {
+        return usuario;
+    }
+
+    public Compra getCompra() {
+        return compra;
+    }
+
+    public Venta getVenta() {
+        return venta;
+    }
 }

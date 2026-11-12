@@ -1,0 +1,19 @@
+meta {
+  name: Listar Categorías
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/categorias?soloActivas=true
+  body: none
+  auth: bearer
+}
+
+params:query {
+  soloActivas: true
+}
+
+auth:bearer {
+  token: {{token}}
+}

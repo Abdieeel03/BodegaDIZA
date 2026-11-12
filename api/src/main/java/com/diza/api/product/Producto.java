@@ -84,6 +84,20 @@ public class Producto {
         BigDecimal stockMinimo,
         UnidadMedida unidadMedida
     ) {
+        this(sku, nombre, descripcion, categoria, proveedor, precioVenta, stockMinimo, unidadMedida, true);
+    }
+
+    public Producto(
+        String sku,
+        String nombre,
+        String descripcion,
+        Categoria categoria,
+        Proveedor proveedor,
+        BigDecimal precioVenta,
+        BigDecimal stockMinimo,
+        UnidadMedida unidadMedida,
+        boolean activo
+    ) {
         this.sku = sku;
         this.nombre = nombre;
         this.descripcion = descripcion;
@@ -92,6 +106,7 @@ public class Producto {
         this.precioVenta = precioVenta;
         this.stockMinimo = stockMinimo;
         this.unidadMedida = unidadMedida;
+        this.activo = activo;
     }
 
     public Long getId() {
@@ -102,7 +117,59 @@ public class Producto {
         return sku;
     }
 
+    public String getNombre() {
+        return nombre;
+    }
+
+    public String getDescripcion() {
+        return descripcion;
+    }
+
+    public Categoria getCategoria() {
+        return categoria;
+    }
+
+    public Proveedor getProveedor() {
+        return proveedor;
+    }
+
+    public BigDecimal getPrecioVenta() {
+        return precioVenta;
+    }
+
+    public BigDecimal getStockMinimo() {
+        return stockMinimo;
+    }
+
     public UnidadMedida getUnidadMedida() {
         return unidadMedida;
+    }
+
+    public boolean isActivo() {
+        return activo;
+    }
+
+    public void setActivo(boolean activo) {
+        this.activo = activo;
+    }
+
+    public void actualizar(
+        String sku,
+        String nombre,
+        String descripcion,
+        Categoria categoria,
+        Proveedor proveedor,
+        BigDecimal precioVenta,
+        BigDecimal stockMinimo,
+        UnidadMedida unidadMedida
+    ) {
+        this.sku = sku;
+        this.nombre = nombre;
+        this.descripcion = descripcion;
+        this.categoria = categoria;
+        this.proveedor = proveedor;
+        this.precioVenta = precioVenta;
+        this.stockMinimo = stockMinimo;
+        this.unidadMedida = unidadMedida;
     }
 }

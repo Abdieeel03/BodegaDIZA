@@ -49,4 +49,20 @@ public class Venta {
     public Long getId() {
         return id;
     }
+
+    public LocalDateTime getFecha() {
+        return fecha;
+    }
+
+    public BigDecimal getTotal() {
+        return total;
+    }
+
+    public void setTotal(BigDecimal total) {
+        this.total = total;
+    }
+
+    public Usuario getUsuario() {
+        return usuario;
+    }
 }

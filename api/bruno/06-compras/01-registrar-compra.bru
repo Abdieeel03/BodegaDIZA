@@ -1,0 +1,34 @@
+meta {
+  name: Registrar Compra a Proveedor
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/compras
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "proveedorId": 1,
+    "items": [
+      {
+        "productoId": 1,
+        "codigoLote": "LT-COM-001",
+        "cantidad": 48.000,
+        "costoUnitario": 3.60,
+        "fechaVencimiento": "2027-12-31"
+      }
+    ]
+  }
+}

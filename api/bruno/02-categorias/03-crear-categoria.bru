@@ -1,0 +1,26 @@
+meta {
+  name: Crear Categoría
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/categorias
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "nombre": "Lácteos",
+    "descripcion": "Leches, quesos, yogures y mantequillas"
+  }
+}

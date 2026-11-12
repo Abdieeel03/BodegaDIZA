@@ -41,6 +41,15 @@ public class Proveedor {
         this.ruc = ruc;
         this.telefono = telefono;
         this.email = email;
+        this.activo = true;
+    }
+
+    public Proveedor(String nombre, String ruc, String telefono, String email, boolean activo) {
+        this.nombre = nombre;
+        this.ruc = ruc;
+        this.telefono = telefono;
+        this.email = email;
+        this.activo = activo;
     }
 
     public Long getId() {
@@ -49,5 +58,32 @@ public class Proveedor {
 
     public String getNombre() {
         return nombre;
+    }
+
+    public String getRuc() {
+        return ruc;
+    }
+
+    public String getTelefono() {
+        return telefono;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public boolean isActivo() {
+        return activo;
+    }
+
+    public void setActivo(boolean activo) {
+        this.activo = activo;
+    }
+
+    public void actualizar(String nombre, String ruc, String telefono, String email) {
+        this.nombre = nombre;
+        this.ruc = ruc;
+        this.telefono = telefono;
+        this.email = email;
     }
 }

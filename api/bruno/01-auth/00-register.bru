@@ -1,0 +1,30 @@
+meta {
+  name: Registrar Usuario (Auto-registro / Crear Cuenta)
+  type: http
+  seq: 0
+}
+
+post {
+  url: {{baseUrl}}/auth/register
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "nombre": "Administrador Diza",
+    "email": "admin@bodegadiza.com",
+    "password": "PasswordSegura123",
+    "rol": "ADMIN"
+  }
+}
+
+script:post-response {
+  if (res.status === 201 && res.body && res.body.data && res.body.data.token) {
+    bru.setEnvVar('token', res.body.data.token);
+  }
+}

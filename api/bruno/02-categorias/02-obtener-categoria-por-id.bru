@@ -1,0 +1,15 @@
+meta {
+  name: Obtener Categoría por ID
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/categorias/1
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}

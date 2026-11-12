@@ -1,0 +1,32 @@
+meta {
+  name: Registrar Venta (Lote Específico)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/ventas
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "items": [
+      {
+        "productoId": 1,
+        "cantidad": 2.000,
+        "loteId": 1,
+        "precioUnitario": 4.50
+      }
+    ]
+  }
+}

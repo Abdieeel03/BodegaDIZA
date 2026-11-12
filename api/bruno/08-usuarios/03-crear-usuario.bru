@@ -1,0 +1,28 @@
+meta {
+  name: Crear Usuario (Cajero / Administrador)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/usuarios
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "nombre": "Carlos Cajero",
+    "email": "carlos.cajero@bodegadiza.com",
+    "password": "PasswordCajero123",
+    "rol": "CAJERO"
+  }
+}

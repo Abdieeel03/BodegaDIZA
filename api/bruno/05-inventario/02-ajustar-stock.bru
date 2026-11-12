@@ -1,0 +1,27 @@
+meta {
+  name: Ajustar Stock de Lote (Merma / Conteo)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/inventario/ajustes
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "loteId": 1,
+    "nuevaCantidadDisponible": 23.000,
+    "motivo": "Merma por 1 lata abollada durante acomodo"
+  }
+}

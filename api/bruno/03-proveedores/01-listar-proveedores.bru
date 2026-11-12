@@ -1,0 +1,19 @@
+meta {
+  name: Listar Proveedores
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/proveedores?soloActivos=true
+  body: none
+  auth: bearer
+}
+
+params:query {
+  soloActivos: true
+}
+
+auth:bearer {
+  token: {{token}}
+}

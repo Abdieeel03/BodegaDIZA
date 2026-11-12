@@ -1,0 +1,21 @@
+meta {
+  name: Solicitar Código de Recuperación
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/auth/recuperar-password
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "admin@bodegadiza.com"
+  }
+}

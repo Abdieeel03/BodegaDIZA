@@ -1,0 +1,26 @@
+meta {
+  name: Actualizar Categoría
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/categorias/1
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "nombre": "Lácteos y Derivados",
+    "descripcion": "Leches enteras, quesos frescos, yogures y mantequillas"
+  }
+}

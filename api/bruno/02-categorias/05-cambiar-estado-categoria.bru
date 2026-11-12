@@ -1,0 +1,25 @@
+meta {
+  name: Cambiar Estado Categoría (Activar/Desactivar)
+  type: http
+  seq: 5
+}
+
+patch {
+  url: {{baseUrl}}/categorias/1/estado
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "activo": true
+  }
+}

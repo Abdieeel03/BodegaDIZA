@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.diza.api.auth.AuthResponse;
 import com.diza.api.auth.AuthService;
+import com.diza.api.auth.CambiarPasswordRequest;
 import com.diza.api.auth.CodigoRecuperacion;
 import com.diza.api.auth.CodigoRecuperacionRepository;
 import com.diza.api.auth.LoginRequest;
@@ -104,5 +105,26 @@ class PasswordRecoveryIntegrationTests {
     void failsWhenEmailDoesNotExist() {
         assertThatThrownBy(() -> authService.solicitarRecuperacion(new SolicitudRecuperacionRequest("noexiste@diza.pe")))
             .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void changePasswordForAuthenticatedUser() {
+        // 1. Falla si la contraseña actual no coincide
+        assertThatThrownBy(() -> authService.cambiarPassword(
+            usuario.getEmail(),
+            new CambiarPasswordRequest("incorrecta", "newValidPassword123")
+        )).isInstanceOf(BusinessException.class)
+          .hasMessageContaining("actual es incorrecta");
+
+        // 2. Éxito si la contraseña actual es correcta
+        String res = authService.cambiarPassword(
+            usuario.getEmail(),
+            new CambiarPasswordRequest("oldPassword123", "newValidPassword123")
+        );
+        assertThat(res).contains("exitosamente");
+
+        // 3. Puede iniciar sesión con la nueva contraseña
+        AuthResponse loginResponse = authService.login(new LoginRequest(usuario.getEmail(), "newValidPassword123"));
+        assertThat(loginResponse.token()).isNotBlank();
     }
 }

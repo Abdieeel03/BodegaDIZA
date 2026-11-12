@@ -150,6 +150,20 @@ public class AuthService {
         return "La contraseña ha sido restablecida exitosamente. Ahora puede iniciar sesión con su nueva contraseña.";
     }
 
+    @Transactional
+    public String cambiarPassword(String email, CambiarPasswordRequest request) {
+        Usuario usuario = findByEmail(email);
+
+        if (!passwordEncoder.matches(request.passwordActual(), usuario.getPassword())) {
+            throw new BusinessException("La contraseña actual es incorrecta");
+        }
+
+        usuario.setPassword(passwordEncoder.encode(request.nuevaPassword()));
+        usuarioRepository.save(usuario);
+
+        return "Contraseña actualizada exitosamente";
+    }
+
     private Usuario findByEmail(String email) {
         return usuarioRepository.findByEmail(email)
             .orElseThrow(() -> new IllegalStateException("El usuario autenticado ya no existe"));

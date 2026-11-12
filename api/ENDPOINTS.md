@@ -47,6 +47,7 @@ Todos los endpoints devuelven un objeto JSON unificado con la siguiente estructu
 | | `POST` | `/auth/recuperar-password` | Solicitar código de recuperación por correo |
 | | `POST` | `/auth/verificar-codigo` | Validar código de recuperación de 6 dígitos |
 | | `POST` | `/auth/restablecer-password` | Actualizar contraseña con código verificado |
+| | `PATCH` | `/auth/cambiar-password` | Cambiar contraseña del usuario logueado |
 | **Usuarios** | `GET` | `/usuarios` | Listar todos los usuarios del sistema |
 | | `GET` | `/usuarios/{id}` | Obtener detalle de un usuario por ID |
 | | `POST` | `/usuarios` | Crear usuario con rol (`ADMIN` o `CAJERO`) |
@@ -231,6 +232,29 @@ Actualiza la contraseña del usuario tras verificar el código. La nueva contras
 {
   "success": true,
   "data": "La contraseña ha sido restablecida exitosamente. Ahora puede iniciar sesión con su nueva contraseña.",
+  "message": null
+}
+```
+
+---
+
+### `PATCH /auth/cambiar-password`
+Permite al usuario actualmente autenticado cambiar su propia contraseña. Requiere ingresar la contraseña actual para verificar la identidad antes de asignar la nueva contraseña encriptada con BCrypt.
+- **Acceso:** Autenticado (`Authorization: Bearer <token>`)
+
+#### Request Body
+```json
+{
+  "passwordActual": "MiPasswordActual123",
+  "nuevaPassword": "MiNuevaPasswordSuperSegura2026"
+}
+```
+
+#### Response Body (`200 OK`)
+```json
+{
+  "success": true,
+  "data": "Contraseña actualizada exitosamente",
   "message": null
 }
 ```

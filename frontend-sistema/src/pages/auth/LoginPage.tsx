@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { ApiError } from '../../types';
 
 export const LoginPage = () => {
   const navigate = useNavigate();
@@ -20,8 +21,8 @@ export const LoginPage = () => {
     try {
       await login({ email, password });
       navigate('/');
-    } catch {
-      setError('Correo o contraseña inválidos.');
+    } catch (error: unknown) {
+      setError(error instanceof ApiError ? error.message : 'No fue posible iniciar sesión.');
     }
   };
 
@@ -56,8 +57,8 @@ export const LoginPage = () => {
         />
       </div>
 
-        <button type="submit" className="btn-primary btn-block" disabled={isLoading}>
-          {isLoading ? 'Ingresando...' : 'Entrar al Sistema'}
+      <button type="submit" className="btn-primary btn-block" disabled={isLoading}>
+        {isLoading ? 'Ingresando...' : 'Entrar al Sistema'}
       </button>
     </form>
   );

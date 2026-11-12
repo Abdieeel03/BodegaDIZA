@@ -1,0 +1,21 @@
+meta {
+  name: Listar Productos (con Stock Actual)
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/productos?soloActivos=true
+  body: none
+  auth: bearer
+}
+
+params:query {
+  soloActivos: true
+  ~search: leche
+  ~categoriaId: 1
+}
+
+auth:bearer {
+  token: {{token}}
+}

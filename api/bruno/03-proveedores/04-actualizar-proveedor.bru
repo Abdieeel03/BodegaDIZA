@@ -1,0 +1,28 @@
+meta {
+  name: Actualizar Proveedor
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/proveedores/1
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "nombre": "Distribuidora Gloria S.A. - Central",
+    "ruc": "20100010724",
+    "telefono": "987654321",
+    "email": "ventas@gloria.pe"
+  }
+}

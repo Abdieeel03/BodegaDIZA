@@ -1,0 +1,29 @@
+meta {
+  name: Registrar Entrada Directa de Stock (Lote)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/inventario/entradas
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "productoId": 1,
+    "codigoLote": "LT-2026-002",
+    "cantidad": 12.000,
+    "fechaVencimiento": "2027-08-15",
+    "motivo": "Reposición de stock para vitrina"
+  }
+}

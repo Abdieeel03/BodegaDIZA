@@ -1,0 +1,15 @@
+meta {
+  name: Obtener Detalle de Compra por ID
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/compras/1
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}

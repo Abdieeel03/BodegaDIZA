@@ -1,0 +1,32 @@
+meta {
+  name: Registrar Venta (Descuento Automático FEFO)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/ventas
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "items": [
+      {
+        "productoId": 1,
+        "cantidad": 3.000,
+        "loteId": null,
+        "precioUnitario": null
+      }
+    ]
+  }
+}

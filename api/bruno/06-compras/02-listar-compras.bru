@@ -1,0 +1,19 @@
+meta {
+  name: Listar Compras Realizadas
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/compras
+  body: none
+  auth: bearer
+}
+
+params:query {
+  ~proveedorId: 1
+}
+
+auth:bearer {
+  token: {{token}}
+}

@@ -1,0 +1,20 @@
+meta {
+  name: Consultar Movimientos (Kardex)
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/inventario/movimientos
+  body: none
+  auth: bearer
+}
+
+params:query {
+  ~productoId: 1
+  ~tipo: ENTRADA
+}
+
+auth:bearer {
+  token: {{token}}
+}

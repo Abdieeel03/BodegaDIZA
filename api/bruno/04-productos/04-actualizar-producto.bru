@@ -1,0 +1,32 @@
+meta {
+  name: Actualizar Catálogo de Producto
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/productos/1
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "sku": "LEC-GLO-AZU",
+    "nombre": "Leche Evaporada Gloria Azul 400g (Pack)",
+    "descripcion": "Lata de leche evaporada entera clásica",
+    "categoriaId": 1,
+    "proveedorId": 1,
+    "precioVenta": 4.60,
+    "stockMinimo": 15.000,
+    "unidadMedida": "LATA"
+  }
+}

@@ -1,0 +1,28 @@
+meta {
+  name: Crear Proveedor
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/proveedores
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "nombre": "Distribuidora Gloria S.A.",
+    "ruc": "20100010724",
+    "telefono": "987654321",
+    "email": "contacto@gloria.pe"
+  }
+}

@@ -1,0 +1,22 @@
+meta {
+  name: Verificar Código de 6 Dígitos
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/auth/verificar-codigo
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "admin@bodegadiza.com",
+    "codigo": "123456"
+  }
+}

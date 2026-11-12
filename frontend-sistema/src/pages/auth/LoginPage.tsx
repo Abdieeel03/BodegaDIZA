@@ -1,35 +1,37 @@
 import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { ApiError } from '../../types';
 
 export const LoginPage = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
-  const [email, setEmail] = useState('admin@bodegadiza.com');
-  const [password, setPassword] = useState('123456');
+  const { isAuthenticated, isLoading, login } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: FormEvent) => {
+  if (isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setError(null);
 
-    // Simulación de login exitoso recibiendo token JWT
-    const simulatedJwt = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(
-      JSON.stringify({ sub: email, iat: Date.now() })
-    )}.simulatedSignature`;
-
-    login(simulatedJwt, {
-      id: 1,
-      nombre: 'Administrador Diza',
-      email,
-      rol: 'ADMIN',
-    });
-
-    navigate('/');
+    try {
+      await login({ email, password });
+      navigate('/');
+    } catch (error: unknown) {
+      setError(error instanceof ApiError ? error.message : 'No fue posible iniciar sesión.');
+    }
   };
 
   return (
     <form onSubmit={handleSubmit} className="login-form">
       <h2>Iniciar Sesión</h2>
       <p>Ingresa tus credenciales para acceder al sistema.</p>
+
+      {error && <p className="auth-error" role="alert">{error}</p>}
 
       <div className="form-group">
         <label htmlFor="login-email">Correo Electrónico</label>
@@ -55,8 +57,8 @@ export const LoginPage = () => {
         />
       </div>
 
-      <button type="submit" className="btn-primary btn-block">
-        Entrar al Sistema
+      <button type="submit" className="btn-primary btn-block" disabled={isLoading}>
+        {isLoading ? 'Ingresando...' : 'Entrar al Sistema'}
       </button>
     </form>
   );

@@ -20,6 +20,12 @@ const menuItems: MenuItem[] = [
     mobileLabel: 'Predicción',
     icon: 'prediction',
   },
+  {
+    to: '/predicciones-ml',
+    label: 'Entrenamiento ML',
+    mobileLabel: 'Entrenar ML',
+    icon: 'prediction',
+  },
   { label: 'Próximos a vencer', mobileLabel: 'Vence', icon: 'calendar' },
   { label: 'Alertas', mobileLabel: 'Alertas', icon: 'warning' },
 ];

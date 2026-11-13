@@ -1,0 +1,3 @@
+﻿
+# Mantener el script del contenedor PostgreSQL con finales de linea Unix
+demo-db/10-restore.sh text eol=lf

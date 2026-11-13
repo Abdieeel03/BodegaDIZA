@@ -1,5 +1,6 @@
 package com.diza.api.config;
 
+import com.diza.api.ml.MlProperties;
 import com.diza.api.security.JwtAuthenticationFilter;
 import com.diza.api.security.JwtProperties;
 import com.diza.api.user.Usuario;
@@ -28,7 +29,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
-@EnableConfigurationProperties({JwtProperties.class, AppProperties.class})
+@EnableConfigurationProperties({JwtProperties.class, AppProperties.class, MlProperties.class})
 public class SecurityConfig {
 
     @Bean

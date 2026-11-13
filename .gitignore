@@ -1,0 +1,23 @@
+﻿
+# Inicio rapido: archivos privados/generados (BodegaDIZA equipo)
+.env.equipo
+.env.equipo.*
+**/.env
+**/.env.local
+**/__pycache__/
+**/*.pyc
+**/.venv/
+**/.pytest_cache/
+**/data/models/
+**/node_modules/
+**/dist/
+**/.gradle/
+**/build/
+Respaldo_*/
+BodegaDIZA_Inventario_Web_Movil/
+*.joblib
+*.pkl
+*.backup
+*.zip
+# NO sube el snapshot a Git sin auditoria y aprobacion manual.
+demo-db/bodega_diza_test_demo.dump

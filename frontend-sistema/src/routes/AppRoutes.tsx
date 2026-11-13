@@ -7,10 +7,15 @@ import { ProtectedRoute } from './ProtectedRoute';
 
 import { DashboardPage } from '../pages/dashboard/DashboardPage';
 import { SalesPage } from '../pages/sales/SalesPage';
+import { DemoDataPage } from '../pages/demo/DemoDataPage';
 import { InventoryPage } from '../pages/inventory/InventoryPage';
+import { ProductCreatePage } from '../pages/product/ProductCreatePage';
+import { InventoryMovementsPage } from '../pages/inventory/InventoryMovementsPage';
+import { BulkInventoryCsvPage } from '../pages/inventory/bulk/BulkInventoryCsvPage';
 import { PredictionPage } from '../pages/prediction/PredictionPage';
 import { ApiStatusPage } from '../pages/api-status/ApiStatusPage';
 import { LoginPage } from '../pages/auth/LoginPage';
+import { PredictionsPage } from '../pages/predictions/PredictionsPage';
 import { NotFoundPage } from '../pages/not-found/NotFoundPage';
 
 export const AppRoutes = () => {
@@ -30,7 +35,12 @@ export const AppRoutes = () => {
               path="/ventas"
               element={<SalesPage />}
             />
+            <Route path="/datos-prueba" element={<DemoDataPage />} />
             <Route path="/inventario" element={<InventoryPage />} />
+            <Route path="/inventario/agregar" element={<ProductCreatePage />} />
+            <Route path="/inventario/movimientos" element={<InventoryMovementsPage />} />
+            <Route path="/inventario/carga-masiva" element={<BulkInventoryCsvPage />} />
+	    <Route path="/predicciones-ml" element={<PredictionsPage />} />
             <Route
               path="/prediccion-demanda"
               element={<PredictionPage />}

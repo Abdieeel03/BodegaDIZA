@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import type { InventoryProduct as Producto } from '../../types/inventory';
 import { useRemoteResource } from '../../hooks/useRemoteResource';
@@ -94,6 +96,7 @@ const EtiquetaEstado = ({ producto }: { producto: Producto }) => {
 };
 
 export const InventoryPage = () => {
+  const navigate = useNavigate();
   const {
     data: productosApi, status: estadoApi, error: errorApi, reload: recargarApi,
   } = useRemoteResource(listInventoryProducts, MODO_API);
@@ -155,7 +158,7 @@ export const InventoryPage = () => {
       return;
     }
     if ([nuevo.stock, nuevo.stockMinimo, nuevo.precioCosto, nuevo.precioVenta]
-      .some((valor) => !Number.isFinite(valor) || valor < 0)) {
+      .some((valor) => typeof valor !== 'number' || !Number.isFinite(valor) || valor < 0)) {
       setErrorFormulario('Las cantidades y precios deben ser números válidos mayores o iguales a cero.');
       return;
     }
@@ -177,12 +180,17 @@ export const InventoryPage = () => {
           <p>Consulta y gestiona el stock de productos</p>
         </div>
         <div className="inventory-actions">
-          <button
+          {MODO_API ? (
+  <Link className="inventory-action inventory-action-add" to="/inventario/agregar">
+    <span aria-hidden="true">＋</span> Nuevo Producto
+  </Link>
+) : (
+<button
             className="inventory-action inventory-action-add"
             type="button"
             onClick={() => {
               if (MODO_API) {
-                setMensaje('El registro de productos estará disponible cuando el backend incorpore su endpoint.');
+                setMensaje('El backend dispone de POST /productos; falta integrar y validar el formulario antes de habilitar el registro real.');
                 return;
               }
               setModalNuevo(true); setErrorFormulario('');
@@ -190,10 +198,14 @@ export const InventoryPage = () => {
           >
             <span aria-hidden="true">＋</span> Nuevo Producto
           </button>
+)}
+<Link className="inventory-action inventory-action-bulk" to="/inventario/movimientos">
+  Historial de movimientos
+</Link>
           <button
             className="inventory-action inventory-action-bulk"
             type="button"
-            onClick={() => setModalCarga(true)}
+            onClick={() => navigate('/inventario/carga-masiva')}
           >
             <span aria-hidden="true">⇧</span> Carga Masiva
           </button>
@@ -250,8 +262,8 @@ export const InventoryPage = () => {
         <article className="inventory-summary-card">
           <div>
             <span className="inventory-summary-label">VALORIZADO</span>
-            <strong className="inventory-summary-value">{moneda(valorInventario)}</strong>
-            <span className="inventory-summary-subline">Suma del stock × costo de ejemplo</span>
+            <strong className="inventory-summary-value">{valorInventario === null ? 'No disponible' : moneda(valorInventario)}</strong>
+            <span className="inventory-summary-subline">{MODO_API ? 'El catálogo no devuelve costo de compra' : 'Suma del stock × costo de ejemplo'}</span>
           </div>
           <span className="inventory-summary-icon inventory-summary-icon--green"><IconoDinero /></span>
         </article>
@@ -313,7 +325,7 @@ export const InventoryPage = () => {
                   <td className="inventory-category-cell">{producto.categoria}</td>
                   <td className={`inventory-stock inventory-stock--${estadoProducto(producto)}`}>{producto.stock}</td>
                   <td>{producto.stockMinimo}</td>
-                  <td>{moneda(producto.precioCosto)}</td>
+                  <td>{producto.precioCosto === null ? '—' : moneda(producto.precioCosto)}</td>
                   <td className="inventory-sale-price">{moneda(producto.precioVenta)}</td>
                   <td><EtiquetaEstado producto={producto} /></td>
                 </tr>
@@ -354,7 +366,7 @@ export const InventoryPage = () => {
                 </div>
                 <div>
                   <span>COSTO COMPRA</span>
-                  <strong>{moneda(producto.precioCosto)}</strong>
+                  <strong>{producto.precioCosto === null ? '—' : moneda(producto.precioCosto)}</strong>
                 </div>
                 <div>
                   <span>PRECIO VENTA</span>

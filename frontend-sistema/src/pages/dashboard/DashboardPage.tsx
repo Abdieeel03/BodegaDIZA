@@ -1,250 +1,116 @@
-
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { mlService } from '../../services/mlService';
+import { estimatedRevenueSummary, formatSoles, getCurrentSalePrices, type PriceMap } from '../../services/mlRevenue';
+import type { DemandPrediction, ReplenishmentRecommendation } from '../../types';
+import { OperationalOverview } from './OperationalOverview';
 import './dashboard.css';
 
-const indicadores = [
-  {
-    titulo: 'Ventas del día',
-    valor: 'S/ 840.50',
-    detalle: '▲ +12.4% vs. ayer',
-    icono: '▦',
-    estado: 'positivo',
-  },
-  {
-    titulo: 'Unidades vendidas',
-    valor: '142 uds',
-    detalle: '▲ +18 uds',
-    icono: '▣',
-    estado: 'neutro',
-  },
-  {
-    titulo: 'En riesgo',
-    valor: '8 SKUs',
-    detalle: '✕ Stock crítico',
-    icono: '⚠',
-    estado: 'peligro',
-  },
-  {
-    titulo: 'Cobertura promedio',
-    valor: '14 días',
-    detalle: '✓ Estable',
-    icono: '▤',
-    estado: 'positivo',
-  },
-];
+const formatUnits = (amount: number) => amount.toLocaleString('es-PE', { maximumFractionDigits: 1 });
+const readableName = (text: string) => text.replaceAll('Ã±', 'ñ').replaceAll('Ã©', 'é').replaceAll('Ã¡', 'á');
 
-const productos = [
-  { nombre: 'Arroz Costeño 1kg', ventas: 48, estado: 'Óptimo', tipo: 'positivo' },
-  { nombre: 'Leche Gloria Azul 400g', ventas: 42, estado: 'Bajo', tipo: 'advertencia' },
-  { nombre: 'Inca Kola 1.5L', ventas: 36, estado: 'Normal', tipo: 'positivo' },
-  { nombre: 'Aceite Primor 1L', ventas: 28, estado: 'Normal', tipo: 'positivo' },
-  { nombre: 'Fideos Don Vittorio', ventas: 24, estado: 'Crítico', tipo: 'peligro' },
-];
-
-const horas = ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00', '22:00'];
-
-const reales = [80, 250, 560, 840];
-const estimados = [80, 220, 510, 790, 840, 900, 960, 1020];
-
-const x = (indice: number) => 55 + indice * 76;
-const y = (valor: number) => 225 - (valor / 1200) * 190;
-
-const puntos = (valores: number[], inicio = 0) =>
-  valores
-    .map((valor, i) => `${x(i + inicio)},${y(valor)}`)
-    .join(' ');
-
-function GraficoVentas() {
-  return (
-    <div className="diza-chart-card">
-      <div className="diza-chart-header">
-        <h3>Ventas vs. predicciones — Hoy, por hora</h3>
-        <div className="diza-legend">
-          <span><i className="diza-real" /> Ventas</span>
-          <span><i className="diza-estimado" /> Estimado</span>
-        </div>
-      </div>
-
-      <div className="diza-chart-container">
-        <svg
-          viewBox="0 0 640 280"
-          role="img"
-          aria-label="Gráfico demostrativo de ventas y estimación de demanda por hora"
-        >
-          {[0, 200, 400, 600, 800, 1000, 1200].map((valor) => (
-            <g key={valor}>
-              <line
-                x1="55"
-                y1={y(valor)}
-                x2="600"
-                y2={y(valor)}
-                stroke="#e4e9f2"
-              />
-              <text x="47" y={y(valor) + 4} textAnchor="end" fontSize="11" fill="#66738d">
-                {valor === 0 ? 'S/ 0' : `S/ ${valor}`}
-              </text>
-            </g>
-          ))}
-
-          {horas.map((hora, i) => (
-            <text
-              key={hora}
-              x={x(i)}
-              y="254"
-              textAnchor="middle"
-              fontSize="11"
-              fill="#66738d"
-            >
-              {hora}
-            </text>
-          ))}
-
-          <line
-            x1={x(3)}
-            x2={x(3)}
-            y1={y(840)}
-            y2="225"
-            stroke="#294c9c"
-            strokeDasharray="3 4"
-          />
-
-          <polyline
-            fill="none"
-            stroke="#8da0c3"
-            strokeWidth="2"
-            strokeDasharray="5 5"
-            strokeLinejoin="round"
-            points={puntos(estimados)}
-          />
-
-          <polyline
-            fill="none"
-            stroke="#244695"
-            strokeWidth="3"
-            strokeLinejoin="round"
-            strokeLinecap="round"
-            points={puntos(reales)}
-          />
-
-          {reales.map((valor, i) => (
-            <circle
-              key={i}
-              cx={x(i)}
-              cy={y(valor)}
-              r="5"
-              fill="#fff"
-              stroke="#244695"
-              strokeWidth="3"
-            />
-          ))}
-
-          <rect
-            x={x(3) - 78}
-            y={y(840) - 37}
-            width="156"
-            height="25"
-            rx="5"
-            fill="#101a32"
-          />
-          <text
-            x={x(3)}
-            y={y(840) - 20}
-            textAnchor="middle"
-            fontSize="10"
-            fill="#fff"
-            fontWeight="bold"
-          >
-            Ventas de ejemplo: S/ 840.50
-          </text>
-        </svg>
-      </div>
-
-      <div className="diza-chart-footer">
-        <span>↗ Crecimiento estimado en bebidas y abarrotes.</span>
-        <strong>Meta estimada: S/ 1,020.00</strong>
-      </div>
-    </div>
-  );
-}
-
-function RankingProductos() {
-  return (
-    <section className="diza-ranking">
-      <div className="diza-ranking-header">
-        <h3>Ranking de productos</h3>
-        <span>Top 5 del día</span>
-      </div>
-
-      <div className="diza-ranking-list">
-        {productos.map((producto, i) => (
-          <div className="diza-ranking-item" key={producto.nombre}>
-            <span className="diza-ranking-number">{i + 1}</span>
-
-            <div className="diza-ranking-info">
-              <strong title={producto.nombre}>{producto.nombre}</strong>
-              <small>{producto.ventas} uds vendidas</small>
-              <div className="diza-ranking-track">
-                <div style={{ width: `${producto.ventas / 48 * 100}%` }} />
-              </div>
-            </div>
-
-            <span className={`diza-chip diza-${producto.tipo}`}>
-              {producto.estado}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      <Link to="/inventario" className="diza-ranking-link">
-        Ver inventario completo <span aria-hidden="true">→</span>
-      </Link>
-    </section>
-  );
-}
+type ForecastState = { predictions: DemandPrediction[]; replenishments: ReplenishmentRecommendation[] };
 
 export const DashboardPage = () => {
-  return (
-    <div className="diza-dashboard">
-      <div className="diza-dashboard-heading">
-        <div>
-          <p className="diza-location">BODEGA DIZA · VILLA EL SALVADOR</p>
-          <h1>Dashboard</h1>
-          <p>Resumen de la operación de tu bodega</p>
-        </div>
-        <span className="diza-demo">● Datos de demostración</span>
-      </div>
+  const [data, setData] = useState<ForecastState>({ predictions: [], replenishments: [] });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [refresh, setRefresh] = useState(0);
+  const [prices, setPrices] = useState<PriceMap>({});
+  const [pricesLoading, setPricesLoading] = useState(true);
+  const [priceError, setPriceError] = useState('');
 
-      <section className="diza-indicators" aria-label="Resumen de indicadores">
-        {indicadores.map((item) => (
-          <article
-            key={item.titulo}
-            className={`diza-kpi ${item.estado === 'peligro' ? 'diza-kpi-risk' : ''}`}
-          >
-            <span className="diza-kpi-icon" aria-hidden="true">{item.icono}</span>
-            <div className="diza-kpi-info">
-              <span className="diza-kpi-title">{item.titulo}</span>
-              <strong className="diza-kpi-value">{item.valor}</strong>
-              <span className={`diza-chip diza-${item.estado}`}>
-                {item.detalle}
-              </span>
-            </div>
-          </article>
-        ))}
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setError('');
+    Promise.all([mlService.getLatestPredictions(), mlService.getLatestReplenishments()])
+      .then(([predictions, replenishments]) => { if (active) setData({ predictions, replenishments }); })
+      .catch(err => { if (active) setError(err instanceof Error ? err.message : 'No se encontraron los pronósticos.'); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [refresh]);
+
+  useEffect(() => {
+    let active = true;
+    setPricesLoading(true);
+    setPriceError('');
+    getCurrentSalePrices()
+      .then(items => { if (active) setPrices(items); })
+      .catch(err => { if (active) { setPrices({}); setPriceError(err instanceof Error ? err.message : 'Error al consultar precios.'); } })
+      .finally(() => { if (active) setPricesLoading(false); });
+    return () => { active = false; };
+  }, [refresh]);
+
+  const demand = data.predictions.reduce((sum, item) => sum + Number(item.predictedDemand7Days || 0), 0);
+  const revenue = estimatedRevenueSummary(data.predictions, prices);
+  const revenueLabel = pricesLoading ? 'Calculando...' : revenue.pricedProducts === 0
+    ? 'No disponible' : formatSoles(revenue.total);
+  const urgent = [...data.replenishments].filter(item => Number(item.recommendedReplenishment) > 0)
+    .sort((a, b) => Number(b.recommendedReplenishment) - Number(a.recommendedReplenishment));
+  const toBuy = urgent.reduce((sum, item) => sum + Number(item.recommendedReplenishment), 0);
+  const daily = Array.from({ length: 7 }, (_, day) => data.predictions.reduce((sum, item) => sum + Number(item.dailyPredictions[day] || 0), 0));
+  const maximum = Math.max(1, ...daily);
+  const x = (index: number) => 46 + index * 88;
+  const y = (value: number) => 205 - (value / maximum) * 160;
+
+  return <main className="diza-dashboard">
+    <OperationalOverview />
+    <header className="diza-dashboard-heading">
+      <div><p className="diza-location">BODEGA DIZA</p><h1>Predicción y reposición</h1>
+        <p>Datos obtenidos del modelo entrenado, independientes de las ventas operativas del período.</p></div>
+      <button type="button" className="diza-ranking-link" style={{ border: 0, cursor: 'pointer' }} onClick={() => setRefresh(n => n + 1)}>Actualizar predicción</button>
+    </header>
+    {error && <p role="alert" style={{ color: '#b42332' }}>{error}. Comprueba la conexión entre Spring Boot y el microservicio ML.</p>}
+    {priceError && !loading && <p role="status">Los ingresos estimados no están disponibles: {priceError}. Los pronósticos en unidades sí se muestran.</p>}
+    {loading ? <section className="diza-chart-card"><p>Consultando predicciones...</p></section> : <>
+      <section className="diza-indicators" aria-label="Resumen de predicciones" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(185px, 1fr))' }}>
+        {[
+          { title: 'Demanda prevista · 7 días', value: `${formatUnits(demand)} unidades`, detail: 'Según histórico registrado', icon: '▦' },
+          { title: 'Ingresos estimados · 7 días', value: revenueLabel, detail: revenue.pricedProducts < revenue.products && !pricesLoading ? `Precios de ${revenue.pricedProducts}/${revenue.products} productos` : 'A precios de venta actuales', icon: 'S/' },
+          { title: 'Productos pronosticados', value: String(data.predictions.length), detail: 'Con historial disponible', icon: '▣' },
+          { title: 'Productos por reponer', value: String(urgent.length), detail: 'Basado en stock actual', icon: '⚠' },
+          { title: 'Reposición sugerida', value: `${formatUnits(toBuy)} unidades`, detail: 'Para mantener reserva mínima', icon: '▤' },
+        ].map(item => <article key={item.title} className="diza-kpi">
+          <span className="diza-kpi-icon">{item.icon}</span><div className="diza-kpi-info">
+            <span className="diza-kpi-title">{item.title}</span><strong className="diza-kpi-value">{item.value}</strong>
+            <span className="diza-chip diza-neutro">{item.detail}</span>
+          </div>
+        </article>)}
       </section>
-
-      <h2 className="diza-section-title">¿Qué se está vendiendo?</h2>
-
       <div className="diza-analytics">
-        <GraficoVentas />
-        <RankingProductos />
+        <section className="diza-chart-card">
+          <div className="diza-chart-header"><h3>Demanda estimada durante 7 días (unidades)</h3></div>
+          {data.predictions.length ? <div className="diza-chart-container">
+            <svg viewBox="0 0 630 250" role="img" aria-label="Demanda estimada agregada para siete días">
+              {[0, 0.5, 1].map(r => <g key={r}>
+                <line x1="46" x2="574" y1={y(maximum * r)} y2={y(maximum * r)} stroke="#e3e9f2" />
+                <text x="38" y={y(maximum * r) + 4} textAnchor="end" fill="#66738d" fontSize="11">{formatUnits(maximum * r)}</text>
+              </g>)}
+              <polyline fill="none" stroke="#2563eb" strokeWidth="3" strokeLinecap="round" points={daily.map((n, i) => `${x(i)},${y(n)}`).join(' ')} />
+              {daily.map((n, i) => <g key={i}><circle cx={x(i)} cy={y(n)} r="4" fill="#fff" stroke="#2563eb" strokeWidth="3" />
+                <text x={x(i)} y="234" textAnchor="middle" fill="#66738d" fontSize="11">Día {i + 1}</text></g>)}
+            </svg>
+          </div> : <p>No hay entrenamiento disponible.</p>}
+          <div className="diza-chart-footer"><span>Basado en fechas con ventas observadas.</span><strong>{formatUnits(demand)} unidades · {revenueLabel} estimados</strong></div>
+        </section>
+        <section className="diza-ranking">
+          <div className="diza-ranking-header"><h3>Reposición prioritaria</h3><span>{urgent.length} productos</span></div>
+          <div className="diza-ranking-list">
+            {urgent.length ? urgent.slice(0, 5).map((item, i) => <div className="diza-ranking-item" key={item.productId}>
+              <span className="diza-ranking-number">{i + 1}</span><div className="diza-ranking-info">
+                <strong title={readableName(item.productName)}>{readableName(item.productName)}</strong>
+                <small>Stock {formatUnits(Number(item.stockActual))} · Reponer {formatUnits(Number(item.recommendedReplenishment))}</small>
+              </div>
+              <span className={`diza-chip diza-${item.alertStatus === 'ROJO' ? 'peligro' : 'advertencia'}`}>{item.alertStatus}</span>
+            </div>) : <p>Sin reposiciones sugeridas.</p>}
+          </div>
+          <Link className="diza-ranking-link" to="/prediccion-demanda">Ver predicciones de todos los productos →</Link>
+        </section>
       </div>
-
-      <p className="diza-disclaimer">
-        Las cifras y predicciones mostradas son ejemplos de diseño.
-        Se reemplazarán al conectar los servicios reales del sistema.
-      </p>
-    </div>
-  );
+      <p className="diza-disclaimer">La proyección de siete días parte del cierre del histórico utilizado para entrenar el modelo; no representa necesariamente los siete días posteriores a hoy. Los ingresos estimados (S/) utilizan los precios de venta actuales de Inventario: no son ventas registradas ni utilidad neta.</p>
+    </>}
+  </main>;
 };
 
 export default DashboardPage;

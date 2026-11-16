@@ -448,3 +448,152 @@
   color: var(--text);
   margin-bottom: 1.5rem;
 }
+
+
+
+/* ==========================================
+   BODEGADIZA - CORRECCIÓN RESPONSIVE MÓVIL
+   ========================================== */
+
+@media (max-width: 760px) {
+
+  /* Estructura general */
+  .app-layout {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .app-body {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .main-content {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 12px 10px 100px;
+    overflow: visible;
+  }
+
+  .page-container {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Encabezado compacto */
+  .navbar {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .navbar-brand {
+    min-width: 0;
+    gap: 6px;
+  }
+
+  .brand-logo {
+    font-size: 14px;
+    white-space: nowrap;
+  }
+
+  .system-tag,
+  .user-name,
+  .user-badge {
+    display: none;
+  }
+
+  .navbar-actions,
+  .user-profile {
+    gap: 5px;
+  }
+
+  .btn-logout {
+    font-size: 11px;
+    padding: 7px 9px;
+    white-space: nowrap;
+  }
+
+  /* Menú inferior para celulares */
+  .sidebar {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+
+    width: 100%;
+    height: auto;
+    box-sizing: border-box;
+
+    padding: 7px 8px max(8px, env(safe-area-inset-bottom));
+    background: #ffffff;
+    border: 0;
+    border-top: 1px solid #e2e8f0;
+    box-shadow: 0 -3px 12px rgba(15, 23, 42, 0.06);
+  }
+
+  .sidebar-nav ul {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: stretch;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+  }
+
+  .sidebar-nav li {
+    flex: 1;
+    min-width: 0;
+    list-style: none;
+  }
+
+  .sidebar-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 46px;
+    box-sizing: border-box;
+
+    padding: 7px 4px;
+    border-radius: 8px;
+
+    text-align: center;
+    font-size: 11px;
+    line-height: 1.3;
+    white-space: normal;
+    overflow-wrap: break-word;
+  }
+
+  .sidebar-link.active {
+    color: #2563eb;
+    background: #eff6ff;
+    font-weight: 700;
+  }
+
+  /* Contenido del inventario */
+  .inventory-view {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .inventory-heading,
+  .inventory-panel,
+  .inventory-mobile-products {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .inventory-product-card {
+    min-width: 0;
+  }
+}

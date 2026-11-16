@@ -1,0 +1,61 @@
+/* Estados de carga, error y catálogo vacío. No modifica inventory.css. */
+.inventory-demo-controls {
+  margin: 0 0 14px;
+  color: #41628f;
+  font-size: 12px;
+}
+.inventory-demo-controls summary {
+  cursor: pointer;
+  width: fit-content;
+  color: #2458bb;
+  font-weight: 700;
+}
+.inventory-demo-controls-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding-top: 10px;
+}
+.inventory-demo-controls-options button {
+  border: 1px solid #d7e4f7;
+  background: #fff;
+  color: #244675;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font: inherit;
+  cursor: pointer;
+}
+.inventory-demo-controls-options button[aria-pressed="true"] {
+  border-color: #2563eb;
+  color: #fff;
+  background: #2563eb;
+}
+.inventory-demo-controls-note { margin: 8px 0 0; font-size: 11px; color: #64748b; }
+
+.inventory-data-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(22px, 5vw, 54px) 18px;
+  border: 1px solid #e3eaf3;
+  border-radius: 12px;
+  background: #fff;
+  min-height: 260px;
+  text-align: center;
+  color: #102453;
+}
+.inventory-data-state h2 { margin: 14px 0 7px; font-size: clamp(16px, 2vw, 21px); font-weight: 800; color: #102453; }
+.inventory-data-state p { max-width: 360px; margin: 0; font-size: 13px; color: #64748b; line-height: 1.5; }
+.inventory-data-symbol { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; font-size: 26px; font-weight: 700; }
+.inventory-data-symbol--error { color: #dc2626; background: #fee2e2; }
+.inventory-data-symbol--empty { color: #2563eb; background: #dbeafe; }
+.inventory-data-retry { margin-top: 19px; background: #2563eb; color: #fff; border: 0; border-radius: 8px; padding: 10px 16px; font-weight: 700; cursor: pointer; }
+.inventory-data-retry:hover { background: #1d4ed8; }
+.inventory-data-spinner { width: 36px; height: 36px; border: 3px solid #dbeafe; border-top-color: #2563eb; border-radius: 50%; animation: inventory-data-rotate .8s linear infinite; }
+@keyframes inventory-data-rotate { to { transform: rotate(360deg); } }
+.inventory-data-skeletons { display: grid; width: min(500px, 100%); grid-template-columns: 1fr; gap: 10px; margin-top: 22px; }
+.inventory-data-skeleton { height: 42px; border-radius: 8px; background: linear-gradient(90deg,#f1f5f9 25%,#e8eef9 50%,#f1f5f9 75%); background-size: 200% 100%; animation: inventory-data-shimmer 1.4s linear infinite; }
+@keyframes inventory-data-shimmer { to { background-position-x: -200%; } }
+@media (prefers-reduced-motion: reduce) { .inventory-data-spinner, .inventory-data-skeleton { animation: none; } }
+@media (max-width: 760px) { .inventory-demo-controls { font-size: 11px; } .inventory-data-state { padding: 25px 13px; min-height: 240px; } .inventory-data-state p { font-size: 12px; } }

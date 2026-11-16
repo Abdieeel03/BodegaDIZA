@@ -1,0 +1,308 @@
+/* BodegaDIZA — Entrenamiento ML
+   Estilos encapsulados para no modificar Inicio, Ventas ni Inventario. */
+.prediction-page {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  color: #102044;
+  font-family: inherit;
+}
+
+.prediction-page *,
+.prediction-page *::before,
+.prediction-page *::after {
+  box-sizing: border-box;
+}
+
+.prediction-page .prediction-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 28px;
+  padding: 32px 36px;
+  border-radius: 18px;
+  background: linear-gradient(120deg, #102b65, #245fe9);
+  box-shadow: 0 12px 30px rgba(27, 78, 174, .12);
+  color: #fff;
+}
+
+.prediction-page .eyebrow {
+  display: block;
+  color: #c8dcff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+}
+
+.prediction-page .prediction-hero h1 {
+  max-width: 650px;
+  margin: 12px 0 12px;
+  font-size: clamp(28px, 3.6vw, 44px);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -.8px;
+  color: #fff;
+}
+
+.prediction-page .prediction-hero p {
+  max-width: 590px;
+  margin: 0;
+  color: #e4edff;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.prediction-page .prediction-hero-stat {
+  flex: 0 0 158px;
+  padding: 17px;
+  border: 1px solid rgba(255,255,255,.25);
+  border-radius: 12px;
+  background: rgba(255,255,255,.1);
+}
+
+.prediction-page .prediction-hero-stat span,
+.prediction-page .prediction-hero-stat small {
+  display: block;
+  color: #e2eaff;
+  font-size: 12px;
+}
+
+.prediction-page .prediction-hero-stat strong {
+  display: block;
+  margin: 7px 0;
+  color: #fff;
+  font-size: 29px;
+  font-weight: 800;
+}
+
+.prediction-page .prediction-workspace,
+.prediction-page .prediction-result {
+  margin-top: 22px;
+  padding: 26px;
+  border: 1px solid #dfe7f4;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 6px 20px rgba(20, 48, 96, .035);
+}
+
+.prediction-page .prediction-upload-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.prediction-page .prediction-upload {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  min-height: 115px;
+  padding: 20px;
+  border: 2px dashed #c4d5ee;
+  border-radius: 12px;
+  background: #f8fbff;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease;
+}
+
+.prediction-page .prediction-upload:hover,
+.prediction-page .prediction-upload:focus-within,
+.prediction-page .prediction-upload.is-ready {
+  border-color: #2862ef;
+  background: #eef4ff;
+}
+
+.prediction-page .prediction-upload input[type="file"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.prediction-page .prediction-upload-icon {
+  display: grid;
+  flex: 0 0 48px;
+  place-items: center;
+  height: 48px;
+  border-radius: 12px;
+  background: #e5edff;
+  color: #2257cc;
+  font-size: 24px;
+}
+
+.prediction-page .prediction-upload.is-ready .prediction-upload-icon {
+  background: #245fe9;
+  color: #fff;
+}
+
+.prediction-page .prediction-upload-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.prediction-page .prediction-upload-copy strong {
+  color: #152b54;
+  font-size: 15px;
+}
+
+.prediction-page .prediction-upload-copy small {
+  display: block;
+  overflow: hidden;
+  color: #667896;
+  font-size: 12px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prediction-page .prediction-submit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-top: 22px;
+  padding-top: 22px;
+  border-top: 1px solid #e7edf8;
+}
+
+.prediction-page .prediction-submit-row > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.prediction-page .prediction-submit-row strong {
+  color: #152b54;
+}
+
+.prediction-page .prediction-submit-row span {
+  color: #687996;
+  font-size: 13px;
+}
+
+.prediction-page .prediction-submit-row .btn-primary {
+  min-height: 43px;
+  padding: 11px 21px;
+  border: none;
+  border-radius: 9px;
+  background: #245fec;
+  color: white;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.prediction-page .prediction-submit-row .btn-primary:hover:not(:disabled) {
+  background: #174ac4;
+}
+
+.prediction-page .prediction-submit-row .btn-primary:disabled {
+  opacity: .58;
+  cursor: wait;
+}
+
+.prediction-page .prediction-submit-row .auth-error {
+  margin: 0;
+  color: #be273c;
+  font-size: 13px;
+}
+
+.prediction-page .prediction-result-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.prediction-page .prediction-result-heading .eyebrow {
+  color: #245fec;
+}
+
+.prediction-page .prediction-result h2 {
+  margin: 7px 0 0;
+  color: #152b54;
+  font-size: 24px;
+  text-transform: capitalize;
+}
+
+.prediction-page .prediction-success {
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #e4f7ec;
+  color: #147645;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.prediction-page .prediction-metrics {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.prediction-page .prediction-metrics > div {
+  min-width: 0;
+  padding: 16px;
+  border-radius: 10px;
+  background: #f2f6fd;
+}
+
+.prediction-page .prediction-metrics span,
+.prediction-page .prediction-metrics strong {
+  display: block;
+}
+
+.prediction-page .prediction-metrics span {
+  color: #667996;
+  font-size: 12px;
+}
+
+.prediction-page .prediction-metrics strong {
+  margin-top: 6px;
+  color: #162e60;
+  font-size: 21px;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+  .prediction-page .prediction-hero {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 25px 23px;
+  }
+  .prediction-page .prediction-hero-stat {
+    flex-basis: auto;
+    width: 100%;
+  }
+  .prediction-page .prediction-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 650px) {
+  .prediction-page .prediction-upload-grid,
+  .prediction-page .prediction-metrics {
+    grid-template-columns: 1fr;
+  }
+  .prediction-page .prediction-workspace,
+  .prediction-page .prediction-result {
+    padding: 16px;
+  }
+  .prediction-page .prediction-submit-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .prediction-page .prediction-submit-row .btn-primary {
+    width: 100%;
+  }
+  .prediction-page .prediction-result-heading {
+    flex-direction: column;
+  }
+}

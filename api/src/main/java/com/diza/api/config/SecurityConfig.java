@@ -1,5 +1,6 @@
 package com.diza.api.config;
 
+import com.diza.api.ml.MlProperties;
 import com.diza.api.security.JwtAuthenticationFilter;
 import com.diza.api.security.JwtProperties;
 import com.diza.api.ml.MlProperties;

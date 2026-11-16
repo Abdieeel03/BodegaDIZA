@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { ApiError, type TrainingResult } from '../../types';
 import { mlService } from '../../services/mlService';
+import './predictions-ml.css';
 
 export const PredictionsPage = () => {
   const [salesFile, setSalesFile] = useState<File | null>(null);

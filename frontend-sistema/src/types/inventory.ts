@@ -5,6 +5,6 @@ export interface InventoryProduct {
   categoria: string;
   stock: number;
   stockMinimo: number;
-  precioCosto: number;
+  precioCosto: number | null;
   precioVenta: number;
 }

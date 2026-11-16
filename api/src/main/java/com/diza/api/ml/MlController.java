@@ -17,9 +17,11 @@ import org.springframework.web.multipart.MultipartFile;
 public class MlController {
 
     private final MlServiceClient mlServiceClient;
+    private final MlReplenishmentService mlReplenishmentService;
 
-    public MlController(MlServiceClient mlServiceClient) {
+    public MlController(MlServiceClient mlServiceClient, MlReplenishmentService mlReplenishmentService) {
         this.mlServiceClient = mlServiceClient;
+        this.mlReplenishmentService = mlReplenishmentService;
     }
 
     @PostMapping(value = "/trainings", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -42,6 +44,6 @@ public class MlController {
 
     @GetMapping("/replenishments/latest")
     public ResponseEntity<ApiResponse<List<ReplenishmentResponse>>> getLatestReplenishments() {
-        return ResponseEntity.ok(ApiResponse.success(mlServiceClient.getLatestReplenishments()));
+        return ResponseEntity.ok(ApiResponse.success(mlReplenishmentService.latest()));
     }
 }

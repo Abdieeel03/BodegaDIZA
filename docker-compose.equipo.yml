@@ -1,0 +1,86 @@
+name: bodegadiza-equipo
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: bodega_diza_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${TEAM_DB_PASSWORD:?Falta TEAM_DB_PASSWORD en .env.equipo}
+    ports:
+      - "127.0.0.1:${TEAM_DB_PORT:-5543}:5432"
+    volumes:
+      - equipo_postgres_data:/var/lib/postgresql/data
+      - ./demo-db/bodega_diza_test_demo.dump:/opt/bodegadiza/demo.dump:ro
+      - ./demo-db/10-restore.sh:/docker-entrypoint-initdb.d/10-restore.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d bodega_diza_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 25
+    restart: unless-stopped
+
+  ml:
+    build:
+      context: ./ml-service
+      dockerfile: Dockerfile.equipo
+    environment:
+      ML_MODEL_DIR: /app/data/models
+    volumes:
+      - equipo_ml_models:/app/data/models
+    ports:
+      - "127.0.0.1:${TEAM_ML_PORT:-8002}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 25
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile.equipo
+    environment:
+      SERVER_PORT: 8081
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: bodega_diza_test
+      DB_USER: postgres
+      DB_PASSWORD: ${TEAM_DB_PASSWORD:?Falta TEAM_DB_PASSWORD}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      SPRING_JPA_SHOW_SQL: 'false'
+      JWT_SECRET: ${TEAM_JWT_SECRET:?Falta TEAM_JWT_SECRET}
+      JWT_EXPIRATION: 86400000
+      ADMIN_EMAIL: ${TEAM_ADMIN_EMAIL:-admin.equipo@bodegadiza.local}
+      ADMIN_PASSWORD: ${TEAM_ADMIN_PASSWORD:?Falta TEAM_ADMIN_PASSWORD}
+      ADMIN_NOMBRE: Administrador de demostracion
+      CORS_ALLOWED_ORIGIN: http://localhost:${TEAM_WEB_PORT:-5173}
+      DIZA_DEMO_ENABLED: 'true'
+      ML_SERVICE_BASE_URL: http://ml:8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ml:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${TEAM_API_PORT:-8081}:8081"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend-sistema
+      dockerfile: Dockerfile.equipo
+    environment:
+      VITE_API_BASE_URL: http://localhost:${TEAM_API_PORT:-8081}
+      VITE_INVENTORY_MODE: api
+      VITE_INVENTORY_ENDPOINT: /productos
+    ports:
+      - "127.0.0.1:${TEAM_WEB_PORT:-5173}:5173"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  equipo_postgres_data:
+  equipo_ml_models:

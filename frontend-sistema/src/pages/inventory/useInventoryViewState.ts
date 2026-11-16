@@ -40,7 +40,9 @@ export function useInventoryViewState<T extends InventoryProduct>(initialProduct
   const mostrados = filtrados.slice(inicio, inicio + ITEMS_PER_PAGE);
 
   const valorInventario = useMemo(
-    () => productos.reduce((total, producto) => total + producto.stock * producto.precioCosto, 0),
+    () => productos.some((producto) => producto.precioCosto === null)
+      ? null
+      : productos.reduce((total, producto) => total + producto.stock * (producto.precioCosto ?? 0), 0),
     [productos],
   );
 

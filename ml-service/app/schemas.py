@@ -1,21 +1,23 @@
-from datetime import datetime
-from pydantic import BaseModel, ConfigDict
+from datetime import date, datetime
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
-def to_camel(value: str) -> str:
-    head, *tail = value.split("_")
-    return head + "".join(part.title() for part in tail)
+def camel(value: str) -> str:
+    first, *parts = value.split("_")
+    return first + "".join(part.title() for part in parts)
 
 
 class ApiModel(BaseModel):
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+    model_config = ConfigDict(alias_generator=camel, populate_by_name=True)
 
 
 class Metrics(ApiModel):
     mae: float
     rmse: float
-    mape: float | None
-    wape: float
+    r2: float | None = None
+    mape: float | None = None
+    wape: float | None = None
 
 
 class TrainingResult(ApiModel):
@@ -27,6 +29,13 @@ class TrainingResult(ApiModel):
     products_count: int
     observations_count: int
     validation_rows_rejected: int
+    validation_metrics: Metrics | None = None
+    evaluated_observations: int = 0
+    forecast_from_date: date | None = None
+    forecast_to_date: date | None = None
+    history_coverage_ratio: float = 0.0
+    evaluation_scope: str = "RECORDED_SALE_DAYS_ONLY"
+    missing_dates_policy: str = "UNKNOWN_NOT_ZERO"
 
 
 class PredictionResult(ApiModel):
@@ -34,7 +43,7 @@ class PredictionResult(ApiModel):
     product_name: str
     category: str
     predicted_demand_7_days: float
-    daily_predictions: list[float]
+    daily_predictions: list[float] = Field(min_length=7, max_length=7)
 
 
 class ReplenishmentResult(ApiModel):

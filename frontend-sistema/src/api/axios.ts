@@ -47,6 +47,7 @@ apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
     const token = getAuthToken();
 
+    // Permite enviar archivos CSV correctamente
     if (config.data instanceof FormData) {
       config.headers.delete('Content-Type');
     }

@@ -48,7 +48,7 @@ public class ProductoService {
 
     @Transactional(readOnly = true)
     public List<ProductoResponse> listar(String search, Long categoriaId, Boolean soloActivos) {
-        String cleanSearch = (search != null && !search.isBlank()) ? search.trim() : null;
+        String cleanSearch = (search == null || search.isBlank()) ? "" : search.trim();
         List<Producto> productos = productoRepository.buscarProductos(cleanSearch, categoriaId, soloActivos);
         LocalDate hoy = LocalDate.now();
 

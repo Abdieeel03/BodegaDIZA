@@ -2,8 +2,9 @@
 # NO modifica datos ni contrasenas de la base de origen.
 [CmdletBinding()]
 param(
-    [string]$SourceContainer = 'bodega_diza_postgres_test',
-    [string]$SourceDatabase = 'bodega_diza_test'
+    [string]$SourceContainer = 'bodega_diza_postgres',
+    [string]$SourceDatabase = 'bodega_diza',
+    [switch]$Sobrescribir
 )
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
@@ -25,8 +26,8 @@ if ($LASTEXITCODE -ne 0 -or ($hasUsers -join '').Trim() -ne 't') {
 }
 $targetDir = Join-Path $PSScriptRoot 'demo-db'
 $target = Join-Path $targetDir 'bodega_diza_test_demo.dump'
-if (Test-Path $target) {
-    throw "Ya existe un snapshot en $target. No lo sobrescribiremos. Guardalo o cambiale el nombre manualmente si deseas una exportacion nueva."
+if ((Test-Path $target) -and -not $Sobrescribir) {
+    throw "Ya existe un snapshot en $target. No lo sobrescribiremos sin -Sobrescribir. Guardalo o cambiale el nombre manualmente si deseas una exportacion nueva."
 }
 $inside = '/tmp/diza_demo_' + [Guid]::NewGuid().ToString('N') + '.dump'
 try {

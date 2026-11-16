@@ -1,14 +1,17 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { mlService } from '../../services/mlService';
 import { estimatedRevenue, estimatedRevenueSummary, formatSoles, getCurrentSalePrices, type PriceMap } from '../../services/mlRevenue';
-import type { DemandPrediction, ReplenishmentRecommendation } from '../../types';
+import type { DemandPrediction, ReplenishmentOptimizationResult, ReplenishmentRecommendation } from '../../types';
 import './prediction-live.css';
 
 const fmt = (value: number, digits = 2) => Number(value).toLocaleString('es-PE', {
   minimumFractionDigits: digits,
   maximumFractionDigits: digits,
 });
+
+const riskClass = (risk?: string | null) =>
+  risk === 'ALTO' ? 'diza-ml-rojo' : risk === 'MEDIO' ? 'diza-ml-amarillo' : 'diza-ml-verde';
 
 const readableName = (text: string) => text
   .replaceAll('Ã±', 'ñ').replaceAll('Ã¡', 'á').replaceAll('Ã©', 'é')
@@ -45,6 +48,28 @@ export const PredictionPage = () => {
   const [prices, setPrices] = useState<PriceMap>({});
   const [pricesLoading, setPricesLoading] = useState(true);
   const [priceError, setPriceError] = useState('');
+  const [budgetInput, setBudgetInput] = useState('500');
+  const [optResult, setOptResult] = useState<ReplenishmentOptimizationResult | null>(null);
+  const [optLoading, setOptLoading] = useState(false);
+  const [optError, setOptError] = useState('');
+
+  const handleOptimizeBudget = async (event: FormEvent) => {
+    event.preventDefault();
+    const numericBudget = Number(budgetInput);
+    if (!Number.isFinite(numericBudget) || numericBudget <= 0) {
+      setOptError('Ingresa un presupuesto mayor a cero.');
+      return;
+    }
+    setOptLoading(true);
+    setOptError('');
+    try {
+      setOptResult(await mlService.optimizeReplenishments(numericBudget));
+    } catch (err) {
+      setOptError(err instanceof Error ? err.message : 'No fue posible optimizar las compras.');
+    } finally {
+      setOptLoading(false);
+    }
+  };
 
   useEffect(() => {
     let active = true;
@@ -107,7 +132,7 @@ export const PredictionPage = () => {
       </section>
       <section className="diza-ml-card">
         <div className="diza-ml-card-heading">
-          <div><h2>Pronóstico por producto</h2><p>La fecha de inicio depende de la última venta registrada en el CSV de entrenamiento.</p></div>
+          <div><h2>Pronóstico por producto</h2><p>La fecha de inicio depende de la última venta registrada en la base de datos.</p></div>
           <label>Producto
             <select value={productId} onChange={e => setProductId(e.target.value)}>
               {predictions.map(item => <option key={item.productId} value={item.productId}>{item.productId} · {readableName(item.productName)}</option>)}
@@ -121,6 +146,8 @@ export const PredictionPage = () => {
             <article><span>Stock disponible</span><strong>{stock ? fmt(Number(stock.stockActual), 0) : '—'}</strong></article>
             <article><span>Stock mínimo</span><strong>{stock ? fmt(Number(stock.stockMinimoSeguridad), 0) : '—'}</strong></article>
             <article><span>Reposición sugerida</span><strong>{stock ? fmt(Number(stock.recommendedReplenishment), 0) : '—'}</strong></article>
+            <article><span>Prob. agotamiento (ML)</span><strong>{stock?.stockoutProbability != null ? `${fmt(Number(stock.stockoutProbability) * 100, 1)}%` : '—'}</strong>{stock?.stockoutRiskLevel && <small>Riesgo ML: {stock.stockoutRiskLevel}</small>}</article>
+            <article><span>Autonomía estimada</span><strong>{stock?.daysOfStockRemaining != null ? `${fmt(Number(stock.daysOfStockRemaining), 1)} días` : '—'}</strong></article>
           </div>
           <p>Demanda estimada por día (unidades):</p>
           <DailyForecast values={current.dailyPredictions} />
@@ -132,14 +159,61 @@ export const PredictionPage = () => {
       <section className="diza-ml-card">
         <h2>Productos prioritarios para reposición</h2>
         {recommended.length === 0 ? <p>No hay sugerencias de reposición para el stock consultado.</p> : <div className="diza-ml-table-scroll">
-          <table><thead><tr><th>Producto</th><th>Stock</th><th>Demanda 7 días (unidades)</th><th>Ingresos estimados (S/)</th><th>Reponer</th><th>Estado</th></tr></thead><tbody>
+          <table><thead><tr><th>Producto</th><th>Stock</th><th>Demanda 7 días (unidades)</th><th>Ingresos estimados (S/)</th><th>Prob. agotamiento (ML)</th><th>Riesgo ML</th><th>Reponer</th><th>Estado</th></tr></thead><tbody>
             {recommended.map(item => <tr key={item.productId}>
               <td>{readableName(item.productName)}</td><td>{fmt(Number(item.stockActual), 0)}</td>
-              <td>{fmt(Number(item.predictedDemand7Days))}</td><td>{prices[item.productId.trim().toUpperCase()] === undefined ? '—' : formatSoles(Number(item.predictedDemand7Days) * prices[item.productId.trim().toUpperCase()])}</td><td><strong>{fmt(Number(item.recommendedReplenishment), 0)} unidades</strong></td>
+              <td>{fmt(Number(item.predictedDemand7Days))}</td><td>{prices[item.productId.trim().toUpperCase()] === undefined ? '—' : formatSoles(Number(item.predictedDemand7Days) * prices[item.productId.trim().toUpperCase()])}</td>
+              <td>{item.stockoutProbability != null ? `${fmt(Number(item.stockoutProbability) * 100, 1)}%` : '—'}</td>
+              <td>{item.stockoutRiskLevel ? <span className={`diza-ml-status ${riskClass(item.stockoutRiskLevel)}`}>{item.stockoutRiskLevel}</span> : '—'}</td>
+              <td><strong>{fmt(Number(item.recommendedReplenishment), 0)} unidades</strong></td>
               <td><span className={`diza-ml-status diza-ml-${item.alertStatus.toLowerCase()}`}>{item.alertStatus}</span></td>
             </tr>)}
           </tbody></table>
         </div>}
+      </section>
+      <section className="diza-ml-card">
+        <div className="diza-ml-card-heading">
+          <div>
+            <h2>Optimización de compras por presupuesto (Hill Climbing)</h2>
+            <p>Distribuye un presupuesto limitado priorizando productos con riesgo crítico de agotamiento.</p>
+          </div>
+          <form onSubmit={handleOptimizeBudget} style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+            <label>Presupuesto (S/)
+              <input
+                type="number"
+                min="1"
+                step="0.5"
+                value={budgetInput}
+                onChange={e => setBudgetInput(e.target.value)}
+                style={{ border: '1px solid #d4deec', borderRadius: 8, padding: '10px 12px', fontSize: 13, width: 140 }}
+              />
+            </label>
+            <button type="submit" className="diza-ml-button" disabled={optLoading}>
+              {optLoading ? 'Optimizando...' : 'Optimizar con Hill Climbing'}
+            </button>
+          </form>
+        </div>
+        {optError && <div className="diza-ml-error" role="alert">{optError}</div>}
+        {optResult && <>
+          <div className="diza-ml-stats diza-ml-stats-inside" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
+            <article><span>Presupuesto total</span><strong>{formatSoles(optResult.budget)}</strong></article>
+            <article><span>Presupuesto usado</span><strong>{formatSoles(optResult.budgetUsed)}</strong></article>
+            <article><span>Saldo restante</span><strong>{formatSoles(optResult.budgetRemaining)}</strong></article>
+            <article><span>Iteraciones Hill Climbing</span><strong>{optResult.iterations}</strong></article>
+          </div>
+          <div className="diza-ml-table-scroll">
+            <table><thead><tr><th>Producto</th><th>Estado</th><th>Sugerido</th><th>Compra asignada</th><th>Costo unit.</th><th>Costo total</th></tr></thead><tbody>
+              {optResult.items.filter(item => item.allocatedUnits > 0).map(item => <tr key={item.productId}>
+                <td>{readableName(item.productName)}</td>
+                <td><span className={`diza-ml-status diza-ml-${item.alertStatus.toLowerCase()}`}>{item.alertStatus}</span></td>
+                <td>{item.recommendedReplenishment}</td>
+                <td><strong>{item.allocatedUnits} unidades</strong></td>
+                <td>{formatSoles(item.unitCost)}</td>
+                <td><strong>{formatSoles(item.totalCost)}</strong></td>
+              </tr>)}
+            </tbody></table>
+          </div>
+        </>}
       </section>
       <p className="diza-ml-disclaimer">Los pronósticos son estimaciones basadas en días con ventas registradas; las fechas ausentes no equivalen a ventas cero. Los ingresos estimados (S/) se calculan multiplicando la demanda prevista por el precio de venta actual de cada producto en Inventario; no son ventas realizadas ni utilidad neta. No sustituyen el seguimiento del stock operativo ni validaciones con historiales diarios completos.</p>
     </>}

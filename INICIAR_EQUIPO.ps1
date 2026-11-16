@@ -68,20 +68,9 @@ if (-not $OmitirEntrenamiento) {
   $hasModel=$false
   try { $null=Invoke-RestMethod -Uri "$mlBase/trainings/latest/predictions" -TimeoutSec 10; $hasModel=$true } catch {}
   if (-not $hasModel) {
-    $dir = Join-Path $PSScriptRoot 'ml-service\data'
-    $files = @('ventas.csv','productos.csv','proveedores.csv')
-    foreach ($f in $files) {
-      if (-not (Test-Path (Join-Path $dir $f))) {
-        throw "FastAPI no tiene modelo y falta ml-service/data/$f. Incluye los CSV de demostracion autorizados antes de continuar."
-      }
-    }
-    Write-Host 'Entrenando un modelo de demostracion con los CSV del repositorio...'
-    Push-Location $dir
-    try {
-      & curl.exe --fail-with-body -sS --max-time 900 -X POST "$mlBase/trainings" `
-          -F 'sales_file=@ventas.csv' -F 'products_file=@productos.csv' -F 'suppliers_file=@proveedores.csv'
-      if ($LASTEXITCODE -ne 0) { throw 'El entrenamiento de ML fallo. Revisa el log de ml.' }
-    } finally { Pop-Location }
+    Write-Host 'Entrenando el modelo ML directamente desde PostgreSQL...'
+    & curl.exe --fail-with-body -sS --max-time 900 -X POST "$mlBase/trainings"
+    if ($LASTEXITCODE -ne 0) { throw 'El entrenamiento de ML fallo. Revisa el log de ml.' }
   } else { Write-Host 'ML: ya hay un modelo persistido; no se reentreno.' }
 }
 Write-Host ''

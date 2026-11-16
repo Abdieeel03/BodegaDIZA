@@ -46,9 +46,9 @@ public class TestDataService {
 
     private void preparar() {
         String base = jdbc.queryForObject("select current_database()", String.class);
-        if (!"bodega_diza_test".equals(base)) {
+        if (!"bodega_diza_test".equals(base) && !"bodega_diza".equals(base)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                "Endpoint deshabilitado: requiere exclusivamente la base bodega_diza_test");
+                "Endpoint deshabilitado: requiere bodega_diza o bodega_diza_test");
         }
         jdbc.execute("create schema if not exists staging_diza");
         jdbc.execute("""

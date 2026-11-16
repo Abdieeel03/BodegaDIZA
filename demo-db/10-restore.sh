@@ -1,15 +1,34 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
-SEED=/opt/bodegadiza/demo.dump
-if [[ ! -f "$SEED" || ! -s "$SEED" ]]; then
-  echo 'ERROR: Falta demo-db/bodega_diza_test_demo.dump. Copia el respaldo anonimo antes de iniciar.' >&2
+
+POSTGRES_USER="${POSTGRES_USER:-postgres}"
+POSTGRES_DB="${POSTGRES_DB:-bodega_diza}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+if [[ -n "${SEED:-}" ]]; then
+  SEED_PATH="$SEED"
+elif [[ -f /opt/bodegadiza/demo.dump ]]; then
+  SEED_PATH=/opt/bodegadiza/demo.dump
+else
+  SEED_PATH="$SCRIPT_DIR/bodega_diza_test_demo.dump"
+fi
+
+if [[ ! -f "$SEED_PATH" || ! -s "$SEED_PATH" ]]; then
+  echo "ERROR: Falta el respaldo $SEED_PATH. Copia o genera demo-db/bodega_diza_test_demo.dump antes de iniciar." >&2
   exit 1
 fi
 
+echo "Preparando esquemas limpios en $POSTGRES_DB..."
+psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<'SQL'
+DROP SCHEMA IF EXISTS staging_diza CASCADE;
+DROP SCHEMA IF EXISTS public CASCADE;
+CREATE SCHEMA public;
+SQL
+
 echo 'Restaurando el esquema del entorno demostrativo...'
-pg_restore --exit-on-error --no-owner --no-acl --section=pre-data -U "$POSTGRES_USER" -d "$POSTGRES_DB" "$SEED"
+pg_restore --exit-on-error --no-owner --no-acl --section=pre-data -U "$POSTGRES_USER" -d "$POSTGRES_DB" "$SEED_PATH"
 echo 'Restaurando los datos (sin cuentas de usuarios originales)...'
-pg_restore --exit-on-error --no-owner --no-acl --section=data -U "$POSTGRES_USER" -d "$POSTGRES_DB" "$SEED"
+pg_restore --exit-on-error --no-owner --no-acl --section=data -U "$POSTGRES_USER" -d "$POSTGRES_DB" "$SEED_PATH"
 
 # Las ventas y otros movimientos pueden tener usuario_id. Los IDs se conservan
 # mediante cuentas ficticias INHABILITADAS para que todas las claves foraneas
@@ -50,5 +69,5 @@ END $$;
 SQL
 
 echo 'Restaurando indices y relaciones...'
-pg_restore --exit-on-error --no-owner --no-acl --section=post-data -U "$POSTGRES_USER" -d "$POSTGRES_DB" "$SEED"
+pg_restore --exit-on-error --no-owner --no-acl --section=post-data -U "$POSTGRES_USER" -d "$POSTGRES_DB" "$SEED_PATH"
 echo 'Base de demostracion restaurada; los usuarios anteriores no tienen credenciales funcionales.'

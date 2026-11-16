@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_DB: bodega_diza_test
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${TEAM_DB_PASSWORD:?Falta TEAM_DB_PASSWORD en .env.equipo}
+      POSTGRES_PASSWORD: ${TEAM_DB_PASSWORD:-postgres}
     ports:
       - "127.0.0.1:${TEAM_DB_PORT:-5543}:5432"
     volumes:
@@ -26,10 +26,19 @@ services:
       dockerfile: Dockerfile.equipo
     environment:
       ML_MODEL_DIR: /app/data/models
+      ML_AUTO_TRAIN_ON_STARTUP: 'true'
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: bodega_diza_test
+      DB_USER: postgres
+      DB_PASSWORD: ${TEAM_DB_PASSWORD:-postgres}
     volumes:
       - equipo_ml_models:/app/data/models
     ports:
       - "127.0.0.1:${TEAM_ML_PORT:-8002}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
       interval: 5s
@@ -47,13 +56,13 @@ services:
       DB_PORT: 5432
       DB_NAME: bodega_diza_test
       DB_USER: postgres
-      DB_PASSWORD: ${TEAM_DB_PASSWORD:?Falta TEAM_DB_PASSWORD}
+      DB_PASSWORD: ${TEAM_DB_PASSWORD:-postgres}
       SPRING_JPA_HIBERNATE_DDL_AUTO: validate
       SPRING_JPA_SHOW_SQL: 'false'
-      JWT_SECRET: ${TEAM_JWT_SECRET:?Falta TEAM_JWT_SECRET}
+      JWT_SECRET: ${TEAM_JWT_SECRET:-404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
       JWT_EXPIRATION: 86400000
-      ADMIN_EMAIL: ${TEAM_ADMIN_EMAIL:-admin.equipo@bodegadiza.local}
-      ADMIN_PASSWORD: ${TEAM_ADMIN_PASSWORD:?Falta TEAM_ADMIN_PASSWORD}
+      ADMIN_EMAIL: ${TEAM_ADMIN_EMAIL:-admin@bodegadiza.com}
+      ADMIN_PASSWORD: ${TEAM_ADMIN_PASSWORD:-CAMBIAR_ESTA_CONTRASENA}
       ADMIN_NOMBRE: Administrador de demostracion
       CORS_ALLOWED_ORIGIN: http://localhost:${TEAM_WEB_PORT:-5173}
       DIZA_DEMO_ENABLED: 'true'

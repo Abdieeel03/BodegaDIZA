@@ -11,10 +11,8 @@ Write-Host '=== BASE DEMO ==='
 if (Test-Path 'demo-db/bodega_diza_test_demo.dump') {
   Write-Host 'Snapshot presente: antes de compartir, confirmar que los registros son ficticios/autorizados.'
 } else { Write-Warning 'No hay snapshot exportado. Ejecutar CREAR_COPIA_DEMO.ps1 en el equipo de origen.' }
-Write-Host '=== CSV NECESARIOS PARA MODELO NUEVO ==='
-foreach ($file in @('ml-service/data/ventas.csv','ml-service/data/productos.csv','ml-service/data/proveedores.csv')) {
-  if (Test-Path $file) { Write-Host "OK: $file" } else { Write-Warning "Falta: $file" }
-}
+Write-Host '=== ENTRENAMIENTO ML ==='
+Write-Host 'El servicio ML entrena e infiere directamente desde la base de datos PostgreSQL restaurada (no requiere CSVs).'
 Write-Host '=== ARCHIVOS PRIVADOS QUE YA RASTREA GIT ==='
 $tracked=@(& git ls-files)
 $bad=@($tracked | Where-Object { $_ -match '(^|/)(\.env($|\.)|.*\.(?:joblib|pkl|dump|backup)$)|(^|/)node_modules/' })

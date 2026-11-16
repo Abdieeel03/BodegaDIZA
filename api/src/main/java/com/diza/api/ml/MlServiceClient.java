@@ -18,7 +18,18 @@ public class MlServiceClient {
         this.webClient = WebClient.builder().baseUrl(properties.serviceBaseUrl()).build();
     }
 
+    public TrainingResponse trainFromDb() {
+        return request(() -> webClient.post()
+            .uri("/trainings")
+            .retrieve()
+            .bodyToMono(TrainingResponse.class)
+            .block());
+    }
+
     public TrainingResponse train(MultipartFile salesFile, MultipartFile productsFile) {
+        if (salesFile == null || productsFile == null) {
+            return trainFromDb();
+        }
         MultipartBodyBuilder body = new MultipartBodyBuilder();
         body.part("sales_file", asResource(salesFile)).filename(salesFile.getOriginalFilename());
         body.part("products_file", asResource(productsFile)).filename(productsFile.getOriginalFilename());
@@ -54,6 +65,20 @@ public class MlServiceClient {
             .retrieve()
             .bodyToFlux(ReplenishmentResponse.class)
             .collectList()
+            .block());
+    }
+
+    public ReplenishmentOptimizationResponse optimizeReplenishment(double budget) {
+        if (!Double.isFinite(budget) || budget <= 0) {
+            throw new MlServiceException("El presupuesto debe ser mayor a cero", null);
+        }
+        return request(() -> webClient.get()
+            .uri(uriBuilder -> uriBuilder
+                .path("/trainings/latest/optimize-replenishment")
+                .queryParam("budget", budget)
+                .build())
+            .retrieve()
+            .bodyToMono(ReplenishmentOptimizationResponse.class)
             .block());
     }
 

@@ -12,7 +12,7 @@ class ModelStore:
         self.directory = Path(directory).resolve()
         self.directory.mkdir(parents=True,exist_ok=True)
 
-    def save(self, training_id: str, model: object, payload: dict) -> None:
+    def save(self, training_id: str, model: object, payload: dict, classifier: object | None = None) -> None:
         # UUID evita rutas elegidas por el usuario.
         training_id = str(UUID(training_id))
         base=self.directory/training_id
@@ -20,6 +20,10 @@ class ModelStore:
         temporary=base/'modelo.joblib.tmp'
         joblib.dump(model,temporary)
         os.replace(temporary,base/'modelo.joblib')
+        if classifier is not None:
+            clf_tmp=base/'clasificador.joblib.tmp'
+            joblib.dump(classifier,clf_tmp)
+            os.replace(clf_tmp,base/'clasificador.joblib')
         data=json.dumps(payload,ensure_ascii=False,allow_nan=False,indent=2)
         self._atomic_write(base/'resultado.json',data)
         self._atomic_write(self.directory/'latest.json',data)
@@ -45,4 +49,11 @@ class ModelStore:
         training_id=str(UUID(training_id))
         path=self.directory/training_id/'modelo.joblib'
         if not path.is_file():raise FileNotFoundError(training_id)
+        return joblib.load(path)
+
+    def trusted_classifier(self, training_id: str):
+        """Carga el clasificador local de riesgo de agotamiento si existe."""
+        training_id=str(UUID(training_id))
+        path=self.directory/training_id/'clasificador.joblib'
+        if not path.is_file():return None
         return joblib.load(path)

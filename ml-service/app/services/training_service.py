@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 from fastapi import UploadFile
 from starlette.concurrency import run_in_threadpool
+from ..database import load_from_db
 from ..ingestion import read_table
 from ..schemas import TrainingResult,PredictionResult,ReplenishmentResult
 from ..storage import ModelStore
@@ -14,12 +15,17 @@ class TrainingService:
         self.store=ModelStore(model_dir or os.environ.get('ML_MODEL_DIR','data/models'))
         self.engine=TrainingEngine(self.store)
 
-    async def train(self,sales_file:UploadFile,products_file:UploadFile,
+    async def train(self,sales_file:UploadFile|None=None,products_file:UploadFile|None=None,
                     suppliers_file:UploadFile|None=None)->TrainingResult:
-        sales=read_table(sales_file.filename or 'ventas.csv',await sales_file.read())
-        products=read_table(products_file.filename or 'productos.csv',await products_file.read())
-        suppliers=(read_table(suppliers_file.filename or 'proveedores.csv',await suppliers_file.read())
-                   if suppliers_file else None)
+        if (sales_file is None) != (products_file is None):
+            raise ValueError('Debes enviar ambos archivos (ventas y productos) o ninguno para usar la base de datos')
+        if sales_file is not None and products_file is not None:
+            sales=read_table(sales_file.filename or 'ventas.csv',await sales_file.read())
+            products=read_table(products_file.filename or 'productos.csv',await products_file.read())
+            suppliers=(read_table(suppliers_file.filename or 'proveedores.csv',await suppliers_file.read())
+                       if suppliers_file else None)
+        else:
+            sales,products,suppliers=await run_in_threadpool(load_from_db)
         output=await run_in_threadpool(self.engine.train,sales,products,suppliers)
         return TrainingResult.model_validate(output['training'])
 
@@ -34,4 +40,9 @@ class TrainingService:
 
     def get_latest_comparison(self)->dict:
         data=self.store.latest()
-        return {key:data[key] for key in ['training','validationCandidates','dataCoverage','providersCount']}
+        keys=['training','validationCandidates','dataCoverage','providersCount']
+        result={key:data[key] for key in keys}
+        for optional_key in ('hillClimbing', 'classification'):
+            if optional_key in data:
+                result[optional_key] = data[optional_key]
+        return result

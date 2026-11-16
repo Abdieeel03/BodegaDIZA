@@ -34,9 +34,9 @@ public class TestSalesReportController {
         @RequestParam(defaultValue = "40") int tamanio
     ) {
         String database = jdbc.queryForObject("select current_database()", String.class);
-        if (!"bodega_diza_test".equals(database)) {
+        if (!"bodega_diza_test".equals(database) && !"bodega_diza".equals(database)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                "Los reportes históricos se habilitan solo en bodega_diza_test");
+                "Los reportes históricos se habilitan solo en bodega_diza o bodega_diza_test");
         }
         if (desde != null && hasta != null && desde.isAfter(hasta)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La fecha inicial debe ser anterior a la final");

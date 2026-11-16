@@ -34,6 +34,8 @@ class TrainingResult(ApiModel):
     history_coverage_ratio:float=0.0
     evaluation_scope:str='RECORDED_SALE_DAYS_ONLY'
     missing_dates_policy:str='UNKNOWN_NOT_ZERO'
+    hill_climbing:dict|None=None
+    classification:dict|None=None
 
 class PredictionResult(ApiModel):
     product_id:str
@@ -51,9 +53,14 @@ class ReplenishmentResult(ApiModel):
     predicted_demand_7_days:float
     recommended_replenishment:float
     alert_status:str
+    stockout_probability:float|None=None
+    stockout_risk_level:str|None=None
+    days_of_stock_remaining:float|None=None
 
 class ModelComparison(ApiModel):
     training:TrainingResult
     validation_candidates:dict
     data_coverage:dict
     providers_count:int
+    hill_climbing:dict|None=None
+    classification:dict|None=None

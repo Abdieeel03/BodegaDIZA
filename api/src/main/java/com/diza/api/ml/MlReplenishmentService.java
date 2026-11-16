@@ -43,8 +43,11 @@ public class MlReplenishmentService {
                 ProductoResponse current = bySku.get(normalizedSku(item.productId()));
                 return recalculate(item, current.nombre(), current.stockTotal(), current.stockMinimo());
             })
-            .sorted(Comparator.comparingDouble(ReplenishmentResponse::recommendedReplenishment)
-                .reversed().thenComparing(ReplenishmentResponse::productId))
+            .sorted(Comparator.comparingDouble((ReplenishmentResponse r) ->
+                    r.stockoutProbability() != null ? r.stockoutProbability() : -1.0)
+                .reversed()
+                .thenComparing(Comparator.comparingDouble(ReplenishmentResponse::recommendedReplenishment).reversed())
+                .thenComparing(ReplenishmentResponse::productId))
             .toList();
     }
 
@@ -69,6 +72,26 @@ public class MlReplenishmentService {
         String status = currentStock.compareTo(currentMinimum) <= 0 ? "ROJO"
             : quantity > 0 ? "AMARILLO" : "VERDE";
 
+        double daysOfStockRemaining = BigDecimal.valueOf(currentStock.doubleValue() / Math.max(demand / 7.0, 0.1))
+            .setScale(1, RoundingMode.HALF_UP)
+            .doubleValue();
+
+        Double stockoutProbability = prediction.stockoutProbability();
+        String stockoutRiskLevel = prediction.stockoutRiskLevel();
+        if (stockoutProbability != null) {
+            if (currentStock.signum() == 0) {
+                stockoutProbability = 1.0;
+            } else if (Math.abs(currentStock.doubleValue() - prediction.stockActual()) > 1e-6) {
+                if ("ROJO".equals(status)) {
+                    stockoutProbability = Math.max(stockoutProbability, 0.85);
+                } else if ("VERDE".equals(status) && currentStock.doubleValue() > prediction.stockActual()) {
+                    stockoutProbability = Math.min(stockoutProbability, 0.25);
+                }
+            }
+            stockoutRiskLevel = stockoutProbability >= 0.65 ? "ALTO"
+                : stockoutProbability >= 0.35 ? "MEDIO" : "BAJO";
+        }
+
         return new ReplenishmentResponse(
             prediction.productId(),
             currentProductName,
@@ -77,7 +100,10 @@ public class MlReplenishmentService {
             currentMinimum.doubleValue(),
             demand,
             quantity,
-            status
+            status,
+            stockoutProbability,
+            stockoutRiskLevel,
+            daysOfStockRemaining
         );
     }
 

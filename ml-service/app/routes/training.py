@@ -1,6 +1,8 @@
 from __future__ import annotations
-from fastapi import APIRouter, File,HTTPException,UploadFile
+from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from starlette.concurrency import run_in_threadpool
+from ..database import load_products_from_db
+from ..hill_climbing import optimize_replenishment_hill_climbing
 from ..schemas import TrainingResult,PredictionResult,ReplenishmentResult
 from ..services.training_service import TrainingService
 
@@ -8,7 +10,7 @@ router=APIRouter()
 service=TrainingService()
 
 @router.post('',response_model=TrainingResult,status_code=200)
-async def train(sales_file:UploadFile=File(...),products_file:UploadFile=File(...),
+async def train(sales_file:UploadFile|None=File(default=None),products_file:UploadFile|None=File(default=None),
                 suppliers_file:UploadFile|None=File(default=None)):
     try:
         return await service.train(sales_file,products_file,suppliers_file)
@@ -30,15 +32,33 @@ def latest_comparison():
     try:return service.get_latest_comparison()
     except FileNotFoundError as exc:raise HTTPException(status_code=404,detail='No hay un modelo entrenado') from exc
 
+@router.get('/latest/optimize-replenishment')
+def optimize_replenishment(budget:float=Query(...,gt=0,description='Presupuesto máximo en soles')):
+    from ..preprocessing import prepare_products
+    from ..replenishment import recommend
+    try:
+        latest=service.store.latest()
+        products=prepare_products(load_products_from_db())
+        replenishments=recommend(latest['predictions'],products)
+        return optimize_replenishment_hill_climbing(replenishments,products,budget)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404,detail='No hay un modelo entrenado') from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422,detail=str(exc)) from exc
+
 @router.post('/latest/infer')
-async def infer_latest(sales_file:UploadFile=File(...),products_file:UploadFile=File(...)):
-    """Ejecutar un modelo ya entrenado con nuevas ventas y stock actualizado."""
+async def infer_latest(sales_file:UploadFile|None=File(default=None),products_file:UploadFile|None=File(default=None)):
+    """Ejecutar un modelo ya entrenado con ventas y stock de BD o archivos enviados."""
     from ..ingestion import read_table
     from ..inference_service import InferenceService
     try:
-        sales=read_table(sales_file.filename or 'ventas.csv',await sales_file.read())
-        products=read_table(products_file.filename or 'productos.csv',await products_file.read())
-        return await run_in_threadpool(InferenceService(service.store).latest,sales,products)
+        if (sales_file is None) != (products_file is None):
+            raise ValueError('Debes enviar ambos archivos (ventas y productos) o ninguno para usar la base de datos')
+        if sales_file is not None and products_file is not None:
+            sales=read_table(sales_file.filename or 'ventas.csv',await sales_file.read())
+            products=read_table(products_file.filename or 'productos.csv',await products_file.read())
+            return await run_in_threadpool(InferenceService(service.store).latest,sales,products)
+        return await run_in_threadpool(InferenceService(service.store).latest_from_db)
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404,detail='No hay un modelo entrenado') from exc
     except (ValueError,UnicodeError) as exc:

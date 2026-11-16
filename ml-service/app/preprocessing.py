@@ -63,6 +63,9 @@ def prepare_sales(frame: pd.DataFrame, products: pd.DataFrame) -> tuple[pd.DataF
     df['fecha'] = pd.to_datetime(df['fecha'],format='%Y-%m-%d',errors='coerce').dt.normalize()
     df['cantidad_vendida'] = pd.to_numeric(df['cantidad_vendida'], errors='coerce')
     df['precio_venta_unitario'] = pd.to_numeric(df['precio_venta_unitario'],errors='coerce') if 'precio_venta_unitario' in df else float('nan')
+    has_stock_final = 'stock_final_dia' in df.columns
+    if has_stock_final:
+        df['stock_final_dia'] = pd.to_numeric(df['stock_final_dia'], errors='coerce')
     df = df.drop_duplicates()
     valid = df['fecha'].notna() & df['id_producto'].notna() & df['id_producto'].ne('') & df['cantidad_vendida'].notna() & (df['cantidad_vendida'] >= 0)
     rejected = int((~valid).sum())
@@ -73,7 +76,10 @@ def prepare_sales(frame: pd.DataFrame, products: pd.DataFrame) -> tuple[pd.DataF
     if missing_sku:
         raise ValueError(f'Las ventas contienen productos ausentes del catálogo: {missing_sku[:10]}')
     # Consolidar transacciones del MISMO día si existen; no fabricar días sin información.
-    df = df.groupby(['id_producto','fecha'],as_index=False).agg({'cantidad_vendida':'sum','precio_venta_unitario':'last'})
+    agg_map = {'cantidad_vendida':'sum','precio_venta_unitario':'last'}
+    if has_stock_final:
+        agg_map['stock_final_dia'] = 'last'
+    df = df.groupby(['id_producto','fecha'],as_index=False).agg(agg_map)
     attrs = products[['id_producto','nombre_producto','categoria','precio_venta_unitario']].rename(columns={'precio_venta_unitario':'precio_catalogo'})
     df = df.merge(attrs,on='id_producto',how='left',validate='many_to_one')
     df['precio_venta_unitario'] = df['precio_venta_unitario'].fillna(df['precio_catalogo'])

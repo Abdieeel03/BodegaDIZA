@@ -13,28 +13,36 @@ from .features import FEATURES,CAT_FEATURES,NUM_FEATURES
 
 CANDIDATES = ('media_reciente','ridge','decision_tree','random_forest','hist_gradient_boosting')
 
+DEFAULT_PARAMS: dict[str, dict[str, object]] = {
+    'ridge': {'alpha': 25.0},
+    'decision_tree': {'max_depth': 7, 'min_samples_leaf': 5, 'random_state': 42},
+    'random_forest': {'n_estimators': 100, 'max_depth': 11, 'min_samples_leaf': 3, 'random_state': 42, 'n_jobs': -1},
+    'hist_gradient_boosting': {
+        'loss': 'poisson', 'learning_rate': .055, 'max_iter': 130, 'max_leaf_nodes': 15,
+        'min_samples_leaf': 16, 'l2_regularization': 5.0, 'early_stopping': False, 'random_state': 42,
+    },
+}
 
-def train_model(name: str, dataset):
+
+def train_model(name: str, dataset, params: dict[str, object] | None = None):
     if name == 'media_reciente':
         return None
-    methods = {
-        'ridge': Ridge(alpha=25.0),
-        'decision_tree': DecisionTreeRegressor(
-            max_depth=7, min_samples_leaf=5, random_state=42),
-        'random_forest': RandomForestRegressor(n_estimators=100,max_depth=11,min_samples_leaf=3,
-                                              random_state=42,n_jobs=-1),
-        'hist_gradient_boosting': HistGradientBoostingRegressor(
-            loss='poisson',learning_rate=.055,max_iter=130,max_leaf_nodes=15,
-            min_samples_leaf=16,l2_regularization=5.0,early_stopping=False,random_state=42),
+    constructors = {
+        'ridge': Ridge,
+        'decision_tree': DecisionTreeRegressor,
+        'random_forest': RandomForestRegressor,
+        'hist_gradient_boosting': HistGradientBoostingRegressor,
     }
-    if name not in methods:
+    if name not in constructors:
         raise ValueError('Algoritmo desconocido')
+    merged = {**DEFAULT_PARAMS[name], **(params or {})}
+    estimator = constructors[name](**merged)
     numeric = Pipeline([('scale',StandardScaler())]) if name == 'ridge' else 'passthrough'
     mapper = ColumnTransformer([
         ('categorias',OneHotEncoder(handle_unknown='ignore',sparse_output=False),CAT_FEATURES),
         ('numeros',numeric,NUM_FEATURES),
     ],sparse_threshold=0.0)
-    pipe = Pipeline([('preprocesamiento',mapper),('algoritmo',methods[name])])
+    pipe = Pipeline([('preprocesamiento',mapper),('algoritmo',estimator)])
     pipe.fit(dataset[FEATURES],dataset['cantidad_vendida'].astype(float))
     return pipe
 

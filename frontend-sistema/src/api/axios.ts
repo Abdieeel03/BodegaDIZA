@@ -31,7 +31,7 @@ export const getAuthToken = (): string | null => {
  */
 export const apiClient = axios.create({
   baseURL: getApiBaseUrl(),
-  timeout: 15000,
+  timeout: 60000,
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
@@ -46,6 +46,11 @@ export const apiClient = axios.create({
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
     const token = getAuthToken();
+
+    // Permite enviar archivos CSV correctamente
+    if (config.data instanceof FormData) {
+      config.headers.delete('Content-Type');
+    }
 
     if (token) {
       config.headers.set('Authorization', `Bearer ${token}`);

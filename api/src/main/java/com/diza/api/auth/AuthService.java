@@ -59,7 +59,7 @@ public class AuthService {
             throw new BusinessException("Ya existe un usuario registrado con el email: " + email);
         }
 
-        com.diza.api.user.Rol rol = request.rol() != null ? request.rol() : com.diza.api.user.Rol.ADMIN;
+        com.diza.api.user.Rol rol = request.rol() != null ? request.rol() : com.diza.api.user.Rol.CAJERO;
         Usuario usuario = new Usuario(
             request.nombre().trim(),
             email,

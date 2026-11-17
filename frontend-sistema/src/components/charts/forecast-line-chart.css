@@ -1,0 +1,17 @@
+/* Gráfico de proyección compartido: Dashboard y detalle de Predicción. */
+.diza-forecast{margin:0;min-width:0;width:100%}
+.diza-forecast-graphic svg{width:100%;height:auto;display:block;overflow:visible}
+.diza-forecast-grid{stroke:var(--diza-color-border)}
+.diza-forecast-axis{fill:var(--diza-color-text-muted);font-size:12px;font-family:var(--diza-font-sans)}
+.diza-forecast-line{fill:none;stroke:var(--diza-color-action);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.diza-forecast-area{fill:var(--diza-color-brand-subtle);opacity:.75}
+.diza-forecast-dot{fill:var(--diza-color-surface);stroke:var(--diza-color-action);stroke-width:3}
+.diza-forecast-mobile{display:none}
+@media(max-width:560px){
+  .diza-forecast-graphic{display:none}
+  .diza-forecast-mobile{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .diza-forecast-mobile-day{display:flex;align-items:baseline;flex-wrap:wrap;gap:5px 9px;border:1px solid var(--diza-color-border);border-radius:var(--diza-radius-md);background:var(--diza-color-surface-soft);padding:10px 12px}
+  .diza-forecast-mobile-day span{flex:0 0 100%;font-size:12px;color:var(--diza-color-text-secondary)}
+  .diza-forecast-mobile-day strong{font-size:16px;color:var(--diza-color-text)}
+  .diza-forecast-mobile-day small{font-size:12px;color:var(--diza-color-text-muted)}
+}

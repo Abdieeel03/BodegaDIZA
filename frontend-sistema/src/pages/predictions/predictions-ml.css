@@ -1,0 +1,110 @@
+/* BodegaDIZA — entrenamiento en página propia; superficies y componentes compartidos. */
+.diza-model-panel {
+  min-width: 0;
+  margin: 0 0 var(--diza-space-6);
+  padding: clamp(16px, 2.5vw, 24px);
+  border: 1px solid var(--diza-color-border);
+  border-radius: var(--diza-radius-lg);
+  color: var(--diza-color-text);
+  background: var(--diza-color-surface);
+  box-shadow: var(--diza-shadow-sm);
+}
+.diza-model-panel * { box-sizing: border-box; }
+.diza-model-panel-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px 20px;
+  flex-wrap: wrap;
+}
+.diza-model-eyebrow {
+  display: block;
+  margin-bottom: 7px;
+  font-size: var(--diza-font-size-xs);
+  font-weight: 750;
+  letter-spacing: .07em;
+  color: var(--diza-color-brand);
+}
+.diza-model-panel-heading h2 {
+  margin: 0 0 7px;
+  font-size: var(--diza-font-size-xl);
+  color: var(--diza-color-text);
+}
+.diza-model-panel p {
+  max-width: 75ch;
+  font-size: var(--diza-font-size-sm);
+  line-height: 1.55;
+  color: var(--diza-color-text-secondary);
+}
+.diza-model-horizon {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 6px 11px;
+  border-radius: var(--diza-radius-pill);
+  background: var(--diza-color-brand-subtle);
+  color: var(--diza-color-brand);
+  font-size: var(--diza-font-size-xs);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.diza-model-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--diza-color-border);
+}
+.diza-model-action-row p { flex: 1 1 340px; }
+.diza-model-action-row .diza-ui-button { flex: 0 0 auto; }
+.diza-model-error, .diza-model-info {
+  margin-top: 15px;
+  padding: 12px 14px;
+  border-radius: var(--diza-radius-md);
+  line-height: 1.5;
+  font-size: var(--diza-font-size-sm);
+}
+.diza-model-error { background: var(--diza-color-danger-soft); border: 1px solid var(--diza-color-danger); color: var(--diza-color-danger); }
+.diza-model-info { background: var(--diza-color-info-soft); color: var(--diza-color-brand); }
+.diza-model-result {
+  margin-top: 20px;
+  padding-top: 19px;
+  border-top: 1px solid var(--diza-color-border);
+}
+.diza-model-result-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.diza-model-result-heading h3 { margin: 0 0 5px; font-size: var(--diza-font-size-lg); color: var(--diza-color-text); }
+.diza-model-success { display: inline-flex; align-items: center; border-radius: var(--diza-radius-pill); padding: 7px 12px; background: var(--diza-color-success-soft); color: var(--diza-color-success); font-size: var(--diza-font-size-xs); font-weight: 700; }
+.diza-model-kpis,.diza-model-metrics { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; margin-top: 15px; }
+.diza-model-kpis > div,.diza-model-metrics > div { min-width: 0; border-radius: var(--diza-radius-md); padding: 12px 14px; background: var(--diza-color-surface-soft); }
+.diza-model-kpis span,.diza-model-metrics span { display: block; color: var(--diza-color-text-secondary); font-size: var(--diza-font-size-xs); }
+.diza-model-kpis strong,.diza-model-metrics strong { display: block; margin-top: 5px; color: var(--diza-color-text); font-size: var(--diza-font-size-lg); overflow-wrap: anywhere; }
+.diza-model-technical { margin-top: 17px; padding: 14px 0 0; border-top: 1px solid var(--diza-color-border); }
+.diza-model-technical h4 { margin: 0 0 12px; color: var(--diza-color-text); font-size: 16px; font-weight: 750; }
+.diza-model-technical-detail { margin-top: 18px; }
+.diza-model-technical-detail > strong { display: block; margin-bottom: 7px; color: var(--diza-color-text); font-size: var(--diza-font-size-sm); }
+.diza-model-technical-detail p { overflow-wrap: anywhere; }
+@media (max-width: 700px) {
+  .diza-model-kpis,.diza-model-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .diza-model-action-row .diza-ui-button { width: 100%; }
+}
+@media (max-width: 430px) {
+  .diza-model-kpis,.diza-model-metrics { grid-template-columns: 1fr; }
+}
+
+/* Página propia de actualización, sin acceso lateral ni acordeones. */
+.diza-model-screen { width: 100%; max-width: 1120px; margin: 0 auto; font-family: var(--diza-font-sans); }
+.diza-model-screen .diza-ui-page-header { margin-bottom: 19px; }
+.diza-model-back { display: inline-flex; align-items: center; gap: 6px; margin: 0 0 17px; color: var(--diza-color-brand); font-size: 14px; font-weight: 700; text-decoration: none; }
+.diza-model-back:hover { text-decoration: underline; }
+.diza-model-screen .diza-model-panel { margin-bottom: 0; padding: clamp(18px, 2.2vw, 24px); }
+.diza-model-screen .diza-model-panel-heading h2 { font-size: 18px; }
+.diza-model-screen .diza-model-technical { margin-top: 20px; }
+.diza-model-screen .diza-model-technical-detail { border-top: 1px solid var(--diza-color-border); padding-top: 14px; }
+.diza-model-screen .diza-model-technical-detail p { font-size: 13px; }
+@media (max-width: 700px) {
+  .diza-model-screen .diza-model-panel { padding: 14px; }
+  .diza-model-screen .diza-model-kpis, .diza-model-screen .diza-model-metrics { gap: 8px; }
+}

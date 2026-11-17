@@ -1,0 +1,36 @@
+/* Gráfico de ventas con etiquetas claras en español y desplazamiento horizontal. */
+.diza-sales-trend-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+}
+.diza-sales-trend-heading h3 { margin: 0; font-size: 15px; color: #203c72; }
+.diza-sales-trend-heading p { margin: 5px 0 0; }
+.diza-sales-trend-switch { display: inline-flex; gap: 3px; padding: 4px; border-radius: 10px;
+  border: 1px solid #d5e2f7; background: #f5f8ff; }
+.diza-sales-trend-switch button { border: 0; border-radius: 7px; padding: 7px 11px;
+  font: inherit; font-size: 12px; font-weight: 650; color: #3f5a80; background: transparent; cursor: pointer; }
+.diza-sales-trend-switch button[aria-pressed="true"] { background: #2763dd; color: white; }
+.diza-sales-trend-switch button:focus-visible { outline: 2px solid #244dba; outline-offset: 2px; }
+.diza-sales-trend-scroll { width: 100%; max-width: 100%; overflow-x: auto;
+  padding: 8px 0 12px; margin: 12px 0 5px; border-bottom: 1px solid #e0e7f2; }
+.diza-sales-trend-scroll:focus-visible { outline: 2px solid #2763dd; outline-offset: 2px; }
+.diza-sales-trend-chart { display: flex; align-items: stretch; gap: 8px;
+  min-height: 212px; width: max-content; min-width: 100%; }
+.diza-sales-trend-col { flex: 1 0 90px; min-width: 90px; max-width: 170px;
+  display: flex; flex-direction: column; align-items: center; gap: 7px; text-align: center; }
+.diza-sales-trend-col strong { color: #52698c; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.diza-sales-trend-track { width: 100%; height: 142px; display: flex;
+  justify-content: center; align-items: flex-end; border-bottom: 1px solid #e6eaf2; }
+.diza-sales-trend-track span { display: block; width: 54%; max-width: 42px;
+  min-height: 0; background: #2860d8; border-radius: 5px 5px 0 0; }
+.diza-sales-trend-col small { font-size: 11px; color: #536a8d; font-weight: 600; white-space: nowrap; }
+@media (max-width: 760px) {
+  .diza-sales-trend-col { flex-basis: 76px; min-width: 76px; }
+  .diza-sales-trend-col strong { font-size: 10px; }
+  .diza-sales-trend-switch { width: 100%; }
+  .diza-sales-trend-switch button { flex: 1; }
+}

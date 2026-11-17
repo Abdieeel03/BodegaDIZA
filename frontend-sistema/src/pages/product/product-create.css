@@ -1,0 +1,19 @@
+/* Entrega 4: formulario de producto con el sistema de diseño común. */
+.diza-create-form { display:grid; gap:16px; width:100%; margin:0; }
+.diza-create-tabs { display:flex; flex-wrap:wrap; gap:8px; width:100%; margin:0 0 16px; }
+.diza-create-tab { min-height:42px; padding:8px 16px; border-radius:var(--diza-radius-md); border:1px solid var(--diza-color-border-strong); background:var(--diza-color-surface); color:var(--diza-color-text-secondary); font:inherit; font-size:14px; font-weight:600; cursor:pointer; }
+.diza-create-tab.is-active { background:var(--diza-color-action); border-color:var(--diza-color-action); color:#fff; }
+.diza-create-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin-top:18px; }
+.diza-create-wide { grid-column:1 / -1; }
+.diza-create-form .diza-ui-field :is(input, select, textarea) { box-sizing:border-box; max-width:100%; }
+.diza-create-form textarea { min-height:100px; resize:vertical; }
+.diza-create-check { display:flex; align-items:center; gap:12px; font-size:14px; font-weight:650; color:var(--diza-color-text); margin:16px 0; cursor:pointer; }
+.diza-create-check input { height:20px; width:20px; accent-color:var(--diza-color-action); flex-shrink:0; }
+.diza-create-actions { display:flex; justify-content:flex-end; align-items:center; flex-wrap:wrap; gap:12px; margin-top:4px; }
+.diza-create-actions .diza-period-link { display:inline-flex; justify-content:center; align-items:center; min-height:44px; padding:10px 16px; }
+@media(max-width:700px) {
+  .diza-create-grid { grid-template-columns:1fr; gap:14px; }
+  .diza-create-wide { grid-column:auto; }
+  .diza-create-actions { display:grid; grid-template-columns:1fr; }
+  .diza-create-actions .diza-ui-button, .diza-create-actions .diza-period-link { width:100%; }
+}

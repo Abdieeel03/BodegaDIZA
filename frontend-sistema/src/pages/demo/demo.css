@@ -1,0 +1,35 @@
+.diza-test-page{padding:24px;max-width:1380px;margin:0 auto;color:#14264a}
+.diza-test-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+.diza-test-heading h1{font-size:28px;margin:5px 0 6px;line-height:1.18;color:#10254b}
+.diza-test-heading p,.diza-test-muted{font-size:13px;color:#667792;line-height:1.65}
+.diza-test-eyebrow{color:#285fe4;font-weight:800;font-size:11px;letter-spacing:.08em}
+.diza-test-link{text-decoration:none;background:#255de7;color:white;border-radius:9px;padding:11px 14px;font-weight:700;font-size:13px}
+.diza-test-note{background:#ecf3ff;border:1px solid #d1dffb;color:#27477b;border-radius:10px;padding:13px 16px;font-size:13px;line-height:1.5;margin-bottom:16px}
+.diza-test-error,.diza-test-success{padding:13px 16px;border-radius:9px;font-size:13px;margin:12px 0}
+.diza-test-error{color:#a61d2a;background:#fff0f1;border:1px solid #ffcbd0}
+.diza-test-success{color:#176b45;background:#eafaf0;border:1px solid #b7ebc9}
+.diza-test-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:16px 0}
+.diza-test-metrics article{background:white;border:1px solid #e0e7f1;border-radius:13px;padding:20px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.diza-test-metrics article span{font-size:12px;font-weight:700;color:#667792}
+.diza-test-metrics article strong{font-size:24px;color:#10254b;overflow-wrap:anywhere}
+.diza-test-panel{background:white;border:1px solid #e0e7f1;border-radius:13px;padding:20px;margin-top:18px}
+.diza-test-panel h2{font-size:19px;margin:0 0 12px;color:#10254b}
+.diza-test-form{display:flex;gap:12px;align-items:end;flex-wrap:wrap}
+.diza-test-form label{font-size:12px;font-weight:700;color:#506180;display:flex;flex-direction:column;gap:6px;flex:1;min-width:190px}
+.diza-test-form input,.diza-test-form select,.diza-test-input{background:#fff;color:#14264a;border:1px solid #cfd9eb;border-radius:8px;padding:10px 12px;font:inherit;max-width:100%}
+.diza-test-form button,.diza-test-primary{background:#255de7;color:white;border:0;border-radius:8px;padding:12px 15px;cursor:pointer;font-weight:700}
+.diza-test-form button:disabled,.diza-test-primary:disabled{opacity:.5;cursor:not-allowed}
+.diza-test-form .diza-test-secondary{background:#ecf2fa;color:#294775}
+.diza-test-overflow{overflow:auto;width:100%}
+.diza-test-table{border-collapse:collapse;width:100%;min-width:650px;font-size:13px;color:#253b5d}
+.diza-test-table th{font-size:11px;letter-spacing:.04em;text-align:left;background:#f4f7fc;color:#576a89;text-transform:uppercase}
+.diza-test-table th,.diza-test-table td{padding:12px;border-bottom:1px solid #edf0f6;white-space:nowrap}
+.diza-test-table td:nth-child(2){white-space:normal;min-width:170px}
+.diza-test-tabs{display:flex;gap:8px;margin:18px 0;flex-wrap:wrap}
+.diza-test-tabs button{border:1px solid #cfd9eb;padding:10px 14px;background:#fff;color:#30507d;border-radius:9px;cursor:pointer}
+.diza-test-tabs button[aria-pressed="true"]{background:#255de7;color:#fff;border-color:#255de7}
+.diza-test-chart{width:100%;height:auto;background:#fff;border:1px solid #e8edf5;border-radius:10px}
+.diza-test-chart-legend{display:flex;gap:14px;flex-wrap:wrap;margin:10px 0;font-size:12px;color:#667792}
+.diza-test-chart-legend i{display:inline-block;width:16px;height:3px;vertical-align:middle;margin-right:4px}
+@media(max-width:900px){.diza-test-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.diza-test-page{padding:14px}.diza-test-heading h1{font-size:23px}.diza-test-metrics{gap:8px}.diza-test-metrics article{padding:13px}.diza-test-metrics article strong{font-size:19px}.diza-test-panel{padding:13px}}

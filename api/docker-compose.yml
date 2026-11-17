@@ -11,11 +11,35 @@ services:
       - "${DB_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ../demo-db/bodega_diza_test_demo.dump:/opt/bodegadiza/demo.dump:ro
+      - ../demo-db/10-restore.sh:/docker-entrypoint-initdb.d/10-restore.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-bodega_diza}"]
       interval: 5s
       timeout: 5s
       retries: 5
+
+  ml:
+    build:
+      context: ../ml-service
+      dockerfile: Dockerfile
+    container_name: bodega_diza_ml
+    restart: unless-stopped
+    environment:
+      ML_MODEL_DIR: /app/data/models
+      ML_AUTO_TRAIN_ON_STARTUP: 'true'
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-bodega_diza}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "${ML_PORT:-8001}:8000"
+    volumes:
+      - ../ml-service/data/models:/app/data/models
+    depends_on:
+      postgres:
+        condition: service_healthy
 
 volumes:
   postgres_data:

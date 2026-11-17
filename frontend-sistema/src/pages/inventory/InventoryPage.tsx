@@ -1,15 +1,18 @@
-import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useState, type FormEvent } from 'react';
 import type { InventoryProduct as Producto } from '../../types/inventory';
+import apiClient from '../../api/axios';
+import type { ApiResponse } from '../../types';
 import { useRemoteResource } from '../../hooks/useRemoteResource';
-import { listInventoryProducts } from '../../services/inventoryService';
+import { listInventoryProducts, updateInventoryProduct } from '../../services/inventoryService';
 import { useInventoryViewState } from './useInventoryViewState';
+import { getStockStatus, type StockFilter, type InventorySort } from './inventorySelectors';
 import { InventoryDataState, type InventoryDataStatus } from './InventoryDataState';
-import type { FormEvent } from 'react';
+import { PageHeader, StatusBadge, TableFrame } from '../../components/ui';
 import './inventory.css';
 import './inventory-state.css';
 import './inventory-data-state.css';
 
-type EstadoStock = 'disponible' | 'bajo' | 'agotado';
 
 // SOLAMENTE DATOS DE DEMOSTRACIÓN. No representan el inventario real de BodegaDIZA.
 // Reemplazaremos este arreglo por la consulta al backend cuando exista el endpoint.
@@ -42,7 +45,6 @@ const PRODUCTOS_DE_EJEMPLO: Producto[] = [
 
 // El modo API solo se activa al configurarlo expresamente en frontend-sistema/.env.local.
 const MODO_API = import.meta.env.VITE_INVENTORY_MODE === 'api';
-const POR_PAGINA = 6;
 
 const moneda = (valor: number) =>
   `S/ ${valor.toLocaleString('es-PE', {
@@ -50,13 +52,7 @@ const moneda = (valor: number) =>
     maximumFractionDigits: 2,
   })}`;
 
-const estadoProducto = (producto: Producto): EstadoStock => {
-  if (producto.stock === 0) return 'agotado';
-  if (producto.stock <= producto.stockMinimo) return 'bajo';
-  return 'disponible';
-};
-
-const estadoTexto: Record<EstadoStock, string> = {
+const estadoTexto: Record<ReturnType<typeof getStockStatus>, string> = {
   disponible: 'En Stock',
   bajo: 'Stock Bajo',
   agotado: 'Agotado',
@@ -84,26 +80,26 @@ const IconoDinero = () => (
 );
 
 const EtiquetaEstado = ({ producto }: { producto: Producto }) => {
-  const estado = estadoProducto(producto);
+  const estado = getStockStatus(producto);
   return (
-    <span className={`inventory-status inventory-status--${estado}`}>
-      <span className="inventory-status-dot" aria-hidden="true" />
+    <StatusBadge tone={estado === 'disponible' ? 'success' : estado === 'bajo' ? 'warning' : 'danger'}>
       {estadoTexto[estado]}
-    </span>
+    </StatusBadge>
   );
 };
 
 export const InventoryPage = () => {
+  const navigate = useNavigate();
   const {
     data: productosApi, status: estadoApi, error: errorApi, reload: recargarApi,
   } = useRemoteResource(listInventoryProducts, MODO_API);
 
   const {
-    productos, setProductos, busqueda, categoria,
-    categorias, filtrados, paginaActual, totalPaginas,
+    productos, setProductos, busqueda, categoria, estado, orden, porPagina,
+    categorias, filtrados, paginaActual, totalPaginas, resumenStock,
     inicio, mostrados, valorInventario, setPagina,
-    setCategoria, setBusqueda, cambiarCategoria,
-    cambiarBusqueda, limpiarFiltros,
+    cambiarCategoria, cambiarEstado, cambiarOrden,
+    cambiarPorPagina, cambiarBusqueda, limpiarFiltros,
   } = useInventoryViewState(
     MODO_API ? [] : PRODUCTOS_DE_EJEMPLO,
     MODO_API ? (productosApi ?? []) : undefined,
@@ -112,10 +108,74 @@ export const InventoryPage = () => {
   const [modalCarga, setModalCarga] = useState(false);
   const [errorFormulario, setErrorFormulario] = useState('');
   const [mensaje, setMensaje] = useState('');
-  // Vista de prueba de estados. Sustituir por el estado real de consulta cuando haya endpoint.
-  const [estadoVista, setEstadoVista] = useState<'ready' | InventoryDataStatus>('ready');
+  const [editing, setEditing] = useState<Producto | null>(null);
+  const [editCategories, setEditCategories] = useState<{ id: number; nombre: string; activa: boolean }[]>([]);
+  const [editSuppliers, setEditSuppliers] = useState<{ id: number; nombre: string; activo: boolean }[]>([]);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState('');
 
-  const estadoRemoto: 'ready' | InventoryDataStatus = !MODO_API
+  const openEdit = async (producto: Producto) => {
+    setEditError('');
+    setEditing(producto);
+    if (!editCategories.length || !editSuppliers.length) {
+      try {
+        const [catRes, supRes] = await Promise.all([
+          apiClient.get<ApiResponse<{ id: number; nombre: string; activa: boolean }[]>>('/categorias'),
+          apiClient.get<ApiResponse<{ id: number; nombre: string; activo: boolean }[]>>('/proveedores'),
+        ]);
+        if (catRes.data.success && catRes.data.data) setEditCategories(catRes.data.data.filter(c => c.activa));
+        if (supRes.data.success && supRes.data.data) setEditSuppliers(supRes.data.data.filter(s => s.activo));
+      } catch {
+        setEditError('No se pudieron cargar categorías y proveedores.');
+      }
+    }
+  };
+
+  const guardarEdicion = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!editing?.id || editSaving) return;
+    const datos = new FormData(event.currentTarget);
+    const nombre = String(datos.get('nombre') ?? '').trim();
+    const descripcion = String(datos.get('descripcion') ?? '').trim();
+    const categoriaId = Number(datos.get('categoriaId'));
+    const proveedorId = Number(datos.get('proveedorId'));
+    const precioVenta = Number(datos.get('precioVenta'));
+    const stockMinimo = Number(datos.get('stockMinimo'));
+    const unidadMedida = String(datos.get('unidadMedida') ?? editing.unidadMedida ?? 'UNIDAD');
+
+    if (!nombre || !categoriaId || !proveedorId) {
+      setEditError('Completa el nombre, la categoría y el proveedor.');
+      return;
+    }
+    if (!Number.isFinite(precioVenta) || precioVenta < 0 || !Number.isFinite(stockMinimo) || stockMinimo < 0) {
+      setEditError('Precio y stock mínimo deben ser válidos.');
+      return;
+    }
+
+    setEditSaving(true);
+    setEditError('');
+    try {
+      await updateInventoryProduct(editing.id, {
+        sku: editing.sku,
+        nombre,
+        descripcion,
+        categoriaId,
+        proveedorId,
+        precioVenta,
+        stockMinimo,
+        unidadMedida,
+      });
+      setEditing(null);
+      setMensaje(`Producto ${editing.sku} (${nombre}) actualizado correctamente.`);
+      recargarApi();
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : 'No se pudo actualizar el producto.');
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const estadoMostrado: 'ready' | InventoryDataStatus = !MODO_API
     ? 'ready'
     : estadoApi === 'error'
       ? 'error'
@@ -124,13 +184,8 @@ export const InventoryPage = () => {
         : productos.length === 0
           ? 'empty'
           : 'ready';
-  // Los controles de prueba tienen prioridad solo en desarrollo.
-  const estadoMostrado = import.meta.env.DEV && estadoVista !== 'ready'
-    ? estadoVista
-    : estadoRemoto;
   const reintentar = () => {
-    if (import.meta.env.DEV && estadoVista !== 'ready') setEstadoVista('ready');
-    else if (MODO_API) recargarApi();
+    if (MODO_API) recargarApi();
   };
 
   const agregarProducto = (event: FormEvent<HTMLFormElement>) => {
@@ -155,7 +210,7 @@ export const InventoryPage = () => {
       return;
     }
     if ([nuevo.stock, nuevo.stockMinimo, nuevo.precioCosto, nuevo.precioVenta]
-      .some((valor) => !Number.isFinite(valor) || valor < 0)) {
+      .some((valor) => typeof valor !== 'number' || !Number.isFinite(valor) || valor < 0)) {
       setErrorFormulario('Las cantidades y precios deben ser números válidos mayores o iguales a cero.');
       return;
     }
@@ -163,42 +218,56 @@ export const InventoryPage = () => {
     setProductos((actuales) => [nuevo, ...actuales]);
     setModalNuevo(false);
     setErrorFormulario('');
-    setCategoria('Todos');
-    setBusqueda(nuevo.sku);
-    setPagina(1);
+    limpiarFiltros();
+    cambiarBusqueda(nuevo.sku);
     setMensaje('Producto agregado únicamente a esta vista de prueba. No se guardó en PostgreSQL y desaparecerá al recargar la página.');
   };
 
   return (
     <section className="inventory-view" aria-labelledby="inventory-title">
-      <header className="inventory-heading">
-        <div>
-          <h1 id="inventory-title">Inventario</h1>
-          <p>Consulta y gestiona el stock de productos</p>
-        </div>
+      <PageHeader
+        titleId="inventory-title"
+        title="Inventario"
+        description="Consulta productos y existencias."
+        actions={
         <div className="inventory-actions">
-          <button
+          {MODO_API ? (
+  <>
+    <Link className="inventory-action inventory-action-add" to="/inventario/agregar">
+      <span aria-hidden="true">＋</span> Nuevo producto
+    </Link>
+    <Link className="inventory-action inventory-action-bulk" to="/inventario/agregar?modo=restock">
+      Reponer stock
+    </Link>
+  </>
+) : (
+<button
             className="inventory-action inventory-action-add"
             type="button"
             onClick={() => {
               if (MODO_API) {
-                setMensaje('El registro de productos estará disponible cuando el backend incorpore su endpoint.');
+                setMensaje('El backend dispone de POST /productos; falta integrar y validar el formulario antes de habilitar el registro real.');
                 return;
               }
               setModalNuevo(true); setErrorFormulario('');
             }}
           >
-            <span aria-hidden="true">＋</span> Nuevo Producto
+            <span aria-hidden="true">＋</span> Nuevo producto
           </button>
+)}
+<Link className="inventory-action inventory-action-bulk" to="/inventario/movimientos">
+  Historial de movimientos
+</Link>
           <button
             className="inventory-action inventory-action-bulk"
             type="button"
-            onClick={() => setModalCarga(true)}
+            onClick={() => navigate('/inventario/carga-masiva')}
           >
-            <span aria-hidden="true">⇧</span> Carga Masiva
+            <span aria-hidden="true">⇧</span> Importar productos
           </button>
         </div>
-      </header>
+        }
+      />
 
       {!MODO_API && (
         <div className="inventory-demo-note" role="note">
@@ -212,29 +281,7 @@ export const InventoryPage = () => {
         </div>
       )}
 
-      {import.meta.env.DEV && (
-        <details className="inventory-demo-controls">
-          <summary>Probar estados de la interfaz (solo desarrollo)</summary>
-          <div className="inventory-demo-controls-options" role="group" aria-label="Vista previa de estados">
-            {([
-              ['ready', 'Normal'],
-              ['loading', 'Cargando'],
-              ['error', 'Error'],
-              ['empty', 'Sin productos'],
-            ] as const).map(([status, label]) => (
-              <button
-                key={status}
-                type="button"
-                aria-pressed={estadoVista === status}
-                onClick={() => setEstadoVista(status)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          <p className="inventory-demo-controls-note">Simulación visual local: no consulta ni cambia PostgreSQL.</p>
-        </details>
-      )}
+
 
       {estadoMostrado === 'ready' ? (
         <>
@@ -243,25 +290,33 @@ export const InventoryPage = () => {
           <div>
             <span className="inventory-summary-label">TOTAL SKUs</span>
             <strong className="inventory-summary-value">{productos.length.toLocaleString('es-PE')}</strong>
-            <span className="inventory-summary-subline"><span className="inventory-summary-live">●</span> Productos en la vista</span>
+            <span className="inventory-summary-subline">Productos registrados</span>
           </div>
           <span className="inventory-summary-icon inventory-summary-icon--blue"><IconoCaja /></span>
         </article>
         <article className="inventory-summary-card">
           <div>
             <span className="inventory-summary-label">VALORIZADO</span>
-            <strong className="inventory-summary-value">{moneda(valorInventario)}</strong>
-            <span className="inventory-summary-subline">Suma del stock × costo de ejemplo</span>
+            <strong className="inventory-summary-value">{valorInventario === null ? 'No disponible' : moneda(valorInventario)}</strong>
+            <span className="inventory-summary-subline">{MODO_API ? 'El catálogo no devuelve costo de compra' : 'Suma del stock × costo de ejemplo'}</span>
           </div>
           <span className="inventory-summary-icon inventory-summary-icon--green"><IconoDinero /></span>
+        </article>
+        <article className="inventory-summary-card inventory-summary-card--attention">
+          <div>
+            <span className="inventory-summary-label">REQUIEREN ATENCIÓN</span>
+            <strong className="inventory-summary-value">{resumenStock.bajo + resumenStock.agotado}</strong>
+            <span className="inventory-summary-subline">{resumenStock.bajo} con stock bajo · {resumenStock.agotado} agotados</span>
+          </div>
+          <span className="inventory-summary-icon inventory-summary-icon--warning" aria-hidden="true">!</span>
         </article>
       </div>
 
       <section className="inventory-panel" aria-label="Listado de inventario">
         <div className="inventory-panel-top">
           <div className="inventory-panel-title">
-            <h2>Tabla Inventario</h2>
-            <span>Mostrando {mostrados.length} productos</span>
+            <h2>Productos en inventario</h2>
+            <span>{filtrados.length} coincidencias</span>
           </div>
           <label className="inventory-search">
             <Lupa />
@@ -275,23 +330,56 @@ export const InventoryPage = () => {
           </label>
         </div>
 
-        <div className="inventory-category-tabs" role="group" aria-label="Filtrar productos por categoría">
-          {categorias.map((nombre) => (
-            <button
-              key={nombre}
-              type="button"
-              className={`inventory-category-tab${categoria === nombre ? ' is-selected' : ''}`}
-              onClick={() => cambiarCategoria(nombre)}
-              aria-pressed={categoria === nombre}
-            >
-              {nombre} <span>{nombre === 'Todos'
-                ? productos.length
-                : productos.filter((producto) => producto.categoria === nombre).length}</span>
+        <div className="inventory-filter-bar" aria-label="Filtros de inventario">
+          <label className="inventory-filter-field" htmlFor="inv-filter-category">
+            <span>Categoría</span>
+            <select id="inv-filter-category" value={categoria}
+              onChange={event => cambiarCategoria(event.target.value)}>
+              {categorias.map(nombre => (
+                <option key={nombre} value={nombre}>{nombre}</option>
+              ))}
+            </select>
+          </label>
+          <label className="inventory-filter-field" htmlFor="inv-filter-status">
+            <span>Estado de stock</span>
+            <select id="inv-filter-status" value={estado}
+              onChange={event => cambiarEstado(event.target.value as StockFilter)}>
+              <option value="todos">Todos los estados</option>
+              <option value="disponible">En stock ({resumenStock.disponible})</option>
+              <option value="bajo">Stock bajo ({resumenStock.bajo})</option>
+              <option value="agotado">Agotados ({resumenStock.agotado})</option>
+            </select>
+          </label>
+          <label className="inventory-filter-field" htmlFor="inv-filter-sort">
+            <span>Ordenar por</span>
+            <select id="inv-filter-sort" value={orden}
+              onChange={event => cambiarOrden(event.target.value as InventorySort)}>
+              <option value="nombre">Nombre (A–Z)</option>
+              <option value="prioridad">Mayor prioridad</option>
+              <option value="stock_asc">Menor stock</option>
+              <option value="stock_desc">Mayor stock</option>
+            </select>
+          </label>
+          <label className="inventory-filter-field inventory-filter-field--size" htmlFor="inv-filter-size">
+            <span>Por página</span>
+            <select id="inv-filter-size" value={porPagina}
+              onChange={event => cambiarPorPagina(Number(event.target.value))}>
+              <option value={6}>6</option>
+              <option value={12}>12</option>
+              <option value={24}>24</option>
+            </select>
+          </label>
+          {(busqueda.trim() || categoria !== 'Todos' || estado !== 'todos' || orden !== 'nombre') && (
+            <button className="inventory-filter-reset" type="button" onClick={limpiarFiltros}>
+              Restablecer filtros
             </button>
-          ))}
+          )}
         </div>
+        <p className="inventory-filter-count" role="status" aria-live="polite">
+          {filtrados.length} {filtrados.length === 1 ? 'producto coincide' : 'productos coinciden'} con los filtros.
+        </p>
 
-        <div className="inventory-table-scroll">
+        <TableFrame label="Tabla de productos del inventario" className="inventory-table-scroll">
           <table className="inventory-table">
             <thead>
               <tr>
@@ -303,6 +391,7 @@ export const InventoryPage = () => {
                 <th>PRECIO COSTO</th>
                 <th>PRECIO VENTA</th>
                 <th>ESTADO DE DISPONIBILIDAD</th>
+                {MODO_API && <th>ACCIONES</th>}
               </tr>
             </thead>
             <tbody>
@@ -311,16 +400,28 @@ export const InventoryPage = () => {
                   <td className="inventory-sku">{producto.sku}</td>
                   <td className="inventory-name">{producto.nombre}</td>
                   <td className="inventory-category-cell">{producto.categoria}</td>
-                  <td className={`inventory-stock inventory-stock--${estadoProducto(producto)}`}>{producto.stock}</td>
+                  <td className={`inventory-stock inventory-stock--${getStockStatus(producto)}`}>{producto.stock}</td>
                   <td>{producto.stockMinimo}</td>
-                  <td>{moneda(producto.precioCosto)}</td>
+                  <td>{producto.precioCosto === null ? '—' : moneda(producto.precioCosto)}</td>
                   <td className="inventory-sale-price">{moneda(producto.precioVenta)}</td>
                   <td><EtiquetaEstado producto={producto} /></td>
+                  {MODO_API && (
+                    <td className="inventory-row-actions">
+                      <Link className="inventory-row-btn" to={`/inventario/agregar?modo=restock&${producto.id ? `productoId=${producto.id}` : `sku=${encodeURIComponent(producto.sku)}`}`}>
+                        Reponer
+                      </Link>
+                      {producto.id && (
+                        <button type="button" className="inventory-row-btn" onClick={() => { void openEdit(producto); }}>
+                          Editar
+                        </button>
+                      )}
+                    </td>
+                  )}
                 </tr>
               ))}
               {mostrados.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="inventory-empty">
+                  <td colSpan={MODO_API ? 9 : 8} className="inventory-empty">
                     <strong>{productos.length === 0 ? 'Aún no hay productos' : 'Sin resultados'}</strong>
                     <p>{productos.length === 0
                       ? 'No se han registrado productos en esta vista.'
@@ -335,7 +436,7 @@ export const InventoryPage = () => {
               )}
             </tbody>
           </table>
-        </div>
+        </TableFrame>
 
         <div className="inventory-mobile-products">
           {mostrados.map((producto) => (
@@ -348,19 +449,31 @@ export const InventoryPage = () => {
               <div className="inventory-product-details">
                 <div>
                   <span>STOCK ACTUAL</span>
-                  <strong className={`inventory-stock--${estadoProducto(producto)}`}>
+                  <strong className={`inventory-stock--${getStockStatus(producto)}`}>
                     {producto.stock} <small>/ mín {producto.stockMinimo}</small>
                   </strong>
                 </div>
                 <div>
                   <span>COSTO COMPRA</span>
-                  <strong>{moneda(producto.precioCosto)}</strong>
+                  <strong>{producto.precioCosto === null ? '—' : moneda(producto.precioCosto)}</strong>
                 </div>
                 <div>
                   <span>PRECIO VENTA</span>
                   <strong className="inventory-sale-price">{moneda(producto.precioVenta)}</strong>
                 </div>
               </div>
+              {MODO_API && (
+                <div className="inventory-row-actions inventory-row-actions--mobile">
+                  <Link className="inventory-row-btn" to={`/inventario/agregar?modo=restock&${producto.id ? `productoId=${producto.id}` : `sku=${encodeURIComponent(producto.sku)}`}`}>
+                    Reponer stock
+                  </Link>
+                  {producto.id && (
+                    <button type="button" className="inventory-row-btn" onClick={() => { void openEdit(producto); }}>
+                      Editar producto
+                    </button>
+                  )}
+                </div>
+              )}
             </article>
           ))}
           {mostrados.length === 0 && (
@@ -382,7 +495,7 @@ export const InventoryPage = () => {
           <span>
             {filtrados.length === 0
               ? 'Mostrando 0 productos'
-              : `Mostrando ${inicio + 1} a ${Math.min(inicio + POR_PAGINA, filtrados.length)} de ${filtrados.length} productos`}
+              : `Mostrando ${inicio + 1} a ${Math.min(inicio + porPagina, filtrados.length)} de ${filtrados.length} productos`}
           </span>
           <div className="inventory-pagination" aria-label="Paginación del inventario">
             <button
@@ -390,6 +503,7 @@ export const InventoryPage = () => {
               disabled={paginaActual === 1}
               onClick={() => setPagina((actual) => Math.max(1, actual - 1))}
               className="inventory-page-previous"
+              aria-label="Página anterior"
             >
               <span className="inventory-pagination-text">Anterior</span><span className="inventory-pagination-icon">‹</span>
             </button>
@@ -400,6 +514,7 @@ export const InventoryPage = () => {
                   type="button"
                   key={numero}
                   className={`inventory-page-number${paginaActual === numero ? ' is-current' : ''}`}
+                  aria-label={`Ir a la página ${numero}`}
                   aria-current={paginaActual === numero ? 'page' : undefined}
                   onClick={() => setPagina(numero)}
                 >
@@ -411,6 +526,7 @@ export const InventoryPage = () => {
               disabled={paginaActual === totalPaginas}
               onClick={() => setPagina((actual) => Math.min(totalPaginas, actual + 1))}
               className="inventory-page-next"
+              aria-label="Página siguiente"
             >
               <span className="inventory-pagination-text">Siguiente</span><span className="inventory-pagination-icon">›</span>
             </button>
@@ -423,7 +539,7 @@ export const InventoryPage = () => {
         <InventoryDataState
           status={estadoMostrado}
           onRetry={reintentar}
-          errorMessage={MODO_API && estadoMostrado === 'error' && estadoVista === 'ready' ? errorApi : null}
+          errorMessage={MODO_API && estadoMostrado === 'error' ? errorApi : null}
         />
       )}
 
@@ -471,6 +587,64 @@ export const InventoryPage = () => {
             </div>
             <p className="inventory-bulk-explanation">El diseño del botón ya está preparado. La carga de archivos Excel/CSV se conectará cuando exista un servicio de inventario en el backend. Por ahora no importamos ni modificamos productos reales.</p>
             <button type="button" className="inventory-action inventory-action-add" onClick={() => setModalCarga(false)}>Entendido</button>
+          </div>
+        </div>
+      )}
+
+      {editing && (
+        <div className="inventory-modal-backdrop" role="presentation" onMouseDown={(event) => {
+          if (event.target === event.currentTarget && !editSaving) setEditing(null);
+        }}>
+          <div className="inventory-modal" role="dialog" aria-modal="true" aria-labelledby="inventory-edit-title">
+            <div className="inventory-modal-header">
+              <div>
+                <h2 id="inventory-edit-title">Editar producto</h2>
+                <p>SKU: {editing.sku}</p>
+              </div>
+              <button type="button" disabled={editSaving} onClick={() => setEditing(null)} aria-label="Cerrar editor">×</button>
+            </div>
+            <form key={`${editing.id}-${editCategories.length}-${editSuppliers.length}`} onSubmit={(event) => { void guardarEdicion(event); }} className="inventory-product-form">
+              <label>Nombre del producto
+                <input name="nombre" maxLength={150} required defaultValue={editing.nombre} />
+              </label>
+              <div className="inventory-form-grid">
+                <label>Categoría
+                  <select name="categoriaId" required defaultValue={editing.categoriaId ?? ''}>
+                    {!editing.categoriaId && <option value="">Selecciona categoría</option>}
+                    {editCategories.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                  </select>
+                </label>
+                <label>Proveedor
+                  <select name="proveedorId" required defaultValue={editing.proveedorId ?? ''}>
+                    {!editing.proveedorId && <option value="">Selecciona proveedor</option>}
+                    {editSuppliers.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+                  </select>
+                </label>
+                <label>Precio venta (S/)
+                  <input name="precioVenta" type="number" min="0" step="0.01" required defaultValue={editing.precioVenta} />
+                </label>
+                <label>Stock mínimo
+                  <input name="stockMinimo" type="number" min="0" step="0.001" required defaultValue={editing.stockMinimo} />
+                </label>
+                <label>Unidad de medida
+                  <select name="unidadMedida" defaultValue={editing.unidadMedida ?? 'UNIDAD'}>
+                    {['UNIDAD', 'BOTELLA', 'CAJA', 'PACK', 'LITRO', 'BOLSA', 'LATA', 'KILOGRAMO'].map(u => (
+                      <option key={u} value={u}>{u}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <label>Descripción
+                <input name="descripcion" maxLength={500} defaultValue={editing.descripcion ?? ''} />
+              </label>
+              {editError && <p className="inventory-form-error" role="alert">{editError}</p>}
+              <div className="inventory-modal-actions">
+                <button type="button" className="inventory-action inventory-action-bulk" disabled={editSaving} onClick={() => setEditing(null)}>Cancelar</button>
+                <button type="submit" className="inventory-action inventory-action-add" disabled={editSaving}>
+                  {editSaving ? 'Guardando...' : 'Guardar cambios'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

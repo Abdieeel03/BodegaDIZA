@@ -14,6 +14,9 @@ export const ModelTrainingPanel = ({ onCompleted }: ModelTrainingPanelProps) => 
   const [result, setResult] = useState<TrainingResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [latestLoading, setLatestLoading] = useState(true);
+  const [latestError, setLatestError] = useState('');
+  const [latestRevision, setLatestRevision] = useState(0);
   const [resultOrigin, setResultOrigin] = useState<'latest' | 'new'>('latest');
   const trainingRequested = useRef(false);
 
@@ -21,6 +24,8 @@ export const ModelTrainingPanel = ({ onCompleted }: ModelTrainingPanelProps) => 
   // sin exigir un nuevo entrenamiento ni un clic para desplegarlas.
   useEffect(() => {
     let active = true;
+    setLatestLoading(true);
+    setLatestError('');
     void mlService.getLatestTraining()
       .then(last => {
         if (active && !trainingRequested.current) {
@@ -28,16 +33,20 @@ export const ModelTrainingPanel = ({ onCompleted }: ModelTrainingPanelProps) => 
           setResultOrigin('latest');
         }
       })
-      .catch(() => { /* Puede que todavía no exista ningún entrenamiento. */ });
+      .catch(() => {
+        if (active) setLatestError('No se pudo consultar el último entrenamiento. Reintenta la consulta; si todavía no existe un modelo, genera las primeras predicciones.');
+      })
+      .finally(() => { if (active) setLatestLoading(false); });
     return () => { active = false; };
-  }, []);
+  }, [latestRevision]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (isLoading) return;
+    if (isLoading || latestLoading || trainingRequested.current) return;
     trainingRequested.current = true;
     setError(null);
-    setResult(null);
+    setResultOrigin('latest');
+    setLatestError('');
     setIsLoading(true);
     try {
       const completed = await mlService.train();
@@ -47,6 +56,7 @@ export const ModelTrainingPanel = ({ onCompleted }: ModelTrainingPanelProps) => 
     } catch (requestError: unknown) {
       setError(requestError instanceof ApiError ? requestError.message : requestError instanceof Error ? requestError.message : 'No fue posible actualizar el modelo.');
     } finally {
+      trainingRequested.current = false;
       setIsLoading(false);
     }
   };
@@ -64,10 +74,15 @@ export const ModelTrainingPanel = ({ onCompleted }: ModelTrainingPanelProps) => 
 
       <form onSubmit={handleSubmit} className="diza-model-action-row">
         <p>No requiere archivos ni modifica el stock. El entrenamiento puede tardar unos minutos.</p>
-        <Button type="submit" loading={isLoading} disabled={isLoading}>
+        <Button type="submit" loading={isLoading} disabled={isLoading || latestLoading}>
           {isLoading ? 'Generando predicciones...' : 'Generar nuevas predicciones'}
         </Button>
       </form>
+
+      {latestLoading && <p className="diza-model-info" role="status">Consultando el último entrenamiento guardado…</p>}
+      {latestError && <div className="diza-model-error" role="alert"><p>{latestError}</p>
+        <Button variant="secondary" size="sm" disabled={isLoading} onClick={() => setLatestRevision(value => value + 1)}>Reintentar consulta</Button>
+      </div>}
 
       {isLoading && <p className="diza-model-info" role="status">Entrenando el modelo con los datos registrados…</p>}
       {error && <div className="diza-model-error" role="alert">{error} Revisa la conexión con el servicio ML e inténtalo nuevamente.</div>}

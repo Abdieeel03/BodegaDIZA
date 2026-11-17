@@ -104,8 +104,8 @@ export async function productosOperativos(): Promise<ProductoOperativo[]> {
   const r = await apiClient.get<Respuesta<ProductoOperativo[]>>('/productos');
   return dato(r.data);
 }
-export async function ventasOperativas(): Promise<VentaOperativa[]> {
-  const r = await apiClient.get<Respuesta<VentaOperativa[]>>('/ventas');
+export async function ventasOperativas(range?: { desde?: string; hasta?: string }, signal?: AbortSignal): Promise<VentaOperativa[]> {
+  const r = await apiClient.get<Respuesta<VentaOperativa[]>>('/ventas', { params: range, signal });
   return dato(r.data);
 }
 export type SaleItemPayload = { productoId: number; cantidad: number };

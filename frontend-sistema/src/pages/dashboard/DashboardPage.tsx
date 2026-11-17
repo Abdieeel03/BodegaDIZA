@@ -1,8 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button, PageHeader, StatCard, StatusBadge } from '../../components/ui';
 import { DataFeedback } from '../../components/common/DataFeedback';
 import { ForecastLineChart } from '../../components/charts/ForecastLineChart';
+import { BusinessOverview } from './BusinessOverview';
+import { useRemoteResource } from '../../hooks/useRemoteResource';
+import { peruToday, salesDateLabel } from '../../services/salesReportService';
 import { mlService } from '../../services/mlService';
 import { estimatedRevenueSummary, formatSoles, getCurrentSalePrices, type PriceMap } from '../../services/mlRevenue';
 import type { DemandPrediction, ReplenishmentRecommendation } from '../../types';
@@ -22,6 +25,8 @@ export const DashboardPage = () => {
   const [prices, setPrices] = useState<PriceMap>({});
   const [pricesLoading, setPricesLoading] = useState(true);
   const [priceError, setPriceError] = useState('');
+  const loadTraining = useCallback(() => { void refresh; return mlService.getLatestTraining(); }, [refresh]);
+  const training = useRemoteResource(loadTraining, true);
 
   useEffect(() => {
     let active = true;
@@ -61,8 +66,10 @@ export const DashboardPage = () => {
     <main className="diza-dashboard">
       <PageHeader
         title="Inicio"
-        actions={<Button variant="secondary" size="sm" loading={loading} onClick={() => setRefresh(value => value + 1)}>Actualizar predicción</Button>}
+        actions={<Button variant="secondary" size="sm" loading={loading} onClick={() => setRefresh(value => value + 1)}>Recargar resultados</Button>}
       />
+
+      <BusinessOverview revision={refresh} />
 
       <section className="diza-dashboard-section" aria-labelledby="diza-forecast-title">
         <div className="diza-dashboard-section-heading">
@@ -71,6 +78,12 @@ export const DashboardPage = () => {
           </div>
           <Link to="/prediccion-demanda" className="diza-dashboard-text-link">Explorar predicciones</Link>
         </div>
+
+        {training.data && <p className="diza-dashboard-legal">
+          Período del pronóstico: {training.data.forecastFromDate ? salesDateLabel(training.data.forecastFromDate) : 'No disponible'} – {training.data.forecastToDate ? salesDateLabel(training.data.forecastToDate) : 'No disponible'}.
+          {training.data.forecastToDate && training.data.forecastToDate < peruToday() && <strong> Período finalizado. Actualiza el modelo desde Predicción de demanda.</strong>}
+        </p>}
+        {training.status === 'error' && <p className="diza-dashboard-notice" role="status">No se pudo verificar la fecha del modelo. Recarga los resultados antes de utilizar la proyección para planificar compras.</p>}
 
         {loading ? (
           <DataFeedback status="loading" title="Consultando predicciones" description="Obteniendo la proyección y las necesidades de reposición." />
@@ -97,7 +110,7 @@ export const DashboardPage = () => {
                   <div><h3 id="diza-demand-chart-title">Tendencia de demanda</h3></div>
                   <span className="diza-dashboard-panel-tag">7 días</span>
                 </div>
-                <ForecastLineChart values={daily} title="Demanda prevista total por día en siete días" />
+                <ForecastLineChart values={daily} startDate={training.data?.forecastFromDate} title="Demanda prevista total por día en siete días" />
                 <p className="diza-dashboard-chart-foot">Demanda acumulada: <strong>{formatUnits(demand)} unidades</strong></p>
               </section>
 

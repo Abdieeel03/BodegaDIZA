@@ -1,0 +1,88 @@
+import { useCallback, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Button, StatCard, StatusBadge } from '../../components/ui';
+import { DataFeedback } from '../../components/common/DataFeedback';
+import { SalesHistoryChart } from '../../components/charts/SalesHistoryChart';
+import { useRemoteResource } from '../../hooks/useRemoteResource';
+import { getSalesReport, peruToday } from '../../services/salesReportService';
+import { getLowStockAlerts, getExpiryAlerts } from '../../services/dashboardService';
+import { listDashboardAlerts } from './dashboardSelectors';
+import { formatMoney } from '../../components/period/PeriodControls';
+import './business-overview.css';
+
+export function BusinessOverview({ revision }: { revision: number }) {
+  const [period, setPeriod] = useState<'mes' | 'semestre'>('mes');
+  const [retry, setRetry] = useState(0);
+  const today = peruToday();
+  const monthStart = `${today.slice(0, 7)}-01`;
+  const startDate = new Date(`${monthStart}T12:00:00Z`);
+  startDate.setUTCMonth(startDate.getUTCMonth() - 5);
+  const from = period === 'mes' ? monthStart : startDate.toISOString().slice(0, 10);
+  const loadSummary = useCallback(async (signal: AbortSignal) => {
+    void revision; void retry;
+    const [day, month] = await Promise.all([
+      getSalesReport({ desde: today, hasta: today, origen: 'operativo' }, signal),
+      getSalesReport({ desde: monthStart, hasta: today, origen: 'operativo' }, signal),
+    ]);
+    return { day, month, queriedAt: new Date().toLocaleTimeString('es-PE', { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit' }) };
+  }, [revision, retry, today, monthStart]);
+  const loadHistory = useCallback((signal: AbortSignal) => {
+    void revision; void retry;
+    return getSalesReport({ desde: from, hasta: today, origen: 'todos', agrupacion: period === 'mes' ? 'dia' : 'mes' }, signal);
+  }, [revision, retry, from, today, period]);
+  const loadStock = useCallback(() => { void revision; void retry; return getLowStockAlerts(); }, [revision, retry]);
+  const loadExpiry = useCallback(() => { void revision; void retry; return getExpiryAlerts(7); }, [revision, retry]);
+  const summary = useRemoteResource(loadSummary, true);
+  const history = useRemoteResource(loadHistory, true);
+  const stock = useRemoteResource(loadStock, true);
+  const expiry = useRemoteResource(loadExpiry, true);
+  const alerts = listDashboardAlerts(stock.data ?? [], expiry.data ?? []);
+  const reload = () => setRetry(value => value + 1);
+  const salesLink = `/ventas?desde=${from}&hasta=${today}&agrupacion=${period === 'mes' ? 'dia' : 'mes'}&origen=todos`;
+  const metric = (value?: number | null) => summary.status === 'loading' ? 'Consultando…' : value == null ? '—' : formatMoney(value);
+
+  return <section className="diza-business" aria-labelledby="business-title">
+    <div className="diza-dashboard-section-heading"><div><h2 id="business-title">Tu bodega hoy</h2>
+      <p>Ventas operativas e inventario actual{summary.data ? ` · Consultado a las ${summary.data.queriedAt} (Perú)` : ''}</p></div>
+      <div className="diza-business-actions"><Link to="/ventas?registrar=1" className="diza-period-link">Registrar venta</Link><Link to="/inventario" className="diza-dashboard-text-link">Inventario</Link><Link to="/prediccion-demanda/compras" className="diza-dashboard-text-link">Planificar compras</Link></div>
+    </div>
+    <div className="diza-dashboard-kpis">
+      <StatCard label="Ventas de hoy" value={metric(summary.data?.day.total)} note="Ventas operativas" />
+      <StatCard label="Ventas del mes" value={metric(summary.data?.month.total)} note="Desde el primer día hasta hoy" />
+      <StatCard label="Tickets de hoy" value={summary.status === 'loading' ? 'Consultando…' : summary.data?.day.tickets ?? '—'} />
+      <StatCard label="Productos agotados" value={stock.status === 'loading' ? 'Consultando…' : stock.data ? stock.data.filter(item => Number(item.stockActual) <= 0).length : '—'} note="Stock disponible actual" />
+    </div>
+    {summary.status === 'error' && <DataFeedback status="error" title="Resumen de ventas no disponible" description={summary.error ?? undefined} onRetry={reload} />}
+    <div className="diza-dashboard-analytics">
+      <section className="diza-dashboard-panel" aria-labelledby="business-sales-title">
+        <div className="diza-dashboard-panel-heading"><h3 id="business-sales-title">Evolución de ventas</h3>
+          <label className="diza-business-period">Período<select value={period} onChange={event => setPeriod(event.target.value as 'mes' | 'semestre')}><option value="mes">Este mes</option><option value="semestre">Últimos 6 meses</option></select></label>
+        </div>
+        {history.status === 'loading' ? <DataFeedback status="loading" title="Consultando evolución" /> : history.status === 'error'
+          ? <DataFeedback status="error" description={history.error ?? undefined} onRetry={reload} /> : history.data && <>
+            {history.data.coincidencias > 0 && <p className="diza-dashboard-notice">Hay coincidencias entre ambos orígenes. Consulta Ventas para revisarlas; los importes se muestran por separado.</p>}
+            {!history.data.historicoDisponible && <p className="diza-kpi-note">No hay histórico importado en esta base.</p>}
+            <SalesHistoryChart points={history.data.tendencia} grouping={period === 'mes' ? 'dia' : 'mes'} />
+          </>}
+        <Link to={salesLink} className="diza-dashboard-panel-action">Ver reporte de ventas <span aria-hidden="true">→</span></Link>
+      </section>
+      <section className="diza-dashboard-panel" aria-labelledby="business-alerts-title">
+        <div className="diza-dashboard-panel-heading"><h3 id="business-alerts-title">Requieren atención</h3><StatusBadge tone="warning">Inventario</StatusBadge></div>
+        {(stock.status === 'loading' || expiry.status === 'loading') && <p role="status" className="diza-kpi-note">Consultando existencias y vencimientos…</p>}
+        {(stock.status === 'error' || expiry.status === 'error') && <div className="diza-dashboard-notice" role="status"><p>No se pudo consultar {stock.status === 'error' && expiry.status === 'error' ? 'stock y vencimientos' : stock.status === 'error' ? 'stock' : 'vencimientos'}. Los demás avisos siguen disponibles.</p><Button variant="secondary" size="sm" onClick={reload}>Reintentar</Button></div>}
+        <ul className="diza-business-alerts">{alerts.map(alert => <li key={alert.id}>
+          <StatusBadge tone={alert.tone}>{alert.tone === 'danger' ? 'Urgente' : 'Revisar'}</StatusBadge>
+          <strong>{alert.title}</strong><p>{alert.message}</p>
+        </li>)}</ul>
+        {stock.status === 'success' && expiry.status === 'success' && alerts.length === 0 && <p className="diza-kpi-note">Sin alertas de stock ni vencimientos en los próximos 7 días.</p>}
+        <Link to="/inventario" className="diza-dashboard-panel-action">Consultar inventario <span aria-hidden="true">→</span></Link>
+      </section>
+    </div>
+    {history.data && <section className="diza-dashboard-panel diza-business-ranking" aria-labelledby="business-ranking-title">
+      <div className="diza-dashboard-panel-heading"><div><h3 id="business-ranking-title">Productos con mayor importe vendido</h3><p>{period === 'mes' ? 'Este mes' : 'Últimos 6 meses'} · Histórico y operativo</p></div></div>
+      {history.data.coincidencias > 0 ? <p className="diza-kpi-note">El ranking conjunto estará disponible cuando se concilien los registros coincidentes.</p>
+        : !history.data.ranking.length ? <p className="diza-kpi-note">Todavía no hay ventas para este período.</p>
+        : <ol>{history.data.ranking.map(item => <li key={item.sku}><Link to={`${salesLink}&sku=${encodeURIComponent(item.sku)}`}><span>{item.nombre}<small>{item.sku}</small></span><strong>{formatMoney(item.importe)}</strong></Link></li>)}</ol>}
+    </section>}
+  </section>;
+}

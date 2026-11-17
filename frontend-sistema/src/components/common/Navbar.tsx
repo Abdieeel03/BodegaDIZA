@@ -15,6 +15,7 @@ const titulos: Record<string, string> = {
   '/prediccion-demanda/producto': 'Por producto',
   '/prediccion-demanda/reposicion': 'Reposición',
   '/prediccion-demanda/compras': 'Planificar compras',
+  '/prediccion-demanda/actualizar-modelo': 'Actualizar modelo',
 };
 
 export const Navbar = () => {

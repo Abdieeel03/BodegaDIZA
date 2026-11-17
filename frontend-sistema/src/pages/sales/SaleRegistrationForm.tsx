@@ -21,11 +21,17 @@ function validQuantity(value: number): boolean {
 
 /** Venta operativa: se envía el mismo contrato POST /ventas, ahora con varios ítems. */
 export function SaleRegistrationForm({ products, busy, loading, onRegister }: Props) {
+  const [productQuery, setProductQuery] = useState('');
   const [selectedId, setSelectedId] = useState('');
   const [amount, setAmount] = useState('1');
   const [items, setItems] = useState<SaleItemPayload[]>([]);
   const [localError, setLocalError] = useState('');
   const availableProducts = useMemo(() => products.filter(p => p.activo && p.stockTotal > 0), [products]);
+  const filteredProducts = useMemo(() => {
+    const q = productQuery.trim().toLowerCase();
+    if (!q) return availableProducts;
+    return availableProducts.filter(p => p.nombre.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q));
+  }, [availableProducts, productQuery]);
   const product = availableProducts.find(p => String(p.id) === selectedId);
   const quantity = Number(amount);
   const alreadyAdded = items.find(item => String(item.productoId) === selectedId)?.cantidad ?? 0;
@@ -52,7 +58,7 @@ export function SaleRegistrationForm({ products, busy, loading, onRegister }: Pr
     setItems(prev => prev.some(item => item.productoId === product.id)
       ? prev.map(item => item.productoId === product.id ? { ...item, cantidad: totalQuantity } : item)
       : [...prev, { productoId: product.id, cantidad: quantity }]);
-    setSelectedId(''); setAmount('1'); setLocalError('');
+    setSelectedId(''); setProductQuery(''); setAmount('1'); setLocalError('');
   };
 
   const submit = async (event: FormEvent) => {
@@ -64,25 +70,41 @@ export function SaleRegistrationForm({ products, busy, loading, onRegister }: Pr
     }
     setLocalError('');
     const success = await onRegister(items);
-    if (success) { setItems([]); setSelectedId(''); setAmount('1'); }
+    if (success) { setItems([]); setSelectedId(''); setProductQuery(''); setAmount('1'); }
   };
 
   return (
     <form className="diza-sale-form" noValidate onSubmit={event => { void submit(event); }}>
+      <FormField controlId="sale-product-search" label="Buscar producto">
+        <input id="sale-product-search" type="search" placeholder="Filtrar por nombre o código SKU..."
+          value={productQuery} disabled={busy || loading}
+          onChange={event => {
+            const val = event.target.value;
+            setProductQuery(val);
+            setLocalError('');
+            const q = val.trim().toLowerCase();
+            if (q) {
+              const matches = availableProducts.filter(p => p.nombre.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q));
+              if (matches.length === 1) setSelectedId(String(matches[0].id));
+            }
+          }} />
+      </FormField>
       <div className="diza-sale-entry">
         <FormField controlId="sale-product" label="Producto con stock disponible" required>
           <select id="sale-product" value={selectedId} disabled={busy || loading}
             onChange={event => { setSelectedId(event.target.value); setLocalError(''); }}
             onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); addItem(); } }}>
-            <option value="">Selecciona un producto</option>
-            {availableProducts.map(p => (
-              <option key={p.id} value={p.id}>{p.sku} · {p.nombre} · Stock {formatQuantity(p.stockTotal)}</option>
+            <option value="">{filteredProducts.length ? 'Selecciona un producto' : 'Sin coincidencias'}</option>
+            {filteredProducts.map(p => (
+              <option key={p.id} value={p.id}>
+                {p.sku} · {p.nombre} · {formatMoney(Number(p.precioVenta))} · Stock {formatQuantity(p.stockTotal)}
+              </option>
             ))}
           </select>
         </FormField>
-        <FormField controlId="sale-amount" label="Cantidad" required
-          hint="Permite hasta tres decimales (ej. 0.500).">
+        <FormField controlId="sale-amount" label="Cantidad" required>
           <input id="sale-amount" type="number" inputMode="decimal" min="0.001" step="0.001"
+            placeholder="Ej. 1 o 0.500"
             value={amount} disabled={busy || loading}
             onChange={event => { setAmount(event.target.value); setLocalError(''); }}
             onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); addItem(); } }} />

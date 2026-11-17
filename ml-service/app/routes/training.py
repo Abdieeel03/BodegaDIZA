@@ -17,6 +17,11 @@ async def train(sales_file:UploadFile|None=File(default=None),products_file:Uplo
     except (ValueError,UnicodeError) as exc:
         raise HTTPException(status_code=422,detail=str(exc)) from exc
 
+@router.get('/latest',response_model=TrainingResult)
+def latest_training():
+    try:return service.get_latest_training()
+    except FileNotFoundError as exc:raise HTTPException(status_code=404,detail='No hay un modelo entrenado') from exc
+
 @router.get('/latest/predictions',response_model=list[PredictionResult])
 def latest_predictions():
     try:return service.get_latest_predictions()

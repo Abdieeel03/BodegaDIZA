@@ -34,15 +34,41 @@ function parseProduct(value: unknown): InventoryProduct {
   }
 
   return {
+    id: typeof value.id === 'number' ? value.id : undefined,
     sku: readText(value.sku, 'sku'),
     nombre: readText(value.nombre, 'nombre'),
+    descripcion: typeof value.descripcion === 'string' ? value.descripcion : '',
     categoria: readText(value.categoria.nombre, 'categoria.nombre'),
+    categoriaId: typeof value.categoria.id === 'number' ? value.categoria.id : undefined,
+    proveedorId: isRecord(value.proveedor) && typeof value.proveedor.id === 'number' ? value.proveedor.id : undefined,
+    unidadMedida: typeof value.unidadMedida === 'string' ? value.unidadMedida : 'UNIDAD',
     stock: readNumber(value.stockTotal, 'stockTotal'),
     stockMinimo: readNumber(value.stockMinimo, 'stockMinimo'),
     // El DTO /productos no entrega precio de costo. No inventar valores.
     precioCosto: null,
     precioVenta: readNumber(value.precioVenta, 'precioVenta'),
   };
+}
+
+export type UpdateInventoryProductPayload = {
+  sku: string;
+  nombre: string;
+  descripcion: string;
+  categoriaId: number;
+  proveedorId: number;
+  precioVenta: number;
+  stockMinimo: number;
+  unidadMedida: string;
+};
+
+export async function updateInventoryProduct(id: number, payload: UpdateInventoryProductPayload): Promise<InventoryProduct> {
+  const response = await apiClient.put<unknown>(`/productos/${id}`, payload);
+  const body = response.data;
+  if (!isRecord(body) || body.success !== true || !body.data) {
+    const msg = isRecord(body) && typeof body.message === 'string' ? body.message : 'No se pudo actualizar el producto.';
+    throw new Error(msg);
+  }
+  return parseProduct(body.data);
 }
 
 export async function listInventoryProducts(signal: AbortSignal): Promise<InventoryProduct[]> {

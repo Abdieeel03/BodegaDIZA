@@ -123,15 +123,7 @@ export const BulkInventoryCsvPage = () => {
   const [categoryCreated, setCategoryCreated] = useState(0);
   const [units, setUnits] = useState<Record<string, Unit>>({});
 
-  const checkTestDb = async () => {
-    const apiUrl = (apiClient.defaults.baseURL ?? '').replace(/\/$/, '');
-    if (apiUrl !== 'http://localhost:8081') throw new Error('Seguridad TEST: configura VITE_API_BASE_URL=http://localhost:8081.');
-    // El backend solo devuelve 200 cuando la base real se llama exactamente bodega_diza_test.
-    await getData<unknown>('/test-data/resumen');
-  };
-
   const loadCatalogs = async () => {
-    await checkTestDb();
     const [cats, prov, prod] = await Promise.all([
       getData<Category[]>('/categorias'),
       getData<Supplier[]>('/proveedores'),
@@ -197,18 +189,16 @@ export const BulkInventoryCsvPage = () => {
         if (sameName && sameName.ruc !== row.proveedorRuc) throw new Error(`El proveedor ${row.proveedorNombre} ya existe con otro RUC.`);
         if (catalog.some((x) => clean(x.nombre) === clean(row.categoria) && !x.activa)) throw new Error(`La categoría ${row.categoria} está inactiva.`);
       }
-      // Primero registrar categorías que falten, solo en la base TEST verificada.
+      // Primero registrar categorías que falten.
       for (const row of pending) {
         if (!catalog.some((x) => clean(x.nombre) === clean(row.categoria))) {
-          await checkTestDb();
-          const created = await postData<Category>('/categorias', { nombre: row.categoria, descripcion: 'Categoría importada en ambiente TEST' });
+          const created = await postData<Category>('/categorias', { nombre: row.categoria, descripcion: 'Categoría importada desde CSV' });
           catalog.push(created); categoriesCreated += 1;
         }
       }
       // Luego registrar proveedores únicos, una sola vez por RUC.
       for (const row of pending) {
         if (!providers.some((x) => x.ruc === row.proveedorRuc)) {
-          await checkTestDb();
           const created = await postData<Supplier>('/proveedores', {
             nombre: row.proveedorNombre, ruc: row.proveedorRuc, telefono: '', email: '',
           });
@@ -227,10 +217,9 @@ export const BulkInventoryCsvPage = () => {
         const sup = providers.find((x) => x.ruc === row.proveedorRuc && x.activo);
         if (!cat || !sup) { list.push({ sku: row.sku, estado: 'error', descripcion: 'Categoría o proveedor no disponible.' }); setOutcomes([...list]); continue; }
         try {
-          await checkTestDb();
           await postData<ExistingProduct>('/productos', {
             sku: row.sku, nombre: row.nombre,
-            descripcion: 'Catálogo importado en TEST; stock histórico no trasladado.',
+            descripcion: 'Producto importado desde carga masiva CSV.',
             categoriaId: cat.id, proveedorId: sup.id,
             precioVenta: row.precioVenta, stockMinimo: row.stockMinimo,
             unidadMedida: units[row.sku] || row.unidad, loteInicial: null,
@@ -258,19 +247,16 @@ export const BulkInventoryCsvPage = () => {
   return (
     <section className="diza-bulk" aria-labelledby="bulk-title">
       <div className="diza-bulk-head">
-        <div><span className="diza-bulk-eyebrow">BODEGA D'IZA · SOLO BASE TEST</span><h1 id="bulk-title">Carga masiva de Inventario</h1><p>Un solo CSV registra proveedores, categorías y productos en PostgreSQL TEST.</p></div>
+        <div><span className="diza-bulk-eyebrow">INVENTARIO</span><h1 id="bulk-title">Carga masiva de Inventario</h1><p>Importa proveedores, categorías y productos desde un archivo CSV.</p></div>
         <Link className="diza-bulk-back" to="/inventario">← Volver a Inventario</Link>
       </div>
-      <div className="diza-bulk-notice" role="note">
-        <strong>Proveedores DEMO ficticios.</strong> Los RUC del archivo son simulados y no se deben utilizar en producción. El <code>stock_actual</code> representa abril de 2026: lo mostraremos como referencia, pero los productos se crearán <strong>sin lote inicial, con stock operativo 0</strong>. No se crearán ventas ni movimientos de stock.
-      </div>
       {error && <div className="diza-bulk-error" role="alert">{error}</div>}
-      {!ready && <p className="diza-bulk-loading">Validando la conexión exclusiva con bodega_diza_test...</p>}
+      {!ready && <p className="diza-bulk-loading">Cargando catálogos existentes...</p>}
       {ready && <>
         <div className="diza-bulk-panel">
-          <h2>1. Seleccionar CSV de productos y proveedores</h2>
+          <h2>1. Seleccionar archivo CSV</h2>
           <label className="diza-bulk-file">Archivo CSV combinado<input type="file" accept=".csv,text/csv" onChange={(e) => { void handleFile(e); }} /></label>
-          <p className="diza-bulk-help">Selecciona <strong>productos_con_proveedores_demo.csv</strong>. Archivo seleccionado: {fileName || 'ninguno'}.</p>
+          <p className="diza-bulk-help">Archivo seleccionado: {fileName || 'ninguno'}.</p>
           {rows.length > 0 && <div className="diza-bulk-stats">
             <span><b>{rows.length}</b> productos leídos</span>
             <span><b>{newRows.length}</b> productos nuevos</span>
@@ -283,7 +269,7 @@ export const BulkInventoryCsvPage = () => {
           <h2>2. Revisar el contenido antes de importar</h2>
           <p className="diza-bulk-help">Al confirmar se crearán los proveedores del CSV que aún no existan, después las categorías y los productos. Los productos existentes se omitirán. Puedes cambiar la unidad antes de guardar.</p>
           <div className="diza-bulk-scroll"><table className="diza-bulk-table"><thead><tr>
-            <th>SKU</th><th>Producto / categoría</th><th>Proveedor del CSV</th><th>RUC DEMO</th><th>Precio</th><th>Stock mín.</th><th>Stock histórico*</th><th>Unidad</th><th>Estado</th>
+            <th>SKU</th><th>Producto / categoría</th><th>Proveedor</th><th>RUC</th><th>Precio</th><th>Stock mín.</th><th>Stock ref.*</th><th>Unidad</th><th>Estado</th>
           </tr></thead><tbody>
             {rows.map((row) => <tr key={row.sku}>
               <td>{row.sku}</td><td><strong>{row.nombre}</strong><small>{row.categoria}</small></td>
@@ -293,12 +279,12 @@ export const BulkInventoryCsvPage = () => {
               <td>{skus.has(clean(row.sku)) ? 'Ya existe' : 'Nuevo'}</td>
             </tr>)}
           </tbody></table></div>
-          <p className="diza-bulk-help">* Stock histórico solo informativo, no se registrará como stock actual.</p>
+          <p className="diza-bulk-help">* Stock referencial del archivo; los productos nuevos se crean con stock inicial 0.</p>
           {mismatch.length > 0 && <p className="diza-bulk-error">Hay proveedores cuyo RUC coincide con uno ya registrado, pero el nombre es diferente o están inactivos. Revisa el CSV.</p>}
           {inactiveCategories.length > 0 && <p className="diza-bulk-error">Existen categorías inactivas que deben activarse antes de importar.</p>}
-          <label className="diza-bulk-confirm"><input type="checkbox" disabled={busy} checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} /> Confirmo que son proveedores ficticios para TEST y que los productos se crearán con stock 0.</label>
+          <label className="diza-bulk-confirm"><input type="checkbox" disabled={busy} checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} /> Confirmo la importación de los nuevos proveedores, categorías y productos (con stock inicial 0).</label>
           <div className="diza-bulk-submit"><span>{newRows.length} productos y {newProviderCount} proveedores nuevos detectados.</span>
-            <button type="button" disabled={busy || !confirmed || newRows.length === 0 || mismatch.length > 0 || inactiveCategories.length > 0} onClick={() => { void importRows(); }}>{busy ? 'Importando...' : 'Importar productos y proveedores a TEST'}</button>
+            <button type="button" disabled={busy || !confirmed || newRows.length === 0 || mismatch.length > 0 || inactiveCategories.length > 0} onClick={() => { void importRows(); }}>{busy ? 'Importando...' : 'Importar productos y proveedores'}</button>
           </div>
         </div>}
         {(outcomes.length > 0 || supplierCreated > 0 || categoryCreated > 0) && <div className="diza-bulk-panel" role="status">

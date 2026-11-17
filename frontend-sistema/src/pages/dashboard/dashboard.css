@@ -29,7 +29,10 @@
 .diza-dashboard-priority{min-width:0;display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid var(--diza-color-border);text-decoration:none;color:inherit}
 .diza-dashboard-priority:hover .diza-dashboard-priority-body strong{color:var(--diza-color-action);text-decoration:underline}
 .diza-dashboard-priority-number{flex:0 0 28px;width:28px;height:28px;display:grid;place-items:center;border-radius:var(--diza-radius-md);background:var(--diza-color-brand-subtle);color:var(--diza-color-brand);font-weight:750;font-size:12px}
-.diza-dashboard-priority-body{min-width:0;flex:1;display:flex;flex-direction:column;gap:4px}
+.diza-dashboard-priority-body{min-width:0;flex:1;display:flex;flex-direction:column;gap:4px;text-decoration:none;color:inherit}
+.diza-dashboard-priority-body:hover strong{color:var(--diza-color-action);text-decoration:underline}
+.diza-dashboard-priority-restock{flex-shrink:0;padding:5px 10px;border-radius:var(--diza-radius-md);border:1px solid var(--diza-color-border-strong);background:var(--diza-color-surface);color:var(--diza-color-brand);font-size:12px;font-weight:600;text-decoration:none}
+.diza-dashboard-priority-restock:hover{border-color:var(--diza-color-action);background:var(--diza-color-brand-subtle);color:var(--diza-color-action)}
 .diza-dashboard-priority-body strong{font-size:13px;line-height:1.4;color:var(--diza-color-text);overflow-wrap:anywhere}
 .diza-dashboard-priority-body small{font-size:12px;line-height:1.4;color:var(--diza-color-text-secondary)}
 .diza-dashboard-priority .diza-ui-badge{flex-shrink:0}

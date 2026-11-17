@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { Button, PageHeader, StatCard, TableFrame } from '../../components/ui';
 import { DataFeedback } from '../../components/common/DataFeedback';
 import { SaleRegistrationForm } from './SaleRegistrationForm';
@@ -27,7 +27,6 @@ export const SalesPage = () => {
   const from = params.get('desde') ?? `${today.slice(0, 7)}-01`;
   const to = params.get('hasta') ?? today;
   const sku = params.get('sku') ?? '';
-  const origin = params.get('origen') ?? 'todos';
   const validDates = !from || !to || from <= to;
   const registerOpen = params.get('registrar') === '1';
   const toggleRegister = () => {
@@ -71,9 +70,8 @@ export const SalesPage = () => {
   const page = Math.min(ticketPage, Math.max(0, Math.ceil(tickets.length / 20) - 1));
 
   return <section className="diza-test-page">
-    <PageHeader title="Ventas" description="Consulta el histórico y las ventas de tu bodega en un solo lugar."
+    <PageHeader title="Ventas" description="Consulta y registra las ventas de tu bodega en un solo lugar."
       actions={<div className="diza-sales-actions">
-        <Link to="/ventas/importar-historico" className="diza-period-link">Importar histórico</Link>
         <Button variant="secondary" onClick={() => setRevision(value => value + 1)} disabled={loading || busy}>Actualizar datos</Button>
         <Button onClick={toggleRegister} aria-expanded={registerOpen} aria-controls="sale-registration">{registerOpen ? 'Cerrar formulario' : 'Registrar venta'}</Button>
       </div>} />
@@ -85,8 +83,8 @@ export const SalesPage = () => {
     </section>}
     {message && <p className="diza-test-success" role="status">{message}</p>}
     <UnifiedSalesReport revision={revision} />
-    {origin !== 'historico' && validDates && <details className="diza-test-panel diza-sales-registration">
-      <summary>Consultar tickets operativos</summary>
+    {validDates && <details className="diza-test-panel diza-sales-registration">
+      <summary>Consultar tickets de venta</summary>
       <p className="diza-kpi-note">Se aplican las fechas y el producto del reporte. El importe del ticket incluye todos sus productos. Buscar un ticket no cambia el gráfico.</p>
       <label className="diza-sale-search" htmlFor="sale-ticket-search">Buscar número de ticket
         <input id="sale-ticket-search" type="search" placeholder="Ej. 125" value={ticketQuery} onChange={event => { setTicketQuery(event.target.value); setTicketPage(0); }} />
@@ -96,7 +94,7 @@ export const SalesPage = () => {
         : <><div className="diza-stat-grid">
           <StatCard label="Tickets encontrados" value={tickets.length} />
           <StatCard label="Importe promedio por ticket" value={tickets.length ? formatMoney(tickets.reduce((sum, sale) => sum + Number(sale.total), 0) / tickets.length) : '—'} note="Incluye todos los productos de los tickets encontrados" />
-        </div><TableFrame label="Tickets operativos del período"><table className="diza-test-table">
+        </div><TableFrame label="Tickets de venta del período"><table className="diza-test-table">
           <thead><tr><th scope="col">Ticket</th><th scope="col">Fecha</th><th scope="col">Total del ticket</th><th scope="col">Detalle</th></tr></thead>
           <tbody>{tickets.slice(page * 20, (page + 1) * 20).map(sale => <tr key={sale.id}>
             <td>#{sale.id}</td><td>{sale.fecha.replace('T', ' ')}</td><td>{formatMoney(sale.total)}</td>

@@ -21,8 +21,8 @@ export function BusinessOverview({ revision }: { revision: number }) {
   const loadSummary = useCallback(async (signal: AbortSignal) => {
     void revision; void retry;
     const [day, month] = await Promise.all([
-      getSalesReport({ desde: today, hasta: today, origen: 'operativo' }, signal),
-      getSalesReport({ desde: monthStart, hasta: today, origen: 'operativo' }, signal),
+      getSalesReport({ desde: today, hasta: today }, signal),
+      getSalesReport({ desde: monthStart, hasta: today }, signal),
     ]);
     return { day, month, queriedAt: new Date().toLocaleTimeString('es-PE', { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit' }) };
   }, [revision, retry, today, monthStart]);
@@ -38,16 +38,16 @@ export function BusinessOverview({ revision }: { revision: number }) {
   const expiry = useRemoteResource(loadExpiry, true);
   const alerts = listDashboardAlerts(stock.data ?? [], expiry.data ?? []);
   const reload = () => setRetry(value => value + 1);
-  const salesLink = `/ventas?desde=${from}&hasta=${today}&agrupacion=${period === 'mes' ? 'dia' : 'mes'}&origen=todos`;
+  const salesLink = `/ventas?desde=${from}&hasta=${today}&agrupacion=${period === 'mes' ? 'dia' : 'mes'}`;
   const metric = (value?: number | null) => summary.status === 'loading' ? 'Consultando…' : value == null ? '—' : formatMoney(value);
 
   return <section className="diza-business" aria-labelledby="business-title">
     <div className="diza-dashboard-section-heading"><div><h2 id="business-title">Tu bodega hoy</h2>
-      <p>Ventas operativas e inventario actual{summary.data ? ` · Consultado a las ${summary.data.queriedAt} (Perú)` : ''}</p></div>
+      <p>Ventas e inventario actual{summary.data ? ` · Consultado a las ${summary.data.queriedAt} (Perú)` : ''}</p></div>
       <div className="diza-business-actions"><Link to="/ventas?registrar=1" className="diza-period-link">Registrar venta</Link><Link to="/inventario" className="diza-dashboard-text-link">Inventario</Link><Link to="/prediccion-demanda/compras" className="diza-dashboard-text-link">Planificar compras</Link></div>
     </div>
     <div className="diza-dashboard-kpis">
-      <StatCard label="Ventas de hoy" value={metric(summary.data?.day.total)} note="Ventas operativas" />
+      <StatCard label="Ventas de hoy" value={metric(summary.data?.day.total)} note="Total del día" />
       <StatCard label="Ventas del mes" value={metric(summary.data?.month.total)} note="Desde el primer día hasta hoy" />
       <StatCard label="Tickets de hoy" value={summary.status === 'loading' ? 'Consultando…' : summary.data?.day.tickets ?? '—'} />
       <StatCard label="Productos agotados" value={stock.status === 'loading' ? 'Consultando…' : stock.data ? stock.data.filter(item => Number(item.stockActual) <= 0).length : '—'} note="Stock disponible actual" />
@@ -59,11 +59,9 @@ export function BusinessOverview({ revision }: { revision: number }) {
           <label className="diza-business-period">Período<select value={period} onChange={event => setPeriod(event.target.value as 'mes' | 'semestre')}><option value="mes">Este mes</option><option value="semestre">Últimos 6 meses</option></select></label>
         </div>
         {history.status === 'loading' ? <DataFeedback status="loading" title="Consultando evolución" /> : history.status === 'error'
-          ? <DataFeedback status="error" description={history.error ?? undefined} onRetry={reload} /> : history.data && <>
-            {history.data.coincidencias > 0 && <p className="diza-dashboard-notice">Hay coincidencias entre ambos orígenes. Consulta Ventas para revisarlas; los importes se muestran por separado.</p>}
-            {!history.data.historicoDisponible && <p className="diza-kpi-note">No hay histórico importado en esta base.</p>}
+          ? <DataFeedback status="error" description={history.error ?? undefined} onRetry={reload} /> : history.data && (
             <SalesHistoryChart points={history.data.tendencia} grouping={period === 'mes' ? 'dia' : 'mes'} />
-          </>}
+          )}
         <Link to={salesLink} className="diza-dashboard-panel-action">Ver reporte de ventas <span aria-hidden="true">→</span></Link>
       </section>
       <section className="diza-dashboard-panel" aria-labelledby="business-alerts-title">
@@ -79,9 +77,8 @@ export function BusinessOverview({ revision }: { revision: number }) {
       </section>
     </div>
     {history.data && <section className="diza-dashboard-panel diza-business-ranking" aria-labelledby="business-ranking-title">
-      <div className="diza-dashboard-panel-heading"><div><h3 id="business-ranking-title">Productos con mayor importe vendido</h3><p>{period === 'mes' ? 'Este mes' : 'Últimos 6 meses'} · Histórico y operativo</p></div></div>
-      {history.data.coincidencias > 0 ? <p className="diza-kpi-note">El ranking conjunto estará disponible cuando se concilien los registros coincidentes.</p>
-        : !history.data.ranking.length ? <p className="diza-kpi-note">Todavía no hay ventas para este período.</p>
+      <div className="diza-dashboard-panel-heading"><div><h3 id="business-ranking-title">Productos con mayor importe vendido</h3><p>{period === 'mes' ? 'Este mes' : 'Últimos 6 meses'}</p></div></div>
+      {!history.data.ranking.length ? <p className="diza-kpi-note">Todavía no hay ventas para este período.</p>
         : <ol>{history.data.ranking.map(item => <li key={item.sku}><Link to={`${salesLink}&sku=${encodeURIComponent(item.sku)}`}><span>{item.nombre}<small>{item.sku}</small></span><strong>{formatMoney(item.importe)}</strong></Link></li>)}</ol>}
     </section>}
   </section>;

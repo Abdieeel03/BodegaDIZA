@@ -29,8 +29,7 @@ export const InventoryMovementsPage=()=>{
   const total=(type:StockMovement['tipo'])=>visible.filter(m=>m.tipo===type).reduce((a,m)=>a+Number(m.cantidad),0);
   const low=products.filter(p=>p.activo&&p.stockTotal===0).length;
   return <main className="diza-test-page">
-    <header className="diza-test-heading"><div><span className="diza-test-eyebrow">INVENTARIO · MOVIMIENTOS OPERATIVOS</span><h1>Historial de inventario</h1><p>Entradas, salidas y ajustes por día, semana, mes o año.</p></div><Link className="diza-test-link" to="/inventario">← Volver a inventario</Link></header>
-    <p className="diza-test-note">Este reporte muestra únicamente operaciones reales de TEST. El stock de Inventario es el actual; los movimientos se filtran por fecha sin recalcular el stock histórico del CSV.</p>
+    <header className="diza-test-heading"><div><span className="diza-test-eyebrow">INVENTARIO</span><h1>Historial de inventario</h1><p>Entradas, salidas y ajustes por día, semana, mes o año.</p></div><Link className="diza-test-link" to="/inventario">← Volver a inventario</Link></header>
     <PeriodControls mode={period} setMode={setPeriod} anchor={anchor} setAnchor={setAnchor}/>
     <div className="diza-test-heading"><label>Producto <select className="diza-test-input" value={filter} onChange={e=>setFilter(e.target.value)}><option value="">Todos</option>{products.map(p=><option key={p.id} value={p.id}>{p.sku} · {p.nombre}</option>)}</select></label><button className="diza-period-link" onClick={()=>setReload(x=>x+1)}>Actualizar datos</button></div>
     {error&&<p className="diza-test-error" role="alert">{error}</p>}

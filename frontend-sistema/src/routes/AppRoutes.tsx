@@ -7,7 +7,6 @@ import { ProtectedRoute } from './ProtectedRoute';
 
 import { DashboardPage } from '../pages/dashboard/DashboardPage';
 import { SalesPage } from '../pages/sales/SalesPage';
-import { DemoDataPage } from '../pages/demo/DemoDataPage';
 import { InventoryPage } from '../pages/inventory/InventoryPage';
 import { ProductCreatePage } from '../pages/product/ProductCreatePage';
 import { InventoryMovementsPage } from '../pages/inventory/InventoryMovementsPage';
@@ -35,8 +34,8 @@ export const AppRoutes = () => {
               path="/ventas"
               element={<SalesPage />}
             />
-            <Route path="/ventas/importar-historico" element={<DemoDataPage />} />
-            <Route path="/datos-prueba" element={<Navigate to="/ventas/importar-historico" replace />} />
+            <Route path="/ventas/importar-historico" element={<Navigate to="/ventas" replace />} />
+            <Route path="/datos-prueba" element={<Navigate to="/ventas" replace />} />
             <Route path="/inventario" element={<InventoryPage />} />
             <Route path="/inventario/agregar" element={<ProductCreatePage />} />
             <Route path="/inventario/movimientos" element={<InventoryMovementsPage />} />

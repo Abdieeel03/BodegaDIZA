@@ -36,7 +36,7 @@ export function MonthlySalesChart({ months }: { months: MonthlyTotal[] }) {
         </div>
       </div>
       <figcaption className="diza-dashboard-sales-caption">
-        {largest === 0 ? 'No se han registrado ventas durante estos seis meses.' : 'Importes de ventas registradas, sin históricos CSV importados.'}
+        {largest === 0 ? 'No se han registrado ventas durante estos seis meses.' : 'Importes de ventas registradas por mes.'}
       </figcaption>
       <table className="diza-dashboard-visually-hidden">
         <caption>Importes mensuales de ventas</caption>

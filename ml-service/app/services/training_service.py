@@ -32,6 +32,9 @@ class TrainingService:
     def get_training(self,training_id:str)->TrainingResult:
         return TrainingResult.model_validate(self.store.get(training_id)['training'])
 
+    def get_latest_training(self)->TrainingResult:
+        return TrainingResult.model_validate(self.store.latest()['training'])
+
     def get_latest_predictions(self)->list[PredictionResult]:
         return [PredictionResult.model_validate(x) for x in self.store.latest()['predictions']]
 

@@ -45,8 +45,8 @@ export const OperationalOverview = () => {
     <section className="diza-dashboard-section diza-dashboard-operational" aria-labelledby="diza-operational-title">
       <div className="diza-dashboard-section-heading">
         <div>
-          <h2 id="diza-operational-title">Resumen operativo</h2>
-          <p>Ventas e inventario reales; no incluye los registros históricos importados.</p>
+          <h2 id="diza-operational-title">Resumen de ventas e inventario</h2>
+          <p>Ventas e inventario registrados en el sistema.</p>
         </div>
         <Button variant="secondary" size="sm" loading={loading} onClick={() => setRefresh(value => value + 1)}>Actualizar operaciones</Button>
       </div>
@@ -72,7 +72,6 @@ export const OperationalOverview = () => {
             <Link to="/inventario/movimientos">Ver movimientos <span aria-hidden="true">→</span></Link>
           </div>
         </div>
-        <p className="diza-dashboard-legal">El inventario refleja el stock actual. El filtro temporal solo modifica las cifras de ventas y movimientos.</p>
       </div>
     </section>
   );

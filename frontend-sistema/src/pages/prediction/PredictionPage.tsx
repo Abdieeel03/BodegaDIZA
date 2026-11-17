@@ -123,8 +123,10 @@ export const PredictionPage = ({ view = 'summary' }: { view?: PredictionView }) 
   const stock = replenishments.find(item => item.productId === current?.productId);
   const recommended = useMemo(() => replenishments.filter(item => Number(item.recommendedReplenishment) > 0)
     .sort((a, b) => priority[a.alertStatus] - priority[b.alertStatus] || Number(b.stockoutProbability ?? 0) - Number(a.stockoutProbability ?? 0) || Number(b.recommendedReplenishment) - Number(a.recommendedReplenishment)), [replenishments]);
+  const criticalCount = replenishments.filter(item => item.alertStatus === 'ROJO').length;
+  const preventiveCount = replenishments.filter(item => item.alertStatus === 'AMARILLO').length;
+  const coveredCount = replenishments.filter(item => item.alertStatus === 'VERDE').length;
   const visibleRecommendations = recommended.filter(item => (!priorityFilter || item.alertStatus === priorityFilter) && normalize(item.productId + ' ' + item.productName).includes(normalize(search.trim())));
-  const totalDemand = predictions.reduce((sum, item) => sum + Number(item.predictedDemand7Days || 0), 0);
   // La gráfica totaliza exclusivamente las series de siete días recibidas del modelo.
   // Si algún producto no trae siete valores válidos, no inventamos los faltantes.
   const dailySeries = useMemo(() => predictions.filter(item =>
@@ -134,8 +136,12 @@ export const PredictionPage = ({ view = 'summary' }: { view?: PredictionView }) 
   const dailyTotalSeries = useMemo(() => Array.from({ length: 7 }, (_, index) =>
     dailySeries.reduce((sum, item) => sum + Number(item.dailyPredictions[index]), 0)
   ), [dailySeries]);
+  const dailyRevenueSeries = useMemo(() => Array.from({ length: 7 }, (_, index) =>
+    dailySeries.reduce((sum, item) => sum + Number(item.dailyPredictions[index]) * (prices[item.productId.trim().toUpperCase()] ?? 0), 0)
+  ), [dailySeries, prices]);
   const revenue = estimatedRevenueSummary(predictions, prices);
-  const revenueLabel = pricesLoading ? 'Calculando...' : revenue.pricedProducts === 0
+  const hasPrices = revenue.pricedProducts > 0;
+  const revenueLabel = pricesLoading ? 'Calculando...' : !hasPrices
     ? 'No disponible' : formatSoles(revenue.total);
   const selectedRevenue = current ? estimatedRevenue(current, prices) : null;
   const selectedPrice = current ? prices[current.productId.trim().toUpperCase()] : undefined;
@@ -168,18 +174,17 @@ export const PredictionPage = ({ view = 'summary' }: { view?: PredictionView }) 
       No hay resultados disponibles. {view === 'summary' ? 'Usa el botón «Actualizar modelo» del encabezado para generar el primer pronóstico.' : <Link to="/prediccion-demanda">Ir al Resumen para actualizar el modelo</Link>}
     </div> : <>
       {view === 'summary' && <section className="diza-ml-stats" aria-label="Resumen del modelo">
-        <StatCard label="Productos con pronóstico" value={predictions.length} />
-        <StatCard label="Demanda estimada · 7 días" value={`${fmt(totalDemand, 1)} unidades`} />
-        <StatCard label="Ingresos estimados · 7 días" value={revenueLabel} note={!pricesLoading && revenue.pricedProducts > 0 && revenue.pricedProducts < revenue.products ? `Precios de ${revenue.pricedProducts} de ${revenue.products} productos` : undefined} />
-        <StatCard label="Productos por reponer" value={recommended.length} />
-        <StatCard label="Unidades sugeridas" value={`${fmt(recommended.reduce((total, item) => total + Number(item.recommendedReplenishment), 0), 0)} unidades`} />
+        <StatCard label="Ingresos estimados · 7 días" value={revenueLabel} note={!pricesLoading && revenue.pricedProducts > 0 && revenue.pricedProducts < revenue.products ? `Precios de ${revenue.pricedProducts} de ${revenue.products} productos` : `${predictions.length} productos con pronóstico`} />
+        <StatCard label="Reposición urgente" value={criticalCount} note="Prioridad alta en los próximos días" />
+        <StatCard label="Reposición preventiva" value={preventiveCount} note="Conviene programar pedido" />
+        <StatCard label="Stock suficiente" value={coveredCount} note="Cubren la demanda de 7 días" />
       </section>}
       {view === 'summary' && <div className="prediction-summary-grid">
         <section className="diza-ml-card prediction-summary-graph" aria-labelledby="prediction-summary-graph-title">
           <div className="diza-ml-card-heading prediction-summary-graph-heading">
             <div>
-              <h2 id="prediction-summary-graph-title">Tendencia de demanda</h2>
-              <p>Demanda estimada por día · 7 días</p>
+              <h2 id="prediction-summary-graph-title">{hasPrices ? 'Ingresos estimados por día' : 'Tendencia de demanda'}</h2>
+              <p>{hasPrices ? 'Proyección diaria en soles · 7 días' : 'Demanda estimada por día · 7 días'}</p>
             </div>
             {training?.forecastFromDate && training?.forecastToDate ? (
               <span className="prediction-summary-date" aria-label="Período del pronóstico">
@@ -190,9 +195,10 @@ export const PredictionPage = ({ view = 'summary' }: { view?: PredictionView }) 
           {dailySeries.length ? (
             <>
               <ForecastLineChart
-                values={dailyTotalSeries}
+                values={hasPrices ? dailyRevenueSeries : dailyTotalSeries}
                 startDate={training?.forecastFromDate}
-                title="Demanda diaria estimada de los productos con pronóstico, durante siete días"
+                unit={hasPrices ? 'soles' : 'units'}
+                title={hasPrices ? 'Ingresos diarios estimados durante siete días' : 'Demanda diaria estimada de los productos con pronóstico, durante siete días'}
               />
               {dailySeries.length !== predictions.length && <p className="prediction-summary-caveat" role="status">
                 Se muestran {dailySeries.length} de {predictions.length} productos con datos diarios completos.
@@ -205,9 +211,15 @@ export const PredictionPage = ({ view = 'summary' }: { view?: PredictionView }) 
         </section>
         <section className="diza-ml-card prediction-summary-replenishment">
           <div className="diza-ml-card-heading"><div><h2>Prioridades de reposición</h2></div><Link to="/prediccion-demanda/reposicion">Ver toda la reposición →</Link></div>
-          <div className="prediction-priorities">{recommended.slice(0, 5).map((item, index) => <Link key={item.productId} to={`/prediccion-demanda/producto?producto=${encodeURIComponent(item.productId)}`} className="prediction-priority-item">
-            <span className="prediction-rank">{index + 1}</span><div><strong>{readableName(item.productName)}</strong><small>Stock: {fmt(item.stockActual, 0)} · Reponer: {fmt(item.recommendedReplenishment, 0)} unidades</small></div><span className={`diza-ml-status diza-ml-${item.alertStatus.toLowerCase()}`}>{priorityLabel[item.alertStatus]}</span>
-          </Link>)}</div>
+          <div className="prediction-priorities">{recommended.slice(0, 5).map((item, index) => <div key={item.productId} className="prediction-priority-item">
+            <span className="prediction-rank">{index + 1}</span>
+            <Link to={`/prediccion-demanda/producto?producto=${encodeURIComponent(item.productId)}`} className="prediction-priority-body">
+              <strong>{readableName(item.productName)}</strong>
+              <small>Stock: {fmt(item.stockActual, 0)} · {item.daysOfStockRemaining != null ? `Cubre ${fmt(Number(item.daysOfStockRemaining), 1)} días · ` : ''}Reponer: {fmt(item.recommendedReplenishment, 0)} u.</small>
+            </Link>
+            <span className={`diza-ml-status diza-ml-${item.alertStatus.toLowerCase()}`}>{priorityLabel[item.alertStatus]}</span>
+            <Link className="prediction-priority-restock" to={`/inventario/agregar?modo=restock&sku=${encodeURIComponent(item.productId)}&cantidad=${Math.ceil(Number(item.recommendedReplenishment))}`}>Reponer</Link>
+          </div>)}</div>
           {!recommended.length && <p>No hay productos pendientes de reposición.</p>}
           <div className="prediction-actions"><Link className="diza-ml-button" to="/prediccion-demanda/producto">Consultar un producto</Link><Link className="prediction-secondary" to="/prediccion-demanda/compras">Planificar compras →</Link></div>
         </section>
@@ -216,14 +228,15 @@ export const PredictionPage = ({ view = 'summary' }: { view?: PredictionView }) 
         <h2>Qué necesitas reponer</h2>
         <div className="prediction-filters"><label>Buscar producto<input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Nombre o código" /></label><label>Prioridad<select value={priorityFilter} onChange={e => setPriorityFilter(e.target.value)}><option value="">Todas</option><option value="ROJO">Alta</option><option value="AMARILLO">Media</option><option value="VERDE">Baja</option></select></label></div>
         {recommended.length === 0 ? <p>No hay sugerencias de reposición para el stock consultado.</p> : <div className="diza-ml-table-scroll">
-          <table><thead><tr><th>Producto</th><th>Stock</th><th>Demanda 7 días (unidades)</th><th>Ingresos estimados (S/)</th><th>Probabilidad de agotamiento</th><th>Riesgo de agotamiento</th><th>Reponer</th><th>Prioridad</th></tr></thead><tbody>
+          <table><thead><tr><th>Producto</th><th>Stock</th><th>Demanda 7 días</th><th>Cobertura actual</th><th>Prob. agotamiento</th><th>Reponer</th><th>Prioridad</th><th>Acción</th></tr></thead><tbody>
             {visibleRecommendations.map(item => <tr key={item.productId}>
               <td><Link to={`/prediccion-demanda/producto?producto=${encodeURIComponent(item.productId)}`}>{readableName(item.productName)}</Link></td><td>{fmt(Number(item.stockActual), 0)}</td>
-              <td>{fmt(Number(item.predictedDemand7Days))}</td><td>{prices[item.productId.trim().toUpperCase()] === undefined ? '—' : formatSoles(Number(item.predictedDemand7Days) * prices[item.productId.trim().toUpperCase()])}</td>
+              <td>{fmt(Number(item.predictedDemand7Days))} u.</td>
+              <td>{item.daysOfStockRemaining != null ? `${fmt(Number(item.daysOfStockRemaining), 1)} días` : '—'}</td>
               <td>{item.stockoutProbability != null ? `${fmt(Number(item.stockoutProbability) * 100, 1)}%` : '—'}</td>
-              <td>{item.stockoutRiskLevel ? <span className={`diza-ml-status ${riskClass(item.stockoutRiskLevel)}`}>{item.stockoutRiskLevel}</span> : '—'}</td>
               <td><strong>{fmt(Number(item.recommendedReplenishment), 0)} unidades</strong></td>
               <td><span className={`diza-ml-status diza-ml-${item.alertStatus.toLowerCase()}`}>{priorityLabel[item.alertStatus]}</span></td>
+              <td><Link className="diza-ml-link" to={`/inventario/agregar?modo=restock&sku=${encodeURIComponent(item.productId)}&cantidad=${Math.ceil(Number(item.recommendedReplenishment))}`}>Reponer</Link></td>
             </tr>)}
           </tbody></table>
         </div>}
@@ -255,7 +268,7 @@ export const PredictionPage = ({ view = 'summary' }: { view?: PredictionView }) 
           <div className="prediction-insights">
             <article><span className="prediction-card-label">INDICADOR ACTUAL</span><h3>Stock disponible</h3><strong>{stock ? fmt(stock.stockActual, 0) : '—'} <small>unidades</small></strong><p>Stock mínimo: {stock ? fmt(stock.stockMinimoSeguridad, 0) : '—'} unidades.</p><p>Cobertura estimada: {stock?.daysOfStockRemaining != null ? fmt(stock.daysOfStockRemaining, 1) + ' días' : 'No disponible'}.</p></article>
             <article><span className="prediction-card-label">DEMANDA PREVISTA</span><h3>Estimación del modelo</h3><strong>{fmt(current.predictedDemand7Days, 1)} <small>unidades</small></strong><p>Ingresos estimados: {pricesLoading ? 'Calculando...' : selectedRevenue === null ? 'No disponible' : formatSoles(selectedRevenue)}.</p><p>Probabilidad de agotamiento: {stock?.stockoutProbability != null ? fmt(stock.stockoutProbability * 100, 1) + '%' : 'No disponible'}.</p>{stock?.stockoutRiskLevel && <span className={`diza-ml-status ${riskClass(stock.stockoutRiskLevel)}`}>Riesgo {stock.stockoutRiskLevel.toLowerCase()}</span>}</article>
-            <article className="prediction-action-card"><span className="prediction-card-label">ACCIÓN RECOMENDADA</span><h3>Reposición sugerida</h3><strong>{stock ? fmt(stock.recommendedReplenishment, 0) : '—'} <small>unidades</small></strong><p>Cantidad sugerida para cubrir la demanda y mantener el stock mínimo.</p><Link className="diza-ml-button" to="/prediccion-demanda/compras">Planificar compra →</Link></article>
+            <article className="prediction-action-card"><span className="prediction-card-label">ACCIÓN RECOMENDADA</span><h3>Reposición sugerida</h3><strong>{stock ? fmt(stock.recommendedReplenishment, 0) : '—'} <small>unidades</small></strong><p>Cantidad sugerida para cubrir la demanda y mantener el stock mínimo.</p><div className="prediction-actions"><Link className="diza-ml-button" to={`/inventario/agregar?modo=restock&sku=${encodeURIComponent(current.productId)}&cantidad=${stock ? Math.ceil(Number(stock.recommendedReplenishment)) : ''}`}>Reponer stock →</Link><Link className="prediction-secondary" to="/prediccion-demanda/compras">Planificar compra</Link></div></article>
           </div>
         </>}
       </section>}
@@ -291,20 +304,20 @@ export const PredictionPage = ({ view = 'summary' }: { view?: PredictionView }) 
             <article><span>Productos incluidos</span><strong>{optResult.items.filter(item => item.allocatedUnits > 0).length}</strong></article>
           </div>
           <div className="diza-ml-table-scroll">
-            <table><thead><tr><th>Producto</th><th>Estado</th><th>Sugerido</th><th>Compra asignada</th><th>Costo unit.</th><th>Costo total</th></tr></thead><tbody>
+            <table><thead><tr><th>Producto</th><th>Prioridad</th><th>Sugerido</th><th>Compra asignada</th><th>Costo unit.</th><th>Costo total</th><th>Acción</th></tr></thead><tbody>
               {optResult.items.filter(item => item.allocatedUnits > 0).map(item => <tr key={item.productId}>
                 <td>{readableName(item.productName)}</td>
-                <td><span className={`diza-ml-status diza-ml-${item.alertStatus.toLowerCase()}`}>{item.alertStatus}</span></td>
+                <td><span className={`diza-ml-status diza-ml-${item.alertStatus.toLowerCase()}`}>{priorityLabel[item.alertStatus]}</span></td>
                 <td>{item.recommendedReplenishment}</td>
                 <td><strong>{item.allocatedUnits} unidades</strong></td>
                 <td>{formatSoles(item.unitCost)}</td>
                 <td><strong>{formatSoles(item.totalCost)}</strong></td>
+                <td><Link className="diza-ml-link" to={`/inventario/agregar?modo=restock&sku=${encodeURIComponent(item.productId)}&cantidad=${Math.ceil(Number(item.allocatedUnits))}`}>Reponer</Link></td>
               </tr>)}
             </tbody></table>
           </div>
         </>}
       </section>}
-      <p className="diza-ml-disclaimer">Los pronósticos son estimaciones basadas en días con ventas registradas; las fechas ausentes no equivalen a ventas cero. Los ingresos estimados (S/) se calculan multiplicando la demanda prevista por el precio de venta actual de cada producto en Inventario; no son ventas realizadas ni utilidad neta. No sustituyen el seguimiento del stock operativo ni validaciones con historiales diarios completos.</p>
     </>}
   </main>;
 };

@@ -8,6 +8,27 @@ type ModelTrainingPanelProps = {
   onCompleted?: () => void;
 };
 
+const formatDateTime = (iso?: string | null) => {
+  if (!iso) return 'No disponible';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return 'No disponible';
+  return date.toLocaleString('es-PE', {
+    timeZone: 'America/Lima',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
+const formatShortDate = (value?: string | null) => {
+  if (!value) return 'No disponible';
+  const date = new Date(`${value}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' });
+};
+
 // Mantener el entrenamiento real: POST /ml/trainings con los datos registrados.
 // Este panel no carga archivos ni modifica el stock de forma directa.
 export const ModelTrainingPanel = ({ onCompleted }: ModelTrainingPanelProps) => {
@@ -93,11 +114,12 @@ export const ModelTrainingPanel = ({ onCompleted }: ModelTrainingPanelProps) => 
             <h3>{resultOrigin === 'new' ? 'Predicciones actualizadas' : 'Último entrenamiento disponible'}</h3>
             <p>{resultOrigin === 'new'
               ? 'Entrenamiento completado. Vuelve al Resumen para consultar los nuevos pronósticos.'
-              : 'Estas métricas corresponden al último entrenamiento guardado.'}</p>
+              : `Entrenado el ${formatDateTime(result.trainedAt)} · Pronóstico: ${formatShortDate(result.forecastFromDate)} – ${formatShortDate(result.forecastToDate)}`}</p>
           </div>
           <span className="diza-model-success">Modelo listo</span>
         </div>
         <div className="diza-model-kpis">
+          <div><span>Última actualización</span><strong>{formatDateTime(result.trainedAt)}</strong></div>
           <div><span>Productos</span><strong>{result.productsCount}</strong></div>
           <div><span>Observaciones</span><strong>{result.observationsCount}</strong></div>
           <div><span>Modelo seleccionado</span><strong>{result.modelName.replaceAll('_', ' ')}</strong></div>

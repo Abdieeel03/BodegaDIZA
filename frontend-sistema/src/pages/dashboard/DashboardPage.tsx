@@ -50,17 +50,21 @@ export const DashboardPage = () => {
     return () => { active = false; };
   }, [refresh]);
 
-  const demand = data.predictions.reduce((sum, item) => sum + Number(item.predictedDemand7Days || 0), 0);
   const revenue = estimatedRevenueSummary(data.predictions, prices);
-  const revenueLabel = pricesLoading ? 'Calculando...' : revenue.pricedProducts === 0
+  const hasPrices = revenue.pricedProducts > 0;
+  const revenueLabel = pricesLoading ? 'Calculando...' : !hasPrices
     ? 'No disponible' : formatSoles(revenue.total);
   const urgent = data.replenishments
     .filter(item => Number(item.recommendedReplenishment) > 0)
     .sort((a, b) => alertPriority[a.alertStatus] - alertPriority[b.alertStatus]
       || Number(b.stockoutProbability ?? 0) - Number(a.stockoutProbability ?? 0)
       || Number(b.recommendedReplenishment) - Number(a.recommendedReplenishment));
-  const unitsToBuy = urgent.reduce((sum, item) => sum + Number(item.recommendedReplenishment), 0);
-  const daily = Array.from({ length: 7 }, (_, day) => data.predictions.reduce((sum, item) => sum + Number(item.dailyPredictions[day] || 0), 0));
+  const criticalCount = data.replenishments.filter(item => item.alertStatus === 'ROJO').length;
+  const preventiveCount = data.replenishments.filter(item => item.alertStatus === 'AMARILLO').length;
+  const coveredCount = data.replenishments.filter(item => item.alertStatus === 'VERDE').length;
+  const dailyUnits = Array.from({ length: 7 }, (_, day) => data.predictions.reduce((sum, item) => sum + Number(item.dailyPredictions[day] || 0), 0));
+  const dailyRevenue = Array.from({ length: 7 }, (_, day) =>
+    data.predictions.reduce((sum, item) => sum + Number(item.dailyPredictions[day] || 0) * (prices[item.productId] ?? 0), 0));
 
   return (
     <main className="diza-dashboard">
@@ -98,20 +102,25 @@ export const DashboardPage = () => {
           <>
             {priceError && !pricesLoading && <p className="diza-dashboard-notice" role="status">No se pudieron consultar los precios: {priceError}. Las cantidades previstas siguen disponibles.</p>}
             <div className="diza-dashboard-kpis" aria-label="Indicadores de predicción">
-              <StatCard label="Demanda prevista · 7 días" value={`${formatUnits(demand)} unidades`} note={`${data.predictions.length} productos con pronóstico`} />
-              <StatCard label="Ingresos estimados · 7 días" value={revenueLabel} note={pricesLoading ? 'Consultando precios de venta' : revenue.pricedProducts < revenue.products ? `Precios disponibles: ${revenue.pricedProducts} de ${revenue.products}` : 'No son ventas reales'} />
-              <StatCard label="Productos por reponer" value={urgent.length} />
-              <StatCard label="Reposición sugerida" value={`${formatUnits(unitsToBuy)} unidades`} note="Incluye reserva mínima" />
+              <StatCard label="Ingresos estimados · 7 días" value={revenueLabel} note={pricesLoading ? 'Consultando precios de venta' : revenue.pricedProducts < revenue.products ? `Precios disponibles: ${revenue.pricedProducts} de ${revenue.products}` : `${data.predictions.length} productos con pronóstico`} />
+              <StatCard label="Reposición urgente" value={criticalCount} note="Prioridad alta en los próximos días" />
+              <StatCard label="Reposición preventiva" value={preventiveCount} note="Prioridad media para programar pedido" />
+              <StatCard label="Stock suficiente" value={coveredCount} note="Cubren la demanda de 7 días" />
             </div>
 
             <div className="diza-dashboard-analytics">
               <section className="diza-dashboard-panel" aria-labelledby="diza-demand-chart-title">
                 <div className="diza-dashboard-panel-heading">
-                  <div><h3 id="diza-demand-chart-title">Tendencia de demanda</h3></div>
+                  <div><h3 id="diza-demand-chart-title">{hasPrices ? 'Ingresos estimados por día' : 'Tendencia de demanda'}</h3></div>
                   <span className="diza-dashboard-panel-tag">7 días</span>
                 </div>
-                <ForecastLineChart values={daily} startDate={training.data?.forecastFromDate} title="Demanda prevista total por día en siete días" />
-                <p className="diza-dashboard-chart-foot">Demanda acumulada: <strong>{formatUnits(demand)} unidades</strong></p>
+                <ForecastLineChart
+                  values={hasPrices ? dailyRevenue : dailyUnits}
+                  startDate={training.data?.forecastFromDate}
+                  unit={hasPrices ? 'soles' : 'units'}
+                  title={hasPrices ? 'Ingresos estimados por día en siete días' : 'Demanda prevista por día en siete días'}
+                />
+                <p className="diza-dashboard-chart-foot">Total estimado en 7 días: <strong>{revenueLabel}</strong></p>
               </section>
 
               <section className="diza-dashboard-panel diza-dashboard-panel--ranking" aria-labelledby="diza-priorities-title">
@@ -120,20 +129,22 @@ export const DashboardPage = () => {
                 </div>
                 <div className="diza-dashboard-priorities">
                   {urgent.length ? urgent.slice(0, 5).map((item, index) => (
-                    <Link key={item.productId} to={`/prediccion-demanda/producto?producto=${encodeURIComponent(item.productId)}`} className="diza-dashboard-priority">
+                    <div key={item.productId} className="diza-dashboard-priority">
                       <span className="diza-dashboard-priority-number" aria-hidden="true">{index + 1}</span>
-                      <span className="diza-dashboard-priority-body">
+                      <Link to={`/prediccion-demanda/producto?producto=${encodeURIComponent(item.productId)}`} className="diza-dashboard-priority-body">
                         <strong>{readableName(item.productName)}</strong>
                         <small>Stock: {formatUnits(Number(item.stockActual))} · Reponer: {formatUnits(Number(item.recommendedReplenishment))}</small>
-                      </span>
+                      </Link>
                       <StatusBadge tone={item.alertStatus === 'ROJO' ? 'danger' : item.alertStatus === 'AMARILLO' ? 'warning' : 'success'}>{alertLabel[item.alertStatus]}</StatusBadge>
-                    </Link>
+                      <Link className="diza-dashboard-priority-restock" to={`/inventario/agregar?modo=restock&sku=${encodeURIComponent(item.productId)}&cantidad=${Math.ceil(Number(item.recommendedReplenishment))}`}>
+                        Reponer
+                      </Link>
+                    </div>
                   )) : <p className="diza-dashboard-priority-empty">No hay productos con reposición sugerida.</p>}
                 </div>
                 <Link className="diza-dashboard-panel-action" to="/prediccion-demanda/reposicion">Ver todas las recomendaciones <span aria-hidden="true">→</span></Link>
               </section>
             </div>
-            <p className="diza-dashboard-legal">El pronóstico comienza después del histórico utilizado; no necesariamente corresponde a los próximos siete días desde hoy. Los ingresos estimados se calculan con precios actuales: no son ventas registradas ni utilidad neta.</p>
           </>
         )}
       </section>

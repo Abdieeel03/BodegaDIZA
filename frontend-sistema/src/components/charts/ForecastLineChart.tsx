@@ -1,13 +1,15 @@
 import './forecast-line-chart.css';
 
 type Props = {
-  /** Cantidades diarias previstas, nunca totales de ventas reales. */
+  /** Cantidades o importes diarios previstos, nunca totales de ventas reales. */
   values: number[];
   startDate?: string | null;
   title: string;
+  unit?: 'units' | 'soles';
 };
 
 const formatUnits = (amount: number) => amount.toLocaleString('es-PE', { maximumFractionDigits: 1 });
+const formatSoles = (amount: number) => `S/ ${amount.toLocaleString('es-PE', { maximumFractionDigits: 0 })}`;
 
 function labelForDay(startDate: string | null | undefined, index: number): string {
   if (!startDate || !/^\d{4}-\d{2}-\d{2}$/.test(startDate)) return `Día ${index + 1}`;
@@ -18,7 +20,8 @@ function labelForDay(startDate: string | null | undefined, index: number): strin
 }
 
 /** Un único gráfico de siete días para Inicio y Predicción de demanda. */
-export function ForecastLineChart({ values, startDate, title }: Props) {
+export function ForecastLineChart({ values, startDate, title, unit = 'units' }: Props) {
+  const formatValue = unit === 'soles' ? formatSoles : formatUnits;
   const points = Array.from({ length: 7 }, (_, index) => {
     const value = Number(values[index] ?? 0);
     return Number.isFinite(value) ? value : 0;
@@ -42,7 +45,7 @@ export function ForecastLineChart({ values, startDate, title }: Props) {
             return (
               <g key={level}>
                 <line x1="64" y1={y(value)} x2="670" y2={y(value)} className="diza-forecast-grid" />
-                <text x="53" y={y(value) + 4} textAnchor="end" className="diza-forecast-axis">{formatUnits(value)}</text>
+                <text x="53" y={y(value) + 4} textAnchor="end" className="diza-forecast-axis">{formatValue(value)}</text>
               </g>
             );
           })}
@@ -59,7 +62,7 @@ export function ForecastLineChart({ values, startDate, title }: Props) {
       <div className="diza-forecast-mobile" aria-label="Valores diarios del pronóstico">
         {labels.map(({ day, value }, index) => (
           <div className="diza-forecast-mobile-day" key={index}>
-            <span>{day}</span><strong>{formatUnits(value)}</strong><small>unidades</small>
+            <span>{day}</span><strong>{formatValue(value)}</strong><small>{unit === 'soles' ? 'estimado' : 'unidades'}</small>
           </div>
         ))}
       </div>

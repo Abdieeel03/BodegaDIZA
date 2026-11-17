@@ -1,8 +1,10 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, type FormEvent } from 'react';
 import type { InventoryProduct as Producto } from '../../types/inventory';
+import apiClient from '../../api/axios';
+import type { ApiResponse } from '../../types';
 import { useRemoteResource } from '../../hooks/useRemoteResource';
-import { listInventoryProducts } from '../../services/inventoryService';
+import { listInventoryProducts, updateInventoryProduct } from '../../services/inventoryService';
 import { useInventoryViewState } from './useInventoryViewState';
 import { getStockStatus, type StockFilter, type InventorySort } from './inventorySelectors';
 import { InventoryDataState, type InventoryDataStatus } from './InventoryDataState';
@@ -106,6 +108,72 @@ export const InventoryPage = () => {
   const [modalCarga, setModalCarga] = useState(false);
   const [errorFormulario, setErrorFormulario] = useState('');
   const [mensaje, setMensaje] = useState('');
+  const [editing, setEditing] = useState<Producto | null>(null);
+  const [editCategories, setEditCategories] = useState<{ id: number; nombre: string; activa: boolean }[]>([]);
+  const [editSuppliers, setEditSuppliers] = useState<{ id: number; nombre: string; activo: boolean }[]>([]);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState('');
+
+  const openEdit = async (producto: Producto) => {
+    setEditError('');
+    setEditing(producto);
+    if (!editCategories.length || !editSuppliers.length) {
+      try {
+        const [catRes, supRes] = await Promise.all([
+          apiClient.get<ApiResponse<{ id: number; nombre: string; activa: boolean }[]>>('/categorias'),
+          apiClient.get<ApiResponse<{ id: number; nombre: string; activo: boolean }[]>>('/proveedores'),
+        ]);
+        if (catRes.data.success && catRes.data.data) setEditCategories(catRes.data.data.filter(c => c.activa));
+        if (supRes.data.success && supRes.data.data) setEditSuppliers(supRes.data.data.filter(s => s.activo));
+      } catch {
+        setEditError('No se pudieron cargar categorías y proveedores.');
+      }
+    }
+  };
+
+  const guardarEdicion = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!editing?.id || editSaving) return;
+    const datos = new FormData(event.currentTarget);
+    const nombre = String(datos.get('nombre') ?? '').trim();
+    const descripcion = String(datos.get('descripcion') ?? '').trim();
+    const categoriaId = Number(datos.get('categoriaId'));
+    const proveedorId = Number(datos.get('proveedorId'));
+    const precioVenta = Number(datos.get('precioVenta'));
+    const stockMinimo = Number(datos.get('stockMinimo'));
+    const unidadMedida = String(datos.get('unidadMedida') ?? editing.unidadMedida ?? 'UNIDAD');
+
+    if (!nombre || !categoriaId || !proveedorId) {
+      setEditError('Completa el nombre, la categoría y el proveedor.');
+      return;
+    }
+    if (!Number.isFinite(precioVenta) || precioVenta < 0 || !Number.isFinite(stockMinimo) || stockMinimo < 0) {
+      setEditError('Precio y stock mínimo deben ser válidos.');
+      return;
+    }
+
+    setEditSaving(true);
+    setEditError('');
+    try {
+      await updateInventoryProduct(editing.id, {
+        sku: editing.sku,
+        nombre,
+        descripcion,
+        categoriaId,
+        proveedorId,
+        precioVenta,
+        stockMinimo,
+        unidadMedida,
+      });
+      setEditing(null);
+      setMensaje(`Producto ${editing.sku} (${nombre}) actualizado correctamente.`);
+      recargarApi();
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : 'No se pudo actualizar el producto.');
+    } finally {
+      setEditSaving(false);
+    }
+  };
 
   const estadoMostrado: 'ready' | InventoryDataStatus = !MODO_API
     ? 'ready'
@@ -164,9 +232,14 @@ export const InventoryPage = () => {
         actions={
         <div className="inventory-actions">
           {MODO_API ? (
-  <Link className="inventory-action inventory-action-add" to="/inventario/agregar">
-    <span aria-hidden="true">＋</span> Nuevo producto
-  </Link>
+  <>
+    <Link className="inventory-action inventory-action-add" to="/inventario/agregar">
+      <span aria-hidden="true">＋</span> Nuevo producto
+    </Link>
+    <Link className="inventory-action inventory-action-bulk" to="/inventario/agregar?modo=restock">
+      Reponer stock
+    </Link>
+  </>
 ) : (
 <button
             className="inventory-action inventory-action-add"
@@ -318,6 +391,7 @@ export const InventoryPage = () => {
                 <th>PRECIO COSTO</th>
                 <th>PRECIO VENTA</th>
                 <th>ESTADO DE DISPONIBILIDAD</th>
+                {MODO_API && <th>ACCIONES</th>}
               </tr>
             </thead>
             <tbody>
@@ -331,11 +405,23 @@ export const InventoryPage = () => {
                   <td>{producto.precioCosto === null ? '—' : moneda(producto.precioCosto)}</td>
                   <td className="inventory-sale-price">{moneda(producto.precioVenta)}</td>
                   <td><EtiquetaEstado producto={producto} /></td>
+                  {MODO_API && (
+                    <td className="inventory-row-actions">
+                      <Link className="inventory-row-btn" to={`/inventario/agregar?modo=restock&${producto.id ? `productoId=${producto.id}` : `sku=${encodeURIComponent(producto.sku)}`}`}>
+                        Reponer
+                      </Link>
+                      {producto.id && (
+                        <button type="button" className="inventory-row-btn" onClick={() => { void openEdit(producto); }}>
+                          Editar
+                        </button>
+                      )}
+                    </td>
+                  )}
                 </tr>
               ))}
               {mostrados.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="inventory-empty">
+                  <td colSpan={MODO_API ? 9 : 8} className="inventory-empty">
                     <strong>{productos.length === 0 ? 'Aún no hay productos' : 'Sin resultados'}</strong>
                     <p>{productos.length === 0
                       ? 'No se han registrado productos en esta vista.'
@@ -376,6 +462,18 @@ export const InventoryPage = () => {
                   <strong className="inventory-sale-price">{moneda(producto.precioVenta)}</strong>
                 </div>
               </div>
+              {MODO_API && (
+                <div className="inventory-row-actions inventory-row-actions--mobile">
+                  <Link className="inventory-row-btn" to={`/inventario/agregar?modo=restock&${producto.id ? `productoId=${producto.id}` : `sku=${encodeURIComponent(producto.sku)}`}`}>
+                    Reponer stock
+                  </Link>
+                  {producto.id && (
+                    <button type="button" className="inventory-row-btn" onClick={() => { void openEdit(producto); }}>
+                      Editar producto
+                    </button>
+                  )}
+                </div>
+              )}
             </article>
           ))}
           {mostrados.length === 0 && (
@@ -489,6 +587,64 @@ export const InventoryPage = () => {
             </div>
             <p className="inventory-bulk-explanation">El diseño del botón ya está preparado. La carga de archivos Excel/CSV se conectará cuando exista un servicio de inventario en el backend. Por ahora no importamos ni modificamos productos reales.</p>
             <button type="button" className="inventory-action inventory-action-add" onClick={() => setModalCarga(false)}>Entendido</button>
+          </div>
+        </div>
+      )}
+
+      {editing && (
+        <div className="inventory-modal-backdrop" role="presentation" onMouseDown={(event) => {
+          if (event.target === event.currentTarget && !editSaving) setEditing(null);
+        }}>
+          <div className="inventory-modal" role="dialog" aria-modal="true" aria-labelledby="inventory-edit-title">
+            <div className="inventory-modal-header">
+              <div>
+                <h2 id="inventory-edit-title">Editar producto</h2>
+                <p>SKU: {editing.sku}</p>
+              </div>
+              <button type="button" disabled={editSaving} onClick={() => setEditing(null)} aria-label="Cerrar editor">×</button>
+            </div>
+            <form key={`${editing.id}-${editCategories.length}-${editSuppliers.length}`} onSubmit={(event) => { void guardarEdicion(event); }} className="inventory-product-form">
+              <label>Nombre del producto
+                <input name="nombre" maxLength={150} required defaultValue={editing.nombre} />
+              </label>
+              <div className="inventory-form-grid">
+                <label>Categoría
+                  <select name="categoriaId" required defaultValue={editing.categoriaId ?? ''}>
+                    {!editing.categoriaId && <option value="">Selecciona categoría</option>}
+                    {editCategories.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                  </select>
+                </label>
+                <label>Proveedor
+                  <select name="proveedorId" required defaultValue={editing.proveedorId ?? ''}>
+                    {!editing.proveedorId && <option value="">Selecciona proveedor</option>}
+                    {editSuppliers.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+                  </select>
+                </label>
+                <label>Precio venta (S/)
+                  <input name="precioVenta" type="number" min="0" step="0.01" required defaultValue={editing.precioVenta} />
+                </label>
+                <label>Stock mínimo
+                  <input name="stockMinimo" type="number" min="0" step="0.001" required defaultValue={editing.stockMinimo} />
+                </label>
+                <label>Unidad de medida
+                  <select name="unidadMedida" defaultValue={editing.unidadMedida ?? 'UNIDAD'}>
+                    {['UNIDAD', 'BOTELLA', 'CAJA', 'PACK', 'LITRO', 'BOLSA', 'LATA', 'KILOGRAMO'].map(u => (
+                      <option key={u} value={u}>{u}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <label>Descripción
+                <input name="descripcion" maxLength={500} defaultValue={editing.descripcion ?? ''} />
+              </label>
+              {editError && <p className="inventory-form-error" role="alert">{editError}</p>}
+              <div className="inventory-modal-actions">
+                <button type="button" className="inventory-action inventory-action-bulk" disabled={editSaving} onClick={() => setEditing(null)}>Cancelar</button>
+                <button type="submit" className="inventory-action inventory-action-add" disabled={editSaving}>
+                  {editSaving ? 'Guardando...' : 'Guardar cambios'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

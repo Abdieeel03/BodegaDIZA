@@ -12,6 +12,8 @@ public record TrainingResponse(
     int productsCount,
     int observationsCount,
     int validationRowsRejected,
+    String forecastFromDate,
+    String forecastToDate,
     Map<String, Object> hillClimbing,
     Map<String, Object> classification
 ) {

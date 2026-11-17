@@ -70,6 +70,11 @@
 .inventory-stock--bajo { color: #c56a05 !important; }
 .inventory-stock--agotado { color: #e11d48 !important; }
 .inventory-sale-price { color: #123775; font-weight: 800; white-space: nowrap; }
+.inventory-row-actions { display: flex; gap: 6px; align-items: center; white-space: nowrap; }
+.inventory-row-actions--mobile { margin-top: 10px; padding-top: 10px; border-top: 1px solid #edf1f7; }
+.inventory-row-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 32px; padding: 5px 10px; border-radius: 6px; border: 1px solid #d5e1f0; background: #fff; color: #1e3a72; font-size: 12px; font-weight: 600; text-decoration: none; }
+.inventory-row-btn:hover { border-color: #2563eb; background: #f0f6ff; color: #1d4ed8; }
+.inventory-product-form select { border: 1px solid #dce6f3; background: white; color: #102453; border-radius: 6px; padding: 10px 11px; font-size: 13px; min-width: 0; font-family: inherit; }
 .inventory-status { display: inline-flex; align-items: center; gap: 5px; padding: 5px 8px; white-space: nowrap; border-radius: 100px; font-size: 10px; font-weight: 750; }
 .inventory-status-dot { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
 .inventory-status--disponible { color: #059669; background: #dcfaec; }

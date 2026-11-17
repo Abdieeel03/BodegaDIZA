@@ -125,6 +125,15 @@ export const PredictionPage = ({ view = 'summary' }: { view?: PredictionView }) 
     .sort((a, b) => priority[a.alertStatus] - priority[b.alertStatus] || Number(b.stockoutProbability ?? 0) - Number(a.stockoutProbability ?? 0) || Number(b.recommendedReplenishment) - Number(a.recommendedReplenishment)), [replenishments]);
   const visibleRecommendations = recommended.filter(item => (!priorityFilter || item.alertStatus === priorityFilter) && normalize(item.productId + ' ' + item.productName).includes(normalize(search.trim())));
   const totalDemand = predictions.reduce((sum, item) => sum + Number(item.predictedDemand7Days || 0), 0);
+  // La gráfica totaliza exclusivamente las series de siete días recibidas del modelo.
+  // Si algún producto no trae siete valores válidos, no inventamos los faltantes.
+  const dailySeries = useMemo(() => predictions.filter(item =>
+    Array.isArray(item.dailyPredictions) && item.dailyPredictions.length >= 7 &&
+    item.dailyPredictions.slice(0, 7).every(value => Number.isFinite(Number(value)) && Number(value) >= 0)
+  ), [predictions]);
+  const dailyTotalSeries = useMemo(() => Array.from({ length: 7 }, (_, index) =>
+    dailySeries.reduce((sum, item) => sum + Number(item.dailyPredictions[index]), 0)
+  ), [dailySeries]);
   const revenue = estimatedRevenueSummary(predictions, prices);
   const revenueLabel = pricesLoading ? 'Calculando...' : revenue.pricedProducts === 0
     ? 'No disponible' : formatSoles(revenue.total);
@@ -147,7 +156,7 @@ export const PredictionPage = ({ view = 'summary' }: { view?: PredictionView }) 
       </div>}
     />
 
-    {training && (
+    {training && view !== 'summary' && (
       <p className="prediction-period" aria-label="Período del pronóstico">
         Pronóstico: {dateLabel(training.forecastFromDate)} – {dateLabel(training.forecastToDate)}
         {expired && <strong className="prediction-period-expired"> · Período finalizado. Actualiza el modelo para tener una estimación reciente.</strong>}
@@ -165,14 +174,44 @@ export const PredictionPage = ({ view = 'summary' }: { view?: PredictionView }) 
         <StatCard label="Productos por reponer" value={recommended.length} />
         <StatCard label="Unidades sugeridas" value={`${fmt(recommended.reduce((total, item) => total + Number(item.recommendedReplenishment), 0), 0)} unidades`} />
       </section>}
-      {view === 'summary' && <section className="diza-ml-card">
-        <div className="diza-ml-card-heading"><div><h2>Prioridades de reposición</h2></div><Link to="/prediccion-demanda/reposicion">Ver toda la reposición →</Link></div>
-        <div className="prediction-priorities">{recommended.slice(0, 5).map((item, index) => <Link key={item.productId} to={`/prediccion-demanda/producto?producto=${encodeURIComponent(item.productId)}`} className="prediction-priority-item">
-          <span className="prediction-rank">{index + 1}</span><div><strong>{readableName(item.productName)}</strong><small>Stock: {fmt(item.stockActual, 0)} · Reponer: {fmt(item.recommendedReplenishment, 0)} unidades</small></div><span className={`diza-ml-status diza-ml-${item.alertStatus.toLowerCase()}`}>{priorityLabel[item.alertStatus]}</span>
-        </Link>)}</div>
-        {!recommended.length && <p>No hay productos pendientes de reposición.</p>}
-        <div className="prediction-actions"><Link className="diza-ml-button" to="/prediccion-demanda/producto">Consultar un producto</Link><Link className="prediction-secondary" to="/prediccion-demanda/compras">Planificar compras →</Link></div>
-      </section>}
+      {view === 'summary' && <div className="prediction-summary-grid">
+        <section className="diza-ml-card prediction-summary-graph" aria-labelledby="prediction-summary-graph-title">
+          <div className="diza-ml-card-heading prediction-summary-graph-heading">
+            <div>
+              <h2 id="prediction-summary-graph-title">Tendencia de demanda</h2>
+              <p>Demanda estimada por día · 7 días</p>
+            </div>
+            {training?.forecastFromDate && training?.forecastToDate ? (
+              <span className="prediction-summary-date" aria-label="Período del pronóstico">
+                {dateLabel(training.forecastFromDate)} – {dateLabel(training.forecastToDate)}
+              </span>
+            ) : <span className="prediction-summary-date">7 días</span>}
+          </div>
+          {dailySeries.length ? (
+            <>
+              <ForecastLineChart
+                values={dailyTotalSeries}
+                startDate={training?.forecastFromDate}
+                title="Demanda diaria estimada de los productos con pronóstico, durante siete días"
+              />
+              {dailySeries.length !== predictions.length && <p className="prediction-summary-caveat" role="status">
+                Se muestran {dailySeries.length} de {predictions.length} productos con datos diarios completos.
+              </p>}
+            </>
+          ) : <p className="prediction-summary-caveat">El modelo no devolvió datos diarios suficientes para dibujar la tendencia.</p>}
+          {expired && <p className="prediction-summary-caveat prediction-summary-caveat--expired" role="status">
+            Este período ya terminó. Actualiza el modelo para consultar una estimación reciente.
+          </p>}
+        </section>
+        <section className="diza-ml-card prediction-summary-replenishment">
+          <div className="diza-ml-card-heading"><div><h2>Prioridades de reposición</h2></div><Link to="/prediccion-demanda/reposicion">Ver toda la reposición →</Link></div>
+          <div className="prediction-priorities">{recommended.slice(0, 5).map((item, index) => <Link key={item.productId} to={`/prediccion-demanda/producto?producto=${encodeURIComponent(item.productId)}`} className="prediction-priority-item">
+            <span className="prediction-rank">{index + 1}</span><div><strong>{readableName(item.productName)}</strong><small>Stock: {fmt(item.stockActual, 0)} · Reponer: {fmt(item.recommendedReplenishment, 0)} unidades</small></div><span className={`diza-ml-status diza-ml-${item.alertStatus.toLowerCase()}`}>{priorityLabel[item.alertStatus]}</span>
+          </Link>)}</div>
+          {!recommended.length && <p>No hay productos pendientes de reposición.</p>}
+          <div className="prediction-actions"><Link className="diza-ml-button" to="/prediccion-demanda/producto">Consultar un producto</Link><Link className="prediction-secondary" to="/prediccion-demanda/compras">Planificar compras →</Link></div>
+        </section>
+      </div>}
       {view === 'replenishment' && <section className="diza-ml-card">
         <h2>Qué necesitas reponer</h2>
         <div className="prediction-filters"><label>Buscar producto<input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Nombre o código" /></label><label>Prioridad<select value={priorityFilter} onChange={e => setPriorityFilter(e.target.value)}><option value="">Todas</option><option value="ROJO">Alta</option><option value="AMARILLO">Media</option><option value="VERDE">Baja</option></select></label></div>

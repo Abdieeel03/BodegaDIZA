@@ -115,3 +115,36 @@
 }
 
 .prediction-period-expired { color: var(--diza-color-warning); font-weight: 700; }
+
+
+/* Resumen de Predicción: tendencia diaria y reposición prioritaria lado a lado. */
+.prediction-module .prediction-summary-grid{
+  display:grid;
+  grid-template-columns:minmax(0,1.55fr) minmax(320px,1fr);
+  gap:16px;
+  align-items:stretch;
+}
+.prediction-module .prediction-summary-grid > .diza-ml-card{min-width:0;margin-bottom:0}
+.prediction-module .prediction-summary-graph-heading{align-items:center;gap:8px 16px;margin-bottom:12px}
+.prediction-module .prediction-summary-graph-heading h2{margin:0 0 4px}
+.prediction-module .prediction-summary-graph-heading p{margin:0;font-size:13px}
+.prediction-module .prediction-summary-date{
+  display:inline-flex;align-items:center;
+  flex-shrink:0;border-radius:8px;
+  background:var(--diza-color-brand-subtle);
+  color:var(--diza-color-brand);
+  padding:7px 10px;font-size:12px;font-weight:650;
+}
+.prediction-module .prediction-summary-caveat{margin:10px 0 0;font-size:12px;color:var(--diza-color-text-secondary)}
+.prediction-module .prediction-summary-caveat--expired{color:var(--diza-color-warning);font-weight:650}
+.prediction-module .prediction-summary-replenishment .prediction-priorities{margin-bottom:14px}
+.prediction-module .prediction-summary-replenishment .prediction-priority-item{padding:11px 0;gap:9px}
+.prediction-module .prediction-summary-replenishment .prediction-priority-item > div{gap:3px}
+.prediction-module .prediction-summary-replenishment .prediction-actions{gap:7px}
+@media(max-width:1050px){
+  .prediction-module .prediction-summary-grid{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:600px){
+  .prediction-module .prediction-summary-grid{gap:12px}
+  .prediction-module .prediction-summary-date{font-size:12px}
+}

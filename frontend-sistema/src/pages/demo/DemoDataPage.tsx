@@ -40,11 +40,11 @@ export const DemoDataPage = () => {
     setMensaje('');
     try {
       const resultado = await importarCsv(tipo, archivo);
-      setMensaje(`${resultado.filasImportadas} filas guardadas en ${resultado.destino}.`);
+      setMensaje(`${resultado.filasImportadas} registros importados correctamente.`);
       setArchivo(null);
       await recargar();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Fallo al importar; revisa la consola de Spring Boot');
+      setError(e instanceof Error ? e.message : 'No se pudo importar el archivo. Comprueba su formato y vuelve a intentarlo.');
     } finally {
       setOcupado(false);
     }
@@ -54,18 +54,18 @@ export const DemoDataPage = () => {
     <main className="diza-test-page">
       <header className="diza-test-heading">
         <div>
-          <span className="diza-test-eyebrow">ENTORNO DE DESARROLLO</span>
-          <h1>Carga de datos de prueba</h1>
+          <span className="diza-test-eyebrow">VENTAS · HISTÓRICO IMPORTADO</span>
+          <h1>Importar histórico</h1>
           <p>Históricos CSV separados del inventario y las ventas operativas.</p>
         </div>
-        <Link to="/prediccion-demanda" className="diza-test-link">Ver predicciones →</Link>
+        <Link to="/ventas" className="diza-test-link">← Volver a Ventas</Link>
       </header>
 
-      <div className="diza-test-note">Esta sección solo funciona con la API TEST (puerto 8081), con DIZA_DEMO_ENABLED=true y autenticación JWT. Los CSV no descuentan stock ni generan tickets reales.</div>
+      <div className="diza-test-note">Importa información para consultar el histórico. Estos archivos no registran ventas nuevas ni modifican las existencias del inventario.</div>
       {error && <p role="alert" className="diza-test-error">{error}</p>}
       {mensaje && <p role="status" className="diza-test-success">{mensaje}</p>}
 
-      <section className="diza-test-metrics" aria-label="Estado de la base TEST">
+      <section className="diza-test-metrics" aria-label="Resumen del histórico">
         <article><span>Productos históricos</span><strong>{resumen?.productos ?? '—'}</strong></article>
         <article><span>Filas de ventas diarias</span><strong>{resumen?.ventasDiarias ?? '—'}</strong></article>
         <article><span>Predicciones cargadas</span><strong>{resumen?.predicciones ?? '—'}</strong></article>
@@ -74,19 +74,19 @@ export const DemoDataPage = () => {
 
       <section className="diza-test-panel">
         <h2>Importar CSV</h2>
-        <p className="diza-test-muted">Orden obligatorio: 1. productos_diza.csv, 2. ventas_diza_limpio.csv, 3. predicciones_demo.csv (generado en Python). Si ya cargaste las tablas con SQL, no vuelvas a importar.</p>
+        <p className="diza-test-muted">Carga primero el catálogo de productos históricos y después sus ventas. Si estos datos ya están guardados, no vuelvas a importarlos.</p>
         <form className="diza-test-form" onSubmit={(e) => { void importar(e); }}>
           <label>Tipo de archivo
             <select value={tipo} onChange={e => { setTipo(e.target.value as TipoCsv); setArchivo(null); }}>
               <option value="productos">Productos</option>
               <option value="ventas">Ventas históricas</option>
-              <option value="predicciones">Predicciones del modelo</option>
+              <option value="predicciones">Predicciones históricas (archivo de demostración)</option>
             </select>
           </label>
           <label>Selecciona CSV (UTF-8)
             <input key={tipo} type="file" accept=".csv,text/csv" onChange={e => setArchivo(e.target.files?.[0] ?? null)} required />
           </label>
-          <button disabled={ocupado || !archivo} type="submit">{ocupado ? 'Importando…' : 'Importar en base TEST'}</button>
+          <button disabled={ocupado || !archivo} type="submit">{ocupado ? 'Importando…' : 'Importar archivo'}</button>
           <button type="button" className="diza-test-secondary" onClick={() => { void recargar(); }}>Actualizar datos</button>
         </form>
       </section>

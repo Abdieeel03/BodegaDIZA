@@ -1,0 +1,17 @@
+.diza-sales-history{margin:12px 0 0;min-width:0}
+.diza-sales-history-legend{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:14px;font-size:12px;color:var(--diza-color-text-secondary)}
+.diza-sales-history-legend>span{display:flex;align-items:center;gap:7px}
+.diza-sales-history-legend i{width:10px;height:10px;border-radius:3px}
+.diza-sales-history .is-historico{background:#7185b5}
+.diza-sales-history .is-operativo{background:var(--diza-color-action)}
+.diza-sales-history-scroll{overflow-x:auto;max-width:100%;padding-bottom:8px}
+.diza-sales-history-plot{display:flex;min-width:100%;width:max-content;gap:18px}
+.diza-sales-history-period{flex:1 0 180px;max-width:240px;text-align:center;min-width:0}
+.diza-sales-history-bars{display:flex;justify-content:center;gap:8px;border-bottom:1px solid var(--diza-color-border)}
+.diza-sales-history-series{flex:1;min-width:0}
+.diza-sales-history-amount{display:block;font-size:11px;color:var(--diza-color-text-secondary);padding-bottom:6px;white-space:nowrap}
+.diza-sales-history-track{height:145px;display:flex;justify-content:center;align-items:flex-end}
+.diza-sales-history-track>span{display:block;width:34px;border-radius:4px 4px 0 0}
+.diza-sales-history-date{display:block;font-size:12px;padding-top:8px;color:var(--diza-color-text-secondary)}
+.diza-sales-history>.diza-kpi-note{margin-top:10px}
+@media(max-width:600px){.diza-sales-history-period{flex-basis:156px}.diza-sales-history-track{height:120px}}

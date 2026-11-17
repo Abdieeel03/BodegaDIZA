@@ -12,10 +12,10 @@ import { InventoryPage } from '../pages/inventory/InventoryPage';
 import { ProductCreatePage } from '../pages/product/ProductCreatePage';
 import { InventoryMovementsPage } from '../pages/inventory/InventoryMovementsPage';
 import { BulkInventoryCsvPage } from '../pages/inventory/bulk/BulkInventoryCsvPage';
+import { PredictionLayout } from '../pages/prediction/PredictionLayout';
 import { PredictionPage } from '../pages/prediction/PredictionPage';
-import { ApiStatusPage } from '../pages/api-status/ApiStatusPage';
+import { UpdateModelPage } from '../pages/predictions/UpdateModelPage';
 import { LoginPage } from '../pages/auth/LoginPage';
-import { PredictionsPage } from '../pages/predictions/PredictionsPage';
 import { NotFoundPage } from '../pages/not-found/NotFoundPage';
 
 export const AppRoutes = () => {
@@ -35,20 +35,22 @@ export const AppRoutes = () => {
               path="/ventas"
               element={<SalesPage />}
             />
-            <Route path="/datos-prueba" element={<DemoDataPage />} />
+            <Route path="/ventas/importar-historico" element={<DemoDataPage />} />
+            <Route path="/datos-prueba" element={<Navigate to="/ventas/importar-historico" replace />} />
             <Route path="/inventario" element={<InventoryPage />} />
             <Route path="/inventario/agregar" element={<ProductCreatePage />} />
             <Route path="/inventario/movimientos" element={<InventoryMovementsPage />} />
             <Route path="/inventario/carga-masiva" element={<BulkInventoryCsvPage />} />
-	    <Route path="/predicciones-ml" element={<PredictionsPage />} />
-            <Route
-              path="/prediccion-demanda"
-              element={<PredictionPage />}
-            />
-            <Route
-              path="/conexion-api"
-              element={<ApiStatusPage />}
-            />
+	    
+            <Route path="/predicciones-ml" element={<Navigate to="/prediccion-demanda" replace />} />
+            <Route path="/prediccion-demanda" element={<PredictionLayout />}>
+              <Route index element={<PredictionPage view="summary" />} />
+              <Route path="producto" element={<PredictionPage view="product" />} />
+              <Route path="reposicion" element={<PredictionPage view="replenishment" />} />
+              <Route path="compras" element={<PredictionPage view="purchases" />} />
+              <Route path="actualizar-modelo" element={<UpdateModelPage />} />
+            </Route>
+
           </Route>
         </Route>
 

@@ -1,4 +1,5 @@
 import './data-feedback.css';
+import { Button } from '../ui';
 
 export type DataFeedbackStatus = 'loading' | 'error' | 'empty';
 
@@ -48,9 +49,9 @@ export function DataFeedback({ status, title, description, onRetry, actionLabel 
           <span /><span /><span />
         </div>
       ) : onRetry ? (
-        <button type="button" className="diza-data-retry" onClick={onRetry}>
+        <Button onClick={onRetry} className="diza-data-retry">
           {actionLabel ?? (status === 'empty' ? 'Actualizar' : 'Reintentar')}
-        </button>
+        </Button>
       ) : null}
     </section>
   );

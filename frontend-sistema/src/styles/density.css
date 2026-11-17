@@ -1,0 +1,276 @@
+/* BodegaDIZA · Interfaz compacta y legible (parche acumulado).
+ * Capa de presentación: no afecta datos, rutas, formularios ni servicios.
+ * Se carga después de los estilos de módulos para conservar un solo criterio.
+ * La densidad procede de menos relleno, no de tipografía microscópica.
+ */
+:root {
+  --diza-density-space: 12px;
+  --diza-density-card: 14px;
+  --diza-density-section: 14px;
+  --diza-density-body: 14px;
+}
+
+/* El contenido ocupa prácticamente todo el espacio después del Sidebar. */
+.diza-shell { --diza-shell-sidebar-width: 240px; }
+.diza-content { max-width: none; padding: 16px clamp(14px, 1.6vw, 24px) 28px; }
+.diza-topbar { min-height: 58px; padding: 6px clamp(14px, 1.6vw, 24px); }
+.diza-sidebar { padding: 12px 10px; }
+.diza-sidebar-header { margin-bottom: 14px; }
+.diza-sidebar-nav { gap: 3px; }
+.diza-sidebar-link { min-height: 44px; padding-block: 8px; font-size: 14px; }
+.prediction-submenu { margin-block: 3px 7px; }
+.prediction-submenu a { min-height: 40px; display: flex; align-items: center; padding: 7px 10px; font-size: 13px; }
+.diza-sidebar-brand-text small { font-size: 12px; }
+
+/* Cabeceras uniformes y sobrias: jerarquía clara sin triple espaciado. */
+.diza-ui-page-header,
+.diza-dashboard .diza-ui-page-header {
+  margin: 0 0 15px;
+  gap: 12px;
+  align-items: center;
+}
+.diza-ui-page-header .diza-ui-page-eyebrow { margin-bottom: 3px; font-size: 12px; letter-spacing: .035em; }
+.diza-ui-page-header .diza-ui-page-heading h1,
+.diza-dashboard .diza-ui-page-heading h1,
+.prediction-module .diza-ui-page-heading h1 {
+  margin: 0 0 3px;
+  font-size: clamp(23px, 2vw, 27px);
+  line-height: 1.2;
+}
+.diza-ui-page-header .diza-ui-page-heading p { font-size: 14px; line-height: 1.4; }
+.diza-ui-page-actions { gap: 8px; }
+.diza-ui-button, .diza-ui-button--sm { min-height: 42px; padding: 9px 13px; font-size: 14px; }
+.diza-ui-field { gap: 5px; }
+.diza-ui-field-label, .diza-ui-field :is(input,select,textarea) { font-size: 14px; }
+.diza-ui-field-hint, .diza-ui-field-error { font-size: 13px; }
+.diza-ui-badge { font-size: 12px; }
+.diza-ui-stat, .diza-stat { padding: var(--diza-density-card); }
+.diza-ui-stat .diza-ui-stat-label, .diza-stat span { font-size: 13px; line-height: 1.35; }
+.diza-ui-stat .diza-ui-stat-value, .diza-stat strong { margin-top: 6px; font-size: clamp(20px, 2vw, 25px); line-height: 1.22; }
+.diza-ui-stat .diza-ui-stat-note { margin-top: 5px; font-size: 13px; }
+
+/* Inicio mantiene el diseño claro y espacioso original. No se le aplica
+   la compresión de tarjetas/gráficos de los demás módulos. */
+.diza-dashboard { max-width: 1480px; }
+.diza-dashboard .diza-ui-page-header { margin-bottom: 24px; }
+.diza-dashboard .diza-ui-page-header .diza-ui-page-heading h1 {
+  font-size: clamp(25px, 3vw, 30px);
+  line-height: 1.2;
+}
+
+/* Inventario — espacio útil, filas compactas, texto de tabla legible. */
+.inventory-view { max-width: none; font-size: 14px; }
+.inventory-summary { gap: 10px; margin-bottom: 13px; }
+.inventory-summary-card { min-height: 86px; padding: 13px 15px; }
+.inventory-summary-label, .inventory-summary-subline, .inventory-summary-live { font-size: 12px; letter-spacing: 0; }
+.inventory-summary-value { font-size: clamp(20px, 2.1vw, 25px); }
+.inventory-summary-icon { min-width: 36px; height: 36px; }
+.inventory-panel-top { padding: 12px 14px; gap: 10px; }
+.inventory-panel-title h2 { font-size: 16px; }
+.inventory-search { width: min(100%, 430px); }
+.inventory-search input, .inventory-filter-field select { font-size: 14px; }
+.inventory-filter-bar { gap: 9px; padding: 0 14px 9px; }
+.inventory-filter-field { gap: 4px; }
+.inventory-filter-field > span { font-size: 13px; }
+.inventory-filter-count { padding: 0 14px 9px; font-size: 13px; }
+.inventory-table { font-size: 14px; }
+.inventory-table th { padding: 10px 9px; font-size: 12px; letter-spacing: 0; line-height: 1.3; }
+.inventory-table td { padding: 10px 9px; height: auto; min-height: 46px; }
+.inventory-table .inventory-sku, .inventory-table .inventory-name { font-size: 13px; }
+.inventory-table th:first-child, .inventory-table td:first-child { padding-left: 13px; }
+.inventory-table th:last-child, .inventory-table td:last-child { padding-right: 13px; }
+.inventory-status { font-size: 12px; padding: 4px 8px; }
+.inventory-footer { padding: 9px 14px; font-size: 13px; }
+.inventory-pagination button { min-height: 40px; min-width: 40px; }
+.inventory-demo-note, .inventory-feedback, .inventory-form-disclaimer, .inventory-modal-header p { font-size: 13px; }
+.inventory-product-form label, .inventory-product-form input { font-size: 14px; }
+.inventory-modal { padding: 17px; }
+.inventory-modal-header { margin-bottom: 12px; }
+.inventory-product-form { gap: 10px; }
+.inventory-bulk-explanation { margin-bottom: 12px; }
+
+/* Ventas e informes — menos capas de padding, no sacrificar la lectura. */
+.diza-test-page { max-width: none; padding: 0; }
+.diza-test-heading { margin-bottom: 10px; }
+.diza-test-heading h1 { font-size: clamp(23px, 2vw, 27px); }
+.diza-test-heading p, .diza-test-muted, .diza-test-note { font-size: 14px; line-height: 1.45; }
+.diza-test-tabs { gap: 6px; margin: 9px 0 11px; }
+.diza-test-tabs button { min-height: 40px; padding: 8px 12px; font-size: 14px; }
+.diza-test-panel { padding: 14px; margin-top: 11px; }
+.diza-test-panel h2 { font-size: 17px; margin-bottom: 9px; }
+.diza-test-metrics, .diza-stat-grid { gap: 10px; margin: 10px 0 12px; }
+.diza-test-metrics article { padding: 13px; }
+.diza-test-metrics article span { font-size: 13px; }
+.diza-test-metrics article strong { font-size: 23px; }
+.diza-test-note { margin-bottom: 10px; padding: 10px 12px; }
+.diza-test-form { gap: 9px; }
+.diza-test-form label { font-size: 14px; }
+.diza-test-form input, .diza-test-form select, .diza-test-input { min-height: 42px; font-size: 14px; }
+.diza-test-form button, .diza-test-primary, .diza-test-link { min-height: 42px; padding: 9px 13px; font-size: 14px; }
+.diza-test-table { font-size: 14px; }
+.diza-test-table th { font-size: 12px; letter-spacing: 0; }
+.diza-test-table th, .diza-test-table td { padding: 9px 11px; }
+.diza-kpi-note, .diza-sale-pagination, .diza-sale-list-head p { font-size: 13px; }
+.diza-sales-trend-heading { margin-top: 12px; gap: 8px; }
+.diza-sales-trend-heading h3 { font-size: 16px; }
+.diza-sales-trend-scroll { padding: 5px 0 9px; margin: 7px 0; }
+.diza-sales-trend-chart { min-height: 182px; }
+.diza-sales-trend-track { height: 117px; }
+.diza-sales-trend-col strong, .diza-sales-trend-col small { font-size: 12px; }
+.diza-sale-list-head { margin-top: 11px; }
+.diza-sale-form { gap: 11px; }
+.diza-sale-entry { gap: 9px; }
+.diza-sale-cart-header, .diza-sale-cart-footer { padding: 10px 12px; }
+.diza-sale-items li { padding: 9px 12px; gap: 9px; }
+.diza-sale-item-name span, .diza-sale-cart-footer span, .diza-sale-cart-footer small { font-size: 13px; }
+.diza-sale-search, .diza-sale-search input { font-size: 14px; }
+.diza-sale-pagination { margin-top: 10px; }
+
+/* Predicción y reposición — gráfico y prioridades visibles sin bloques enormes. */
+.prediction-module, .prediction-module .diza-ml-page { max-width: none; }
+.diza-ml-page h2 { font-size: 17px; margin-bottom: 7px; }
+.diza-ml-page p { font-size: 14px; line-height: 1.45; }
+.diza-ml-stats { gap: 10px; margin-bottom: 12px; }
+.diza-ml-stats article, .prediction-module .diza-ml-stats article { padding: 13px; gap: 6px; }
+.diza-ml-stats article span { font-size: 13px; }
+.diza-ml-stats article strong, .prediction-module .diza-ml-stats article strong { font-size: clamp(20px, 2vw, 25px); }
+.diza-ml-card, .prediction-module .diza-ml-card { padding: 15px; margin-bottom: 12px; }
+.diza-ml-card-heading { gap: 11px; margin-bottom: 10px; }
+.diza-ml-card-heading label, .prediction-filters label { font-size: 14px; gap: 5px; }
+.diza-ml-card-heading select, .diza-ml-card-heading input[type='search'],
+.prediction-module input, .prediction-module select { min-height: 42px; padding: 8px 11px; font-size: 14px; }
+.prediction-period { padding-bottom: 9px; font-size: 13px; }
+.prediction-priorities { margin-bottom: 10px; }
+.prediction-priority-item { padding: 9px 0; gap: 10px; }
+.prediction-priority-item > div { gap: 3px; font-size: 14px; }
+.prediction-priority-item small { font-size: 13px; }
+.prediction-rank { flex-basis: 30px; height: 30px; }
+.prediction-filters { gap: 9px; margin: 8px 0 10px; }
+.prediction-product-title { margin: 4px 0 10px; }
+.prediction-forecast-panel { padding: 12px; margin-bottom: 10px; }
+.prediction-insights { gap: 10px; }
+.prediction-insights article { padding: 13px; gap: 7px; }
+.prediction-card-label { font-size: 12px; }
+.prediction-insights strong { font-size: 23px; }
+.prediction-module .diza-ml-chart svg { max-height: 260px; }
+.diza-ml-daily, .prediction-module .diza-ml-daily { gap: 6px; margin-top: 8px; }
+.diza-ml-daily span { padding: 7px; }
+.diza-ml-daily small { font-size: 12px; }
+.diza-ml-daily strong { font-size: 13px; }
+.diza-ml-table-scroll table { font-size: 14px; }
+.diza-ml-table-scroll th, .diza-ml-table-scroll td { padding: 9px 10px; }
+.diza-ml-table-scroll th { font-size: 12px; }
+.diza-ml-status { font-size: 12px; }
+.diza-ml-eyebrow, .diza-test-eyebrow { font-size: 12px; }
+.prediction-model-help { margin-top: 8px; color: var(--diza-color-text-secondary); font-size: 13px; }
+.prediction-model-help summary { cursor: pointer; color: var(--diza-color-brand); font-weight: 650; }
+.prediction-model-help p { margin-top: 7px; }
+.diza-ml-disclaimer { font-size: 13px !important; margin: 10px 0 !important; }
+
+/* Entrenamiento ML integrado al Resumen: limpio, compactado, sin falsos indicadores. */
+.diza-model-panel { padding: 14px; margin-bottom: 12px; }
+.diza-model-panel-heading { margin-bottom: 10px; }
+.diza-model-panel-heading h2 { font-size: 18px; }
+.diza-model-panel p { font-size: 14px; line-height: 1.45; }
+.diza-model-action-row { gap: 10px; margin-top: 11px; padding-top: 11px; }
+.diza-model-result { margin-top: 12px; padding-top: 12px; }
+.diza-model-kpis, .diza-model-metrics { margin-top: 9px; gap: 8px; }
+.diza-model-kpis > div, .diza-model-metrics > div { padding: 10px; }
+.diza-model-kpis span, .diza-model-metrics span { font-size: 13px; }
+.diza-model-technical { margin-top: 10px; padding-top: 10px; }
+
+/* Crear producto, importar CSV, movimientos, filtros y páginas auxiliares. */
+.diza-create-form { max-width: none; gap: 11px; }
+.diza-create-grid { gap: 11px; margin-top: 10px; }
+.diza-create-check { margin: 9px 0; font-size: 14px; }
+.diza-create-form textarea { min-height: 80px; }
+.diza-bulk { max-width: none; padding-bottom: 18px; }
+.diza-bulk-head { gap: 10px; margin-bottom: 12px; }
+.diza-bulk-head h1 { margin: 3px 0 4px; font-size: clamp(23px, 2vw, 27px); }
+.diza-bulk-eyebrow { font-size: 12px; }
+.diza-bulk-panel { padding: 14px; margin-top: 12px; }
+.diza-bulk-panel h2 { margin-bottom: 10px; }
+.diza-bulk-notice { padding: 10px 12px; margin: 9px 0; font-size: 14px; line-height: 1.45; }
+.diza-bulk-help, .diza-bulk-label, .diza-bulk-supplier, .diza-bulk-submit span { font-size: 13px; }
+.diza-bulk-file { padding: 14px; font-size: 14px; }
+.diza-bulk-stats { margin-top: 10px; }
+.diza-bulk-stats span { padding: 8px 10px; font-size: 13px; }
+.diza-bulk-table { font-size: 13px; }
+.diza-bulk-table th, .diza-bulk-table td { padding: 9px; }
+.diza-bulk-table select { font-size: 13px; }
+.diza-bulk-supplier { padding-top: 10px; margin-top: 10px; }
+.diza-bulk-confirm { margin-top: 12px; }
+.diza-bulk-submit { margin-top: 12px; }
+.diza-period { gap: 9px; margin: 10px 0; padding: 10px 12px; }
+.diza-period label, .diza-period-range { font-size: 13px; }
+.diza-period select, .diza-period input { min-height: 42px; padding: 8px 10px; font-size: 14px; }
+.diza-period-table th, .diza-period-table td { padding: 9px 10px; font-size: 13px; }
+.diza-mini-chart { margin: 10px 0 5px; min-height: 155px; }
+.diza-mini-track { min-height: 90px; }
+.diza-mini-col strong, .diza-mini-col small { font-size: 12px; }
+.diza-pagination { margin: 10px 0; }
+.diza-kpi-note { line-height: 1.4; }
+.inventory-data-state { min-height: 190px; padding: 20px; }
+.inventory-data-state h2 { margin: 9px 0 5px; }
+.inventory-data-state p { font-size: 14px; }
+.diza-test-page :is(button, input, select, textarea):focus-visible { outline-offset: 2px; }
+
+/* Estilos de compatibilidad de pantallas auxiliares y autenticación. */
+.page-container { max-width: none; }
+.page-header { margin-bottom: 14px; }
+.stats-grid { gap: 11px; margin-bottom: 14px; }
+.stat-card, .card { padding: 14px; }
+.data-table th, .data-table td { padding: 10px; font-size: 13px; }
+.form-group { margin-bottom: 12px; }
+.form-group label, .text-input { font-size: 14px; }
+.auth-card { padding: 26px; }
+.auth-header { margin-bottom: 18px; }
+.login-form p { margin-bottom: 12px; }
+
+@media (max-width: 1150px) {
+}
+@media (max-width: 800px) {
+  .diza-content { padding: 12px 12px calc(91px + env(safe-area-inset-bottom)); }
+  .diza-topbar { min-height: 58px; }
+  .diza-ui-page-header { gap: 10px; margin-bottom: 12px; }
+  .diza-ui-page-header .diza-ui-page-heading h1 { font-size: 23px; }
+  .diza-test-panel, .diza-ml-card, .prediction-module .diza-ml-card { padding: 12px; }
+  .diza-sales-trend-col strong, .diza-sales-trend-col small { font-size: 12px; }
+  .inventory-summary-card { padding: 12px; }
+  .inventory-mobile-products { gap: 8px; }
+  .inventory-product-card { padding: 12px; }
+  .inventory-product-meta > span:first-child, .inventory-status { font-size: 12px; }
+  .inventory-product-details > div > span, .inventory-product-details small { font-size: 13px; }
+  .inventory-product-details strong { font-size: 15px; }
+  .inventory-filter-bar { padding: 0 0 9px; }
+  .inventory-filter-count { padding: 0 0 9px; }
+  .inventory-footer { padding: 9px; }
+  .prediction-module .diza-ml-stats { gap: 8px; }
+  .prediction-module .diza-ml-stats article { padding: 12px; }
+  .diza-ml-daily small { font-size: 12px; }
+  .diza-bulk-panel { padding: 12px; }
+}
+@media (max-width: 520px) {
+  .diza-ui-page-actions { width: 100%; }
+  .diza-ui-page-actions .diza-ui-button { flex: 1 1 auto; }
+  .prediction-actions { width: 100%; }
+  .prediction-actions > :is(a,button) { flex: 1 1 auto; }
+  .diza-ml-table-scroll, .inventory-table-scroll, .diza-bulk-scroll, .diza-test-overflow { max-width: 100%; }
+}
+@media (max-width: 360px) {
+  .diza-content { padding-inline: 10px; }
+  .diza-mobile-link { font-size: 12px; }
+  .inventory-summary { grid-template-columns: 1fr; }
+  .inventory-filter-bar { grid-template-columns: 1fr; }
+  .diza-ml-stats { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .diza-dashboard-sales-bar { transition: none; }
+}
+
+/* En Inicio se recupera la separación de cabecera del diseño anterior. */
+.diza-dashboard .diza-ui-page-header { margin: 0 0 24px; }
+.diza-dashboard .diza-ui-page-heading h1 { font-size: clamp(25px, 3vw, 30px); }
+@media (max-width: 520px) {
+  .diza-dashboard .diza-ui-page-header { margin-bottom: 19px; }
+}

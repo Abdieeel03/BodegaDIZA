@@ -1,0 +1,92 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;650;700;750;800&display=swap");
+
+/*
+ * BodegaDIZA Design System — Entrega 1
+ * Punto único de verdad para identidad, superficies, tipografía y medidas.
+ * Tema claro explícito. Un tema oscuro requerirá tokens y pruebas propias.
+ */
+:root {
+  color-scheme: light;
+
+  /* Marca y acciones */
+  --diza-color-brand: #1e3a8a;
+  --diza-color-brand-subtle: #edf3ff;
+  --diza-color-action: #315cc9;
+  --diza-color-action-hover: #244ba8;
+  --diza-color-focus: #315cc9;
+
+  /* Superficies y texto */
+  --diza-color-canvas: #f6f8fc;
+  --diza-color-surface: #ffffff;
+  --diza-color-surface-soft: #f3f6fb;
+  --diza-color-text: #14223b;
+  --diza-color-text-secondary: #4b5d77;
+  --diza-color-text-muted: #64748b;
+  --diza-color-text-inverse: #ffffff;
+  --diza-color-border: #dce4ee;
+  --diza-color-border-strong: #b9c9dc;
+
+  /* Estados semánticos: acompañar siempre con texto, no solo color */
+  --diza-color-success: #16805d;
+  --diza-color-success-soft: #e8f8ef;
+  --diza-color-warning: #98550b;
+  --diza-color-warning-soft: #fff5e5;
+  --diza-color-danger: #c6394d;
+  --diza-color-danger-soft: #fff0f2;
+  --diza-color-info-soft: #edf3ff;
+
+  /* Tipografía — sin descarga externa; Inter es opcional */
+  --diza-font-sans: Inter, 'Segoe UI', Roboto, Arial, system-ui, sans-serif;
+  --diza-font-headings: 'Inter', 'Segoe UI', Roboto, Arial, system-ui, sans-serif;
+  --diza-font-mono: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  --diza-font-size-xs: 0.75rem;    /* 12 px */
+  --diza-font-size-sm: 0.875rem;   /* 14 px */
+  --diza-font-size-md: 1rem;       /* 16 px */
+  --diza-font-size-lg: 1.125rem;   /* 18 px */
+  --diza-font-size-xl: 1.25rem;    /* 20 px */
+  --diza-font-size-2xl: 1.5rem;    /* 24 px */
+  --diza-font-size-3xl: 1.875rem;  /* 30 px */
+  --diza-line-height-body: 1.5;
+  --diza-line-height-heading: 1.2;
+
+  /* Espaciado: múltiplos de 4 px */
+  --diza-space-1: 4px;
+  --diza-space-2: 8px;
+  --diza-space-3: 12px;
+  --diza-space-4: 16px;
+  --diza-space-5: 20px;
+  --diza-space-6: 24px;
+  --diza-space-8: 32px;
+  --diza-space-12: 48px;
+
+  /* Bordes, controles y elevación */
+  --diza-radius-sm: 6px;
+  --diza-radius-md: 8px;
+  --diza-radius-lg: 12px;
+  --diza-radius-xl: 16px;
+  --diza-radius-pill: 999px;
+  --diza-control-height: 44px;
+  --diza-shadow-sm: 0 1px 3px rgb(20 34 59 / 7%);
+  --diza-shadow-md: 0 8px 24px rgb(20 34 59 / 9%);
+  --diza-shadow-lg: 0 16px 40px rgb(20 34 59 / 12%);
+  --diza-transition-fast: 150ms ease;
+  --diza-transition-normal: 200ms ease;
+
+  /*
+   * Compatibilidad con App.css y componentes existentes.
+   * Migrar estos aliases cuando se modernice cada módulo; no eliminarlos ahora.
+   */
+  --text: var(--diza-color-text-secondary);
+  --text-h: var(--diza-color-text);
+  --bg: var(--diza-color-surface);
+  --border: var(--diza-color-border);
+  --code-bg: var(--diza-color-surface-soft);
+  --accent: var(--diza-color-action);
+  --accent-bg: var(--diza-color-brand-subtle);
+  --accent-border: var(--diza-color-border-strong);
+  --social-bg: var(--diza-color-surface-soft);
+  --shadow: var(--diza-shadow-md);
+  --sans: var(--diza-font-sans);
+  --heading: var(--diza-font-sans);
+  --mono: var(--diza-font-mono);
+}

@@ -160,9 +160,12 @@ public class VentaService {
     @Transactional(readOnly = true)
     public List<VentaResponse> listarVentas(LocalDate desde, LocalDate hasta) {
         List<Venta> ventas;
-        if (desde != null && hasta != null) {
-            LocalDateTime inicio = desde.atStartOfDay();
-            LocalDateTime fin = hasta.atTime(LocalTime.MAX);
+        if (desde != null && hasta != null && desde.isAfter(hasta)) {
+            throw new BusinessException("La fecha inicial debe ser anterior o igual a la final");
+        }
+        if (desde != null || hasta != null) {
+            LocalDateTime inicio = (desde != null ? desde : LocalDate.of(1, 1, 1)).atStartOfDay();
+            LocalDateTime fin = (hasta != null ? hasta : LocalDate.of(9999, 12, 31)).atTime(LocalTime.MAX);
             ventas = ventaRepository.findByFechaBetweenOrderByFechaDesc(inicio, fin);
         } else {
             ventas = ventaRepository.findAllByOrderByFechaDesc();

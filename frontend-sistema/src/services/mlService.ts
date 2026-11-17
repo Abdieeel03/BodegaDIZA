@@ -15,6 +15,11 @@ const unwrap = <T>(response: ApiResponse<T>): T => {
 };
 
 export const mlService = {
+  async getLatestTraining(): Promise<TrainingResult> {
+    const response = await apiClient.get<ApiResponse<TrainingResult>>('/ml/trainings/latest');
+    return unwrap(response.data);
+  },
+
   async train(salesFile?: File | null, productsFile?: File | null): Promise<TrainingResult> {
     if (salesFile && productsFile) {
       const formData = new FormData();

@@ -12,8 +12,10 @@ def _connection():
         port=int(os.environ.get('DB_PORT', '5432')),
         dbname=os.environ.get('DB_NAME', 'bodega_diza'),
         user=os.environ.get('DB_USER', 'postgres'),
-        password=os.environ.get('DB_PASSWORD', 'postgres'),
-        connect_timeout=5,
+        password=os.environ.get('DB_PASSWORD', ''),
+        sslmode=os.environ.get('DB_SSLMODE', 'prefer'),
+        prepare_threshold=None,
+        connect_timeout=10,
     )
 
 
@@ -71,60 +73,23 @@ def load_providers_from_db() -> pd.DataFrame:
 
 
 def load_sales_from_db() -> pd.DataFrame:
-    """Combina ventas operativas de public.ventas/detalles_venta con el histórico almacenado en BD."""
+    """Carga todas las ventas desde public.ventas y public.detalles_venta."""
+    query = """
+        SELECT
+            TO_CHAR(v.fecha::date, 'YYYY-MM-DD') AS fecha,
+            p.sku AS id_producto,
+            SUM(dv.cantidad)::float8 AS cantidad_vendida,
+            MAX(dv.precio_unitario)::float8 AS precio_venta_unitario,
+            NULL::float8 AS stock_final_dia
+        FROM public.detalles_venta dv
+        JOIN public.ventas v ON v.id = dv.venta_id
+        JOIN public.productos p ON p.id = dv.producto_id
+        WHERE p.activo = true
+        GROUP BY v.fecha::date, p.sku
+        ORDER BY v.fecha::date, p.sku
+    """
     with _connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT to_regclass('staging_diza.ventas_csv') IS NOT NULL")
-            has_staging = bool(cur.fetchone()[0])
-
-            if has_staging:
-                query = """
-                    WITH combined AS (
-                        SELECT
-                            sv.fecha::date AS fecha,
-                            sv.id_producto AS id_producto,
-                            sv.cantidad_vendida::float8 AS cantidad_vendida,
-                            sv.precio_venta_unitario::float8 AS precio_venta_unitario,
-                            sv.stock_final_dia::float8 AS stock_final_dia
-                        FROM staging_diza.ventas_csv sv
-                        JOIN public.productos p ON p.sku = sv.id_producto AND p.activo = true
-                        UNION ALL
-                        SELECT
-                            v.fecha::date AS fecha,
-                            p.sku AS id_producto,
-                            dv.cantidad::float8 AS cantidad_vendida,
-                            dv.precio_unitario::float8 AS precio_venta_unitario,
-                            NULL::float8 AS stock_final_dia
-                        FROM public.detalles_venta dv
-                        JOIN public.ventas v ON v.id = dv.venta_id
-                        JOIN public.productos p ON p.id = dv.producto_id
-                        WHERE p.activo = true
-                    )
-                    SELECT
-                        TO_CHAR(fecha, 'YYYY-MM-DD') AS fecha,
-                        id_producto,
-                        SUM(cantidad_vendida)::float8 AS cantidad_vendida,
-                        MAX(precio_venta_unitario)::float8 AS precio_venta_unitario,
-                        MAX(stock_final_dia)::float8 AS stock_final_dia
-                    FROM combined
-                    GROUP BY fecha, id_producto
-                    ORDER BY fecha, id_producto
-                """
-            else:
-                query = """
-                    SELECT
-                        TO_CHAR(v.fecha::date, 'YYYY-MM-DD') AS fecha,
-                        p.sku AS id_producto,
-                        SUM(dv.cantidad)::float8 AS cantidad_vendida,
-                        MAX(dv.precio_unitario)::float8 AS precio_venta_unitario,
-                        NULL::float8 AS stock_final_dia
-                    FROM public.detalles_venta dv
-                    JOIN public.ventas v ON v.id = dv.venta_id
-                    JOIN public.productos p ON p.id = dv.producto_id
-                    WHERE p.activo = true
-                    GROUP BY v.fecha::date, p.sku
-                    ORDER BY v.fecha::date, p.sku
-                """
             cur.execute(query)
             rows = cur.fetchall()
             columns = [desc.name for desc in cur.description]

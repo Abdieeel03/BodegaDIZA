@@ -1,0 +1,71 @@
+name: bodegadiza-prod
+
+services:
+  ml:
+    build:
+      context: ./ml-service
+      dockerfile: Dockerfile.equipo
+    environment:
+      ML_MODEL_DIR: /app/data/models
+      ML_AUTO_TRAIN_ON_STARTUP: 'true'
+      DB_HOST: ${PROD_DB_HOST:?Define PROD_DB_HOST en .env.prod}
+      DB_PORT: ${PROD_DB_PORT:-5432}
+      DB_NAME: ${PROD_DB_NAME:-postgres}
+      DB_USER: ${PROD_DB_USER:?Define PROD_DB_USER en .env.prod}
+      DB_PASSWORD: ${PROD_DB_PASSWORD:?Define PROD_DB_PASSWORD en .env.prod}
+      DB_SSLMODE: ${PROD_DB_SSLMODE:-require}
+    volumes:
+      - prod_ml_models:/app/data/models
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 25
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile.equipo
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SERVER_PORT: 8081
+      DB_HOST: ${PROD_DB_HOST:?Define PROD_DB_HOST en .env.prod}
+      DB_PORT: ${PROD_DB_PORT:-5432}
+      DB_NAME: ${PROD_DB_NAME:-postgres}
+      DB_USER: ${PROD_DB_USER:?Define PROD_DB_USER en .env.prod}
+      DB_PASSWORD: ${PROD_DB_PASSWORD:?Define PROD_DB_PASSWORD en .env.prod}
+      DB_SSLMODE: ${PROD_DB_SSLMODE:-require}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: ${PROD_DDL_AUTO:-update}
+      SPRING_JPA_SHOW_SQL: 'false'
+      JWT_SECRET: ${PROD_JWT_SECRET:?Define PROD_JWT_SECRET en .env.prod}
+      JWT_EXPIRATION: ${PROD_JWT_EXPIRATION:-86400000}
+      ADMIN_EMAIL: ${PROD_ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${PROD_ADMIN_PASSWORD:-}
+      ADMIN_NOMBRE: ${PROD_ADMIN_NOMBRE:-Administrador Bodega DIZA}
+      CORS_ALLOWED_ORIGIN: ${PROD_CORS_ORIGIN:-https://diza.abdieeel.dev}
+      DIZA_DEMO_ENABLED: 'false'
+      ML_SERVICE_BASE_URL: http://ml:8000
+      MAIL_USERNAME: ${PROD_MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${PROD_MAIL_PASSWORD:-}
+    depends_on:
+      ml:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend-sistema
+      dockerfile: Dockerfile.prod
+      args:
+        VITE_API_BASE_URL: ${PROD_API_BASE_URL:-/api}
+        VITE_INVENTORY_MODE: api
+        VITE_INVENTORY_ENDPOINT: /productos
+    ports:
+      - "${PROD_WEB_BIND:-127.0.0.1}:${PROD_WEB_PORT:-8088}:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  prod_ml_models:

@@ -2,6 +2,8 @@
 # Inicio rapido: archivos privados/generados (BodegaDIZA equipo)
 .env.equipo
 .env.equipo.*
+.env.prod
+.env.prod.local
 **/.env
 **/.env.local
 **/__pycache__/

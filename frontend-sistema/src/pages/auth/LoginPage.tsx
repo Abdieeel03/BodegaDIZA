@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { ApiError } from '../../types';
+import { Button, FormField } from '../../components/ui';
 
 export const LoginPage = () => {
   const navigate = useNavigate();
@@ -33,8 +34,7 @@ export const LoginPage = () => {
 
       {error && <p className="auth-error" role="alert">{error}</p>}
 
-      <div className="form-group">
-        <label htmlFor="login-email">Correo Electrónico</label>
+      <FormField controlId="login-email" label="Correo electrónico" required className="form-group">
         <input
           id="login-email"
           type="email"
@@ -43,10 +43,9 @@ export const LoginPage = () => {
           onChange={(e) => setEmail(e.target.value)}
           className="text-input"
         />
-      </div>
+      </FormField>
 
-      <div className="form-group">
-        <label htmlFor="login-password">Contraseña</label>
+      <FormField controlId="login-password" label="Contraseña" required className="form-group">
         <input
           id="login-password"
           type="password"
@@ -55,11 +54,11 @@ export const LoginPage = () => {
           onChange={(e) => setPassword(e.target.value)}
           className="text-input"
         />
-      </div>
+      </FormField>
 
-      <button type="submit" className="btn-primary btn-block" disabled={isLoading}>
-        {isLoading ? 'Ingresando...' : 'Entrar al Sistema'}
-      </button>
+      <Button type="submit" block loading={isLoading}>
+        {isLoading ? 'Ingresando...' : 'Entrar al sistema'}
+      </Button>
     </form>
   );
 };

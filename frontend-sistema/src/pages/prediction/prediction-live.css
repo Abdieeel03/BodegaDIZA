@@ -15,7 +15,7 @@
 .diza-ml-card{background:#fff;border:1px solid #dce5f1;border-radius:13px;padding:20px;margin-bottom:17px}
 .diza-ml-card-heading{margin-bottom:17px}
 .diza-ml-card-heading label{font-weight:700;font-size:12px;display:flex;flex-direction:column;gap:7px;min-width:260px}
-.diza-ml-card-heading select{border:1px solid #d4deec;border-radius:8px;background:#fff;color:#192d4c;padding:11px;font-size:13px;max-width:100%}
+.diza-ml-card-heading select,.diza-ml-card-heading input[type="search"]{border:1px solid #d4deec;border-radius:8px;background:#fff;color:#192d4c;padding:11px;font-size:13px;max-width:100%}
 .diza-ml-stats-inside{margin-bottom:14px}
 .diza-ml-chart{width:100%;overflow:auto}
 .diza-ml-chart svg{display:block;width:100%;height:auto;min-width:440px;max-height:350px}
@@ -31,3 +31,87 @@
 .diza-ml-disclaimer{font-size:12px!important;margin:20px 0!important}
 @media(max-width:900px){.diza-ml-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.diza-ml-daily{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:530px){.diza-ml-heading h1{font-size:23px}.diza-ml-card{padding:14px}.diza-ml-stats{gap:9px}.diza-ml-stats article{padding:12px}.diza-ml-daily{grid-template-columns:repeat(2,minmax(0,1fr))}.diza-ml-card-heading label{min-width:100%}}
+
+/* Predicción: navegación y tarjetas inspiradas en el prototipo. */
+.prediction-module{--prediction-accent:#283c91;--prediction-ink:#172347;min-width:0;max-width:1320px;margin:auto;background:#f8f9ff;color:var(--prediction-ink);padding:clamp(12px,2vw,24px);border-radius:16px}
+.prediction-module *{box-sizing:border-box;min-width:0}
+.prediction-module .diza-ml-page{font-family:inherit}
+.prediction-module .diza-ml-heading h1{font-size:clamp(23px,3vw,29px);color:#172347;overflow-wrap:anywhere}
+.prediction-module .diza-ml-heading>div:first-child{flex:1 1 280px}
+.prediction-module .diza-ml-card{border-color:#dce0ec;box-shadow:0 2px 4px #283c9103}
+.prediction-module .diza-ml-stats article strong{white-space:normal;overflow-wrap:anywhere;line-height:1.25;font-size:clamp(19px,2vw,25px)}
+.prediction-module h2,.prediction-module h3,.prediction-module strong,.prediction-module p,.prediction-module small{overflow-wrap:anywhere}
+.prediction-module h3{font-size:15px;line-height:1.45}
+.prediction-module .diza-ml-eyebrow,.prediction-card-label{color:#3e4c89}
+.prediction-module a{color:#283c91}
+.prediction-module .diza-ml-button,.prediction-module .btn-primary{display:inline-flex;align-items:center;justify-content:center;background:#283c91;color:white;line-height:1.4;text-align:center;text-decoration:none;white-space:normal;max-width:100%;gap:6px;font-size:13px}
+.prediction-module button:disabled{opacity:.55;cursor:not-allowed}
+.prediction-module a:focus-visible,.prediction-module button:focus-visible,.prediction-module input:focus-visible,.prediction-module select:focus-visible{outline:3px solid #8b95ee;outline-offset:3px}
+.prediction-actions{display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+.prediction-secondary{font-size:13px;font-weight:650;padding:12px 0}
+.prediction-period{padding:0 0 16px;color:#596a87;font-size:13px}
+.prediction-priorities{display:grid;gap:0;margin-bottom:20px}
+.prediction-priority-item{display:flex;gap:14px;align-items:center;text-decoration:none;padding:15px 0;border-bottom:1px solid #edf0f7}
+.prediction-priority-item>div{flex:1;display:grid;gap:5px;font-size:14px}
+.prediction-priority-item small{color:#66718a;font-size:12px}
+.prediction-rank{display:grid;place-items:center;background:#edf0ff;color:#283c91;border-radius:7px;flex:0 0 32px;height:32px;font-weight:700}
+.prediction-filters{display:flex;flex-wrap:wrap;gap:15px;margin:18px 0}
+.prediction-filters label{flex:1 1 200px;display:grid;gap:8px;font-size:13px}
+.prediction-module input,.prediction-module select{width:100%;max-width:100%;min-width:0;font:inherit;color:#172347;background:#fff;border:1px solid #cdd3e7;border-radius:7px;padding:11px}
+.prediction-module .diza-ml-card-heading label{min-width:0;flex:1 1 200px}
+.prediction-module .diza-ml-card-heading>div{flex:1 1 250px}
+.prediction-product-title{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:8px 0 20px}
+.prediction-product-title h2{flex:1 1 220px;margin:0}
+.prediction-product-title>span:last-child{color:#64748b;font-size:12px}
+.prediction-forecast-panel{border:1px solid #dce0ec;border-radius:10px;padding:18px;background:#fff;margin-bottom:18px}
+.prediction-module .diza-ml-chart svg{min-width:0;max-height:310px}
+.prediction-module .diza-ml-daily{grid-template-columns:repeat(auto-fit,minmax(85px,1fr))}
+.prediction-module .diza-ml-daily span{background:#f1f3ff}
+.prediction-insights{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.prediction-insights article{display:flex;flex-direction:column;align-items:flex-start;gap:12px;border:1px solid #dce0ec;border-radius:10px;padding:20px;background:#fff}
+.prediction-card-label{font-size:10px;font-weight:800;letter-spacing:.05em;line-height:1.5}
+.prediction-insights h3{margin:0}.prediction-insights strong{font-size:26px;line-height:1.3}.prediction-insights strong small{font-size:13px;font-weight:500;color:#66718a}
+.prediction-insights .prediction-action-card{border-left:3px solid #283c91}.prediction-action-card .diza-ml-button{margin-top:auto;width:100%}
+.prediction-module .diza-ml-table-scroll{max-width:100%;overscroll-behavior-x:contain}
+.prediction-module .diza-ml-table-scroll table{min-width:780px}
+.prediction-module .diza-ml-table-scroll td:first-child{max-width:220px;overflow-wrap:anywhere}
+.prediction-module .prediction-page{max-width:100%;padding:0;background:transparent}
+.prediction-module .prediction-hero{gap:16px;flex-wrap:wrap}.prediction-module .prediction-hero h1{font-size:clamp(23px,3vw,29px);line-height:1.2}
+.prediction-module .prediction-metrics{grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}
+.prediction-module .prediction-metrics strong{white-space:normal;overflow-wrap:anywhere}
+@media(max-width:1000px){.prediction-insights{grid-template-columns:1fr}.prediction-insights article{gap:9px}}
+@media(max-width:600px){.prediction-module{padding:12px 8px;border-radius:10px}.prediction-module .diza-ml-heading{gap:14px}.prediction-actions{width:100%}.prediction-actions>a,.prediction-actions>button{flex:1 1 145px}.prediction-module .diza-ml-card{padding:14px 12px}.prediction-module .diza-ml-stats{grid-template-columns:repeat(2,minmax(0,1fr))!important}.prediction-module .diza-ml-stats article{padding:13px 10px}.prediction-module .diza-ml-stats article strong{font-size:20px}.prediction-priority-item{gap:9px;flex-wrap:wrap}.prediction-priority-item>div{flex-basis:150px}.prediction-forecast-panel{padding:10px 6px}.prediction-module .prediction-upload-grid{grid-template-columns:1fr}.prediction-module .prediction-hero-stat{min-width:0;max-width:100%}.prediction-module .prediction-submit-row{flex-wrap:wrap;gap:12px}.prediction-module .prediction-submit-row>*{max-width:100%}.prediction-module .diza-ml-card-heading label{flex-basis:100%}}
+
+/* Entrega 5: continuidad visual con el Dashboard y los tokens de BodegaDIZA. */
+.prediction-module{--prediction-accent:var(--diza-color-brand);--prediction-ink:var(--diza-color-text);background:transparent;padding:0;border-radius:0;color:var(--diza-color-text)}
+.prediction-module .diza-ml-page{color:var(--diza-color-text)}
+.prediction-module .diza-ml-heading h1{color:var(--diza-color-text);letter-spacing:-.025em}
+.prediction-module .diza-ml-eyebrow,.prediction-module .prediction-card-label{color:var(--diza-color-brand)}
+.prediction-module .diza-ml-heading p,.prediction-module .diza-ml-card p{color:var(--diza-color-text-secondary)}
+.prediction-module .diza-ml-card,.prediction-module .diza-ml-stats article{border-color:var(--diza-color-border);border-radius:var(--diza-radius-lg);box-shadow:none}
+.prediction-module .diza-ml-stats{grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
+.prediction-module .diza-ml-stats .diza-ui-stat{padding:18px}
+.prediction-module .diza-ml-stats .diza-ui-stat-label{font-size:13px;color:var(--diza-color-text-secondary)}
+.prediction-module .diza-ml-stats .diza-ui-stat-value{color:var(--diza-color-text);font-size:clamp(19px,2vw,25px);margin-top:10px;overflow-wrap:anywhere;white-space:normal}
+.prediction-module .diza-ml-stats .diza-ui-stat-note{color:var(--diza-color-text-muted);font-size:12px}
+.prediction-module .diza-ml-button,.prediction-module .btn-primary{background:var(--diza-color-action);border-radius:var(--diza-radius-md)}
+.prediction-module .diza-ml-button:hover,.prediction-module .btn-primary:hover{background:var(--diza-color-action-hover)}
+.prediction-module a{color:var(--diza-color-brand)}
+.prediction-module .diza-ml-button,.prediction-module .btn-primary{color:#fff}
+.prediction-module .diza-ml-button:focus-visible,.prediction-module button:focus-visible,.prediction-module a:focus-visible{outline-color:var(--diza-color-focus)}
+.prediction-module .prediction-rank{background:var(--diza-color-brand-subtle);color:var(--diza-color-brand)}
+.prediction-module .prediction-insights article,.prediction-module .prediction-forecast-panel{border-color:var(--diza-color-border);border-radius:var(--diza-radius-lg)}
+.prediction-module .prediction-insights .prediction-action-card{border-left-color:var(--diza-color-action)}
+.prediction-module .diza-ml-daily span{background:var(--diza-color-surface-soft)}
+.prediction-module .diza-ml-table-scroll th{background:var(--diza-color-surface-soft)}
+.prediction-module .diza-ml-status.diza-ml-rojo{background:var(--diza-color-danger-soft);color:var(--diza-color-danger)}
+.prediction-module .diza-ml-status.diza-ml-amarillo{background:var(--diza-color-warning-soft);color:var(--diza-color-warning)}
+.prediction-module .diza-ml-status.diza-ml-verde{background:var(--diza-color-success-soft);color:var(--diza-color-success)}
+@media(max-width:600px){
+  .prediction-module{padding:0}
+  .prediction-module .diza-ml-stats{gap:10px}
+  .prediction-module .diza-ml-stats .diza-ui-stat{padding:12px}
+  .prediction-module .diza-ml-stats .diza-ui-stat-label{font-size:12px}
+}
+
+.prediction-period-expired { color: var(--diza-color-warning); font-weight: 700; }

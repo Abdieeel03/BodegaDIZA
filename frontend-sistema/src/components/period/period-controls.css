@@ -3,9 +3,9 @@
 .diza-period select,.diza-period input { color:#172c4f; background:white; border:1px solid #cbd7eb; border-radius:8px; padding:9px 11px; min-height:41px; }
 .diza-period-range { font-size:12px; font-weight:650; color:#587193; padding:10px 4px; }
 .diza-stat-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin:16px 0; }
-.diza-stat { border:1px solid #dbe5f3; border-radius:12px; background:white; padding:16px; min-width:0; }
-.diza-stat span { display:block; font-size:12px; color:#6a7790; }
-.diza-stat strong { display:block; font-size:24px; color:#183b82; margin-top:6px; line-height:1.2; overflow-wrap:anywhere; }
+.diza-stat { border:1px solid var(--diza-color-border); border-radius:var(--diza-radius-lg); background:var(--diza-color-surface); padding:var(--diza-space-4); min-width:0; }
+.diza-stat span { display:block; font-size:var(--diza-font-size-xs); color:var(--diza-color-text-secondary); }
+.diza-stat strong { display:block; font-size:24px; color:var(--diza-color-text); margin-top:6px; line-height:1.2; overflow-wrap:anywhere; }
 .diza-period-empty { color:#7a879b; padding:16px 0; }
 .diza-mini-chart { display:flex; align-items:stretch; gap:7px; min-height:190px; margin:17px 0 8px; padding:9px 0; border-bottom:1px solid #d9e3f1; overflow-x:auto; }
 .diza-mini-col { flex:1 0 40px; display:flex; flex-direction:column; align-items:center; text-align:center; min-width:0; }

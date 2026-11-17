@@ -39,6 +39,8 @@ export interface TrainingResult {
   status: 'COMPLETED';
   modelName: string;
   trainedAt: IsoDateTime;
+  forecastFromDate?: string | null;
+  forecastToDate?: string | null;
   metrics: PredictionMetrics;
   productsCount: number;
   observationsCount: number;

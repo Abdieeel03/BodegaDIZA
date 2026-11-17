@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Button, PageHeader, StatCard, StatusBadge } from '../../components/ui';
+import { DataFeedback } from '../../components/common/DataFeedback';
+import { ForecastLineChart } from '../../components/charts/ForecastLineChart';
 import { mlService } from '../../services/mlService';
 import { estimatedRevenueSummary, formatSoles, getCurrentSalePrices, type PriceMap } from '../../services/mlRevenue';
 import type { DemandPrediction, ReplenishmentRecommendation } from '../../types';
-import { OperationalOverview } from './OperationalOverview';
 import './dashboard.css';
 
+type ForecastState = { predictions: DemandPrediction[]; replenishments: ReplenishmentRecommendation[] };
 const formatUnits = (amount: number) => amount.toLocaleString('es-PE', { maximumFractionDigits: 1 });
 const readableName = (text: string) => text.replaceAll('Ã±', 'ñ').replaceAll('Ã©', 'é').replaceAll('Ã¡', 'á');
-
-type ForecastState = { predictions: DemandPrediction[]; replenishments: ReplenishmentRecommendation[] };
+const alertPriority = { ROJO: 0, AMARILLO: 1, VERDE: 2 };
+const alertLabel = { ROJO: 'Alta', AMARILLO: 'Media', VERDE: 'Baja' };
 
 export const DashboardPage = () => {
   const [data, setData] = useState<ForecastState>({ predictions: [], replenishments: [] });
@@ -46,71 +49,84 @@ export const DashboardPage = () => {
   const revenue = estimatedRevenueSummary(data.predictions, prices);
   const revenueLabel = pricesLoading ? 'Calculando...' : revenue.pricedProducts === 0
     ? 'No disponible' : formatSoles(revenue.total);
-  const urgent = [...data.replenishments].filter(item => Number(item.recommendedReplenishment) > 0)
-    .sort((a, b) => Number(b.recommendedReplenishment) - Number(a.recommendedReplenishment));
-  const toBuy = urgent.reduce((sum, item) => sum + Number(item.recommendedReplenishment), 0);
+  const urgent = data.replenishments
+    .filter(item => Number(item.recommendedReplenishment) > 0)
+    .sort((a, b) => alertPriority[a.alertStatus] - alertPriority[b.alertStatus]
+      || Number(b.stockoutProbability ?? 0) - Number(a.stockoutProbability ?? 0)
+      || Number(b.recommendedReplenishment) - Number(a.recommendedReplenishment));
+  const unitsToBuy = urgent.reduce((sum, item) => sum + Number(item.recommendedReplenishment), 0);
   const daily = Array.from({ length: 7 }, (_, day) => data.predictions.reduce((sum, item) => sum + Number(item.dailyPredictions[day] || 0), 0));
-  const maximum = Math.max(1, ...daily);
-  const x = (index: number) => 46 + index * 88;
-  const y = (value: number) => 205 - (value / maximum) * 160;
 
-  return <main className="diza-dashboard">
-    <OperationalOverview />
-    <header className="diza-dashboard-heading">
-      <div><p className="diza-location">BODEGA DIZA</p><h1>Predicción y reposición</h1>
-        <p>Datos obtenidos del modelo entrenado, independientes de las ventas operativas del período.</p></div>
-      <button type="button" className="diza-ranking-link" style={{ border: 0, cursor: 'pointer' }} onClick={() => setRefresh(n => n + 1)}>Actualizar predicción</button>
-    </header>
-    {error && <p role="alert" style={{ color: '#b42332' }}>{error}. Comprueba la conexión entre Spring Boot y el microservicio ML.</p>}
-    {priceError && !loading && <p role="status">Los ingresos estimados no están disponibles: {priceError}. Los pronósticos en unidades sí se muestran.</p>}
-    {loading ? <section className="diza-chart-card"><p>Consultando predicciones...</p></section> : <>
-      <section className="diza-indicators" aria-label="Resumen de predicciones" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(185px, 1fr))' }}>
-        {[
-          { title: 'Demanda prevista · 7 días', value: `${formatUnits(demand)} unidades`, detail: 'Según histórico registrado', icon: '▦' },
-          { title: 'Ingresos estimados · 7 días', value: revenueLabel, detail: revenue.pricedProducts < revenue.products && !pricesLoading ? `Precios de ${revenue.pricedProducts}/${revenue.products} productos` : 'A precios de venta actuales', icon: 'S/' },
-          { title: 'Productos pronosticados', value: String(data.predictions.length), detail: 'Con historial disponible', icon: '▣' },
-          { title: 'Productos por reponer', value: String(urgent.length), detail: 'Basado en stock actual', icon: '⚠' },
-          { title: 'Reposición sugerida', value: `${formatUnits(toBuy)} unidades`, detail: 'Para mantener reserva mínima', icon: '▤' },
-        ].map(item => <article key={item.title} className="diza-kpi">
-          <span className="diza-kpi-icon">{item.icon}</span><div className="diza-kpi-info">
-            <span className="diza-kpi-title">{item.title}</span><strong className="diza-kpi-value">{item.value}</strong>
-            <span className="diza-chip diza-neutro">{item.detail}</span>
+  return (
+    <main className="diza-dashboard">
+      <PageHeader
+        title="Inicio"
+        actions={<Button variant="secondary" size="sm" loading={loading} onClick={() => setRefresh(value => value + 1)}>Actualizar predicción</Button>}
+      />
+
+      <section className="diza-dashboard-section" aria-labelledby="diza-forecast-title">
+        <div className="diza-dashboard-section-heading">
+          <div>
+            <h2 id="diza-forecast-title">Predicción y reposición</h2>
           </div>
-        </article>)}
+          <Link to="/prediccion-demanda" className="diza-dashboard-text-link">Explorar predicciones</Link>
+        </div>
+
+        {loading ? (
+          <DataFeedback status="loading" title="Consultando predicciones" description="Obteniendo la proyección y las necesidades de reposición." />
+        ) : error ? (
+          <DataFeedback status="error" title="No se pudo consultar la predicción" description={error} onRetry={() => setRefresh(value => value + 1)} />
+        ) : data.predictions.length === 0 ? (
+          <div className="diza-dashboard-empty">
+            <DataFeedback status="empty" title="Todavía no hay pronósticos" description="Genera o consulta predicciones desde el módulo de demanda." onRetry={() => setRefresh(value => value + 1)} />
+            <Link to="/prediccion-demanda" className="diza-dashboard-text-link">Ir a Predicción de demanda</Link>
+          </div>
+        ) : (
+          <>
+            {priceError && !pricesLoading && <p className="diza-dashboard-notice" role="status">No se pudieron consultar los precios: {priceError}. Las cantidades previstas siguen disponibles.</p>}
+            <div className="diza-dashboard-kpis" aria-label="Indicadores de predicción">
+              <StatCard label="Demanda prevista · 7 días" value={`${formatUnits(demand)} unidades`} note={`${data.predictions.length} productos con pronóstico`} />
+              <StatCard label="Ingresos estimados · 7 días" value={revenueLabel} note={pricesLoading ? 'Consultando precios de venta' : revenue.pricedProducts < revenue.products ? `Precios disponibles: ${revenue.pricedProducts} de ${revenue.products}` : 'No son ventas reales'} />
+              <StatCard label="Productos por reponer" value={urgent.length} />
+              <StatCard label="Reposición sugerida" value={`${formatUnits(unitsToBuy)} unidades`} note="Incluye reserva mínima" />
+            </div>
+
+            <div className="diza-dashboard-analytics">
+              <section className="diza-dashboard-panel" aria-labelledby="diza-demand-chart-title">
+                <div className="diza-dashboard-panel-heading">
+                  <div><h3 id="diza-demand-chart-title">Tendencia de demanda</h3></div>
+                  <span className="diza-dashboard-panel-tag">7 días</span>
+                </div>
+                <ForecastLineChart values={daily} title="Demanda prevista total por día en siete días" />
+                <p className="diza-dashboard-chart-foot">Demanda acumulada: <strong>{formatUnits(demand)} unidades</strong></p>
+              </section>
+
+              <section className="diza-dashboard-panel diza-dashboard-panel--ranking" aria-labelledby="diza-priorities-title">
+                <div className="diza-dashboard-panel-heading">
+                  <div><h3 id="diza-priorities-title">Reposición prioritaria</h3></div>
+                </div>
+                <div className="diza-dashboard-priorities">
+                  {urgent.length ? urgent.slice(0, 5).map((item, index) => (
+                    <Link key={item.productId} to={`/prediccion-demanda/producto?producto=${encodeURIComponent(item.productId)}`} className="diza-dashboard-priority">
+                      <span className="diza-dashboard-priority-number" aria-hidden="true">{index + 1}</span>
+                      <span className="diza-dashboard-priority-body">
+                        <strong>{readableName(item.productName)}</strong>
+                        <small>Stock: {formatUnits(Number(item.stockActual))} · Reponer: {formatUnits(Number(item.recommendedReplenishment))}</small>
+                      </span>
+                      <StatusBadge tone={item.alertStatus === 'ROJO' ? 'danger' : item.alertStatus === 'AMARILLO' ? 'warning' : 'success'}>{alertLabel[item.alertStatus]}</StatusBadge>
+                    </Link>
+                  )) : <p className="diza-dashboard-priority-empty">No hay productos con reposición sugerida.</p>}
+                </div>
+                <Link className="diza-dashboard-panel-action" to="/prediccion-demanda/reposicion">Ver todas las recomendaciones <span aria-hidden="true">→</span></Link>
+              </section>
+            </div>
+            <p className="diza-dashboard-legal">El pronóstico comienza después del histórico utilizado; no necesariamente corresponde a los próximos siete días desde hoy. Los ingresos estimados se calculan con precios actuales: no son ventas registradas ni utilidad neta.</p>
+          </>
+        )}
       </section>
-      <div className="diza-analytics">
-        <section className="diza-chart-card">
-          <div className="diza-chart-header"><h3>Demanda estimada durante 7 días (unidades)</h3></div>
-          {data.predictions.length ? <div className="diza-chart-container">
-            <svg viewBox="0 0 630 250" role="img" aria-label="Demanda estimada agregada para siete días">
-              {[0, 0.5, 1].map(r => <g key={r}>
-                <line x1="46" x2="574" y1={y(maximum * r)} y2={y(maximum * r)} stroke="#e3e9f2" />
-                <text x="38" y={y(maximum * r) + 4} textAnchor="end" fill="#66738d" fontSize="11">{formatUnits(maximum * r)}</text>
-              </g>)}
-              <polyline fill="none" stroke="#2563eb" strokeWidth="3" strokeLinecap="round" points={daily.map((n, i) => `${x(i)},${y(n)}`).join(' ')} />
-              {daily.map((n, i) => <g key={i}><circle cx={x(i)} cy={y(n)} r="4" fill="#fff" stroke="#2563eb" strokeWidth="3" />
-                <text x={x(i)} y="234" textAnchor="middle" fill="#66738d" fontSize="11">Día {i + 1}</text></g>)}
-            </svg>
-          </div> : <p>No hay entrenamiento disponible.</p>}
-          <div className="diza-chart-footer"><span>Basado en fechas con ventas observadas.</span><strong>{formatUnits(demand)} unidades · {revenueLabel} estimados</strong></div>
-        </section>
-        <section className="diza-ranking">
-          <div className="diza-ranking-header"><h3>Reposición prioritaria</h3><span>{urgent.length} productos</span></div>
-          <div className="diza-ranking-list">
-            {urgent.length ? urgent.slice(0, 5).map((item, i) => <div className="diza-ranking-item" key={item.productId}>
-              <span className="diza-ranking-number">{i + 1}</span><div className="diza-ranking-info">
-                <strong title={readableName(item.productName)}>{readableName(item.productName)}</strong>
-                <small>Stock {formatUnits(Number(item.stockActual))} · Reponer {formatUnits(Number(item.recommendedReplenishment))}</small>
-              </div>
-              <span className={`diza-chip diza-${item.alertStatus === 'ROJO' ? 'peligro' : 'advertencia'}`}>{item.alertStatus}</span>
-            </div>) : <p>Sin reposiciones sugeridas.</p>}
-          </div>
-          <Link className="diza-ranking-link" to="/prediccion-demanda">Ver predicciones de todos los productos →</Link>
-        </section>
-      </div>
-      <p className="diza-disclaimer">La proyección de siete días parte del cierre del histórico utilizado para entrenar el modelo; no representa necesariamente los siete días posteriores a hoy. Los ingresos estimados (S/) utilizan los precios de venta actuales de Inventario: no son ventas registradas ni utilidad neta.</p>
-    </>}
-  </main>;
+
+    </main>
+  );
 };
 
 export default DashboardPage;

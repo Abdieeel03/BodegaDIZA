@@ -1,0 +1,118 @@
+/* BodegaDIZA UI primitives — se apoyan exclusivamente en tokens de Entrega 1. */
+.diza-ui-button {
+  display:inline-flex; justify-content:center; align-items:center; gap:8px;
+  min-height:var(--diza-control-height); padding:10px 16px;
+  border:1px solid transparent; border-radius:var(--diza-radius-md);
+  font:inherit; font-size:var(--diza-font-size-sm); font-weight:650;
+  line-height:1.35; cursor:pointer; text-decoration:none;
+  transition:background-color var(--diza-transition-fast), border-color var(--diza-transition-fast), box-shadow var(--diza-transition-fast);
+}
+.diza-ui-button--primary { background:var(--diza-color-action); color:var(--diza-color-text-inverse); }
+.diza-ui-button--primary:hover:not(:disabled) { background:var(--diza-color-action-hover); }
+.diza-ui-button--secondary { background:var(--diza-color-surface); border-color:var(--diza-color-border-strong); color:var(--diza-color-brand); }
+.diza-ui-button--secondary:hover:not(:disabled) { background:var(--diza-color-brand-subtle); }
+.diza-ui-button--ghost { background:transparent; color:var(--diza-color-brand); }
+.diza-ui-button--ghost:hover:not(:disabled) { background:var(--diza-color-brand-subtle); }
+.diza-ui-button--danger { background:var(--diza-color-danger); color:var(--diza-color-text-inverse); }
+.diza-ui-button--danger:hover:not(:disabled) { filter:brightness(.9); }
+.diza-ui-button--sm { min-height:40px; padding:8px 12px; font-size:var(--diza-font-size-xs); }
+.diza-ui-button--block { width:100%; }
+.diza-ui-button:disabled { opacity:.55; cursor:not-allowed; }
+.diza-ui-button-spinner { width:15px; height:15px; flex:0 0 15px; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; animation:diza-ui-spin .75s linear infinite; }
+@keyframes diza-ui-spin { to { transform:rotate(360deg); } }
+
+.diza-ui-field { display:flex; flex-direction:column; gap:7px; min-width:0; }
+.diza-ui-field-label { color:var(--diza-color-text); font-size:var(--diza-font-size-sm); font-weight:650; }
+.diza-ui-field :is(input,select,textarea) {
+  width:100%; min-height:var(--diza-control-height); padding:10px 12px;
+  border:1px solid var(--diza-color-border-strong); border-radius:var(--diza-radius-md);
+  background:var(--diza-color-surface); color:var(--diza-color-text);
+  font:inherit; font-size:var(--diza-font-size-sm);
+}
+.diza-ui-field :is(input,select,textarea):disabled { background:var(--diza-color-surface-soft); cursor:not-allowed; }
+.diza-ui-field :is(input,select,textarea)[aria-invalid="true"] { border-color:var(--diza-color-danger); }
+.diza-ui-field-hint { font-size:var(--diza-font-size-xs); color:var(--diza-color-text-muted); }
+.diza-ui-field-error { font-size:var(--diza-font-size-xs); color:var(--diza-color-danger); }
+.diza-ui-required { color:var(--diza-color-danger); }
+
+.diza-ui-badge { display:inline-flex; align-items:center; gap:6px; max-width:100%;
+  padding:5px 9px; border-radius:var(--diza-radius-pill); font-size:var(--diza-font-size-xs);
+  font-weight:700; line-height:1.35; white-space:nowrap; }
+.diza-ui-badge-dot { width:6px; height:6px; flex:0 0 6px; border-radius:50%; background:currentColor; }
+.diza-ui-badge--neutral { color:var(--diza-color-text-secondary); background:var(--diza-color-surface-soft); }
+.diza-ui-badge--info { color:var(--diza-color-brand); background:var(--diza-color-info-soft); }
+.diza-ui-badge--success { color:var(--diza-color-success); background:var(--diza-color-success-soft); }
+.diza-ui-badge--warning { color:var(--diza-color-warning); background:var(--diza-color-warning-soft); }
+.diza-ui-badge--danger { color:var(--diza-color-danger); background:var(--diza-color-danger-soft); }
+
+.diza-ui-stat { background:var(--diza-color-surface); border:1px solid var(--diza-color-border);
+  border-radius:var(--diza-radius-lg); padding:var(--diza-space-4); min-width:0; box-shadow:var(--diza-shadow-sm); }
+.diza-ui-stat .diza-ui-stat-label { display:block; color:var(--diza-color-text-secondary); font-size:var(--diza-font-size-xs); font-weight:600; }
+.diza-ui-stat .diza-ui-stat-value { display:block; margin-top:var(--diza-space-2);
+  color:var(--diza-color-text); font-size:clamp(1.125rem,2vw,1.5rem); line-height:1.25; overflow-wrap:anywhere; }
+.diza-ui-stat .diza-ui-stat-note { display:block; color:var(--diza-color-text-muted); font-size:var(--diza-font-size-xs); margin-top:var(--diza-space-2); }
+
+.diza-ui-table-frame { max-width:100%; overflow-x:auto; scrollbar-width:thin; }
+.diza-ui-table-frame:focus-visible { outline:3px solid var(--diza-color-focus); outline-offset:2px; }
+
+.diza-ui-page-header { display:flex; align-items:flex-start; justify-content:space-between;
+  flex-wrap:wrap; gap:var(--diza-space-4); margin-bottom:var(--diza-space-6); }
+.diza-ui-page-heading { min-width:0; }
+.diza-ui-page-heading h1 { margin:0 0 var(--diza-space-2); }
+.diza-ui-page-heading p { color:var(--diza-color-text-secondary); font-size:var(--diza-font-size-sm); }
+.diza-ui-page-eyebrow { display:block; color:var(--diza-color-brand); font-size:var(--diza-font-size-xs);
+  font-weight:750; letter-spacing:.06em; margin-bottom:var(--diza-space-2); }
+.diza-ui-page-actions { display:flex; align-items:center; gap:var(--diza-space-2); flex-wrap:wrap; }
+@media(prefers-reduced-motion:reduce) { .diza-ui-button,.diza-ui-button-spinner { transition:none; animation:none; } }
+@media(max-width:760px) {
+  .diza-ui-page-header { gap:var(--diza-space-3); }
+  .diza-ui-page-actions { width:100%; }
+  .diza-ui-stat { padding:var(--diza-space-3); }
+}
+
+/* Encabezado único de BodegaDIZA: Ventas, Inventario y Predicción. */
+.diza-ui-page-header {
+  margin: 10px 0 24px;
+  align-items: flex-start;
+  gap: 20px;
+}
+.diza-ui-page-header .diza-ui-page-heading {
+  flex: 1 1 280px;
+}
+.diza-ui-page-header .diza-ui-page-eyebrow {
+  display: block;
+  margin: 0 0 7px;
+  color: var(--diza-color-brand);
+  font-family: var(--diza-font-sans);
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1.4;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.diza-ui-page-header .diza-ui-page-heading h1 {
+  margin: 0 0 5px;
+  color: var(--diza-color-text);
+  font-family: var(--diza-font-sans);
+  font-size: clamp(23px, 3vw, 29px);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -.025em;
+  overflow-wrap: anywhere;
+}
+.diza-ui-page-header .diza-ui-page-heading p {
+  margin: 0;
+  color: var(--diza-color-text-secondary);
+  font-family: var(--diza-font-sans);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.55;
+}
+.diza-ui-page-header .diza-ui-page-actions {
+  margin: 0;
+  align-self: flex-start;
+}
+@media (max-width: 600px) {
+  .diza-ui-page-header { margin: 0 0 20px; gap: 14px; }
+  .diza-ui-page-header .diza-ui-page-heading { flex-basis: 100%; }
+}

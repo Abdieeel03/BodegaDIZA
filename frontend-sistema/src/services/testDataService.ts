@@ -42,8 +42,23 @@ export type ProductoOperativo = {
   precioVenta: number;
   stockTotal: number;
   activo: boolean;
+  unidadMedida?: string;
 };
-export type VentaOperativa = { id: number; fecha: string; total: number };
+export type DetalleVentaOperativa = {
+  id: number;
+  productoId: number;
+  productoNombre: string;
+  productoSku: string;
+  cantidad: number;
+  subtotal: number;
+};
+/** GET /ventas incluye detalles por ticket; opcional para conservar compatibilidad. */
+export type VentaOperativa = {
+  id: number;
+  fecha: string;
+  total: number;
+  detalles?: DetalleVentaOperativa[];
+};
 
 const dato = <T>(respuesta: Respuesta<T>): T => {
   if (!respuesta.success) throw new Error(respuesta.message || 'La API rechazó la solicitud');
@@ -93,7 +108,16 @@ export async function ventasOperativas(): Promise<VentaOperativa[]> {
   const r = await apiClient.get<Respuesta<VentaOperativa[]>>('/ventas');
   return dato(r.data);
 }
-export async function registrarVenta(productoId: number, cantidad: number): Promise<VentaOperativa> {
-  const r = await apiClient.post<Respuesta<VentaOperativa>>('/ventas', { items: [{ productoId, cantidad }] });
+export type SaleItemPayload = { productoId: number; cantidad: number };
+
+/** El backend acepta varios productos en un mismo POST /ventas. */
+export async function registrarVentaConItems(items: SaleItemPayload[]): Promise<VentaOperativa> {
+  if (!items.length) throw new Error('La venta debe incluir al menos un producto.');
+  const r = await apiClient.post<Respuesta<VentaOperativa>>('/ventas', { items });
   return dato(r.data);
+}
+
+/** Se conserva el contrato anterior para otras pantallas que lo utilicen. */
+export async function registrarVenta(productoId: number, cantidad: number): Promise<VentaOperativa> {
+  return registrarVentaConItems([{ productoId, cantidad }]);
 }

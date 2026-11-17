@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { PageHeader, StatCard, TableFrame } from '../../components/ui';
+import { SaleRegistrationForm } from './SaleRegistrationForm';
 import {
-  productosHistoricos, resumenHistorico, productosOperativos, ventasOperativas, registrarVenta,
-  type ProductoHistorico, type ProductoOperativo, type VentaOperativa,
+  productosHistoricos, productosOperativos, ventasOperativas, registrarVentaConItems,
+  type ProductoHistorico, type ProductoOperativo, type VentaOperativa, type SaleItemPayload,
 } from '../../services/testDataService';
 import { historyReport, type HistoryReport } from '../../services/periodReportService';
 import {
@@ -13,6 +15,7 @@ import '../demo/demo.css';
 import './sales-trend.css';
 
 type Modo = 'historico' | 'operativo' | 'unificado';
+const TICKETS_PER_PAGE = 20;
 const numeric = (v: unknown) => Number(v ?? 0);
 const agruparPorFecha = (list: VentaOperativa[], modo: PeriodMode) => {
   const groups = new Map<string,number>();
@@ -84,7 +87,7 @@ function SalesRevenueBars({ data, grouping }: {
 }
 
 export const SalesPage = () => {
-  const [modo,setModo] = useState<Modo>('historico');
+  const [modo,setModo] = useState<Modo>('operativo');
   const [periodo,setPeriodo] = useState<PeriodMode>('mes');
   const [anchor,setAnchor] = useState(todayLocal());
   const [histProducts,setHistProducts] = useState<ProductoHistorico[]>([]);
@@ -97,10 +100,11 @@ export const SalesPage = () => {
   const [trendError,setTrendError] = useState('');
   const [opProducts,setOpProducts] = useState<ProductoOperativo[]>([]);
   const [opSales,setOpSales] = useState<VentaOperativa[]>([]);
-  const [productId,setProductId] = useState('');
-  const [amount,setAmount] = useState(1);
+  const [ticketQuery, setTicketQuery] = useState('');
+  const [ticketPage, setTicketPage] = useState(1);
   const [busy,setBusy] = useState(false);
   const [loading,setLoading] = useState(false);
+  const [operationalLoading,setOperationalLoading] = useState(false);
   const [error,setError] = useState('');
   const [message,setMessage] = useState('');
   const range=useMemo(()=>getPeriodRange(periodo,anchor),[periodo,anchor]);
@@ -114,14 +118,21 @@ export const SalesPage = () => {
   },[]);
 
   useEffect(()=>{
+    if (modo === 'historico') return;
     let active=true;
-    void Promise.all([productosHistoricos(),resumenHistorico(),refreshOperational()]).then(([p,s])=>{
-      if(!active)return;
-      setHistProducts(p);
-      if(s.hasta) setAnchor(s.hasta);
-    }).catch(e=>{if(active)setError(e instanceof Error?e.message:'No se pudieron consultar datos');});
+    setOperationalLoading(true);
+    void refreshOperational().catch(e=>{if(active)setError(e instanceof Error?e.message:'No se pudieron cargar las ventas');})
+      .finally(()=>{if(active)setOperationalLoading(false);});
     return()=>{active=false;};
-  },[refreshOperational]);
+  },[modo,refreshOperational]);
+
+  useEffect(()=>{
+    if (modo === 'operativo') return;
+    let active=true;
+    void productosHistoricos().then(p=>{if(active)setHistProducts(p);})
+      .catch(e=>{if(active)setError(e instanceof Error?e.message:'No se pudo cargar el catálogo histórico');});
+    return()=>{active=false;};
+  },[modo]);
 
   useEffect(()=>{
     if(modo==='operativo') return;
@@ -150,45 +161,73 @@ export const SalesPage = () => {
     return () => { active = false; };
   }, [modo, range, filter, trendGrouping]);
 
-  const filteredOperational=useMemo(()=>opSales.filter(v=>dateInRange(v.fecha,range)),[opSales,range]);
-  const operationalRevenue=filteredOperational.reduce((sum,v)=>sum+numeric(v.total),0);
+  const filteredOperational = useMemo(
+    () => opSales.filter(v => dateInRange(v.fecha, range)), [opSales, range],
+  );
+  const operationalRevenue = filteredOperational.reduce((sum, v) => sum + numeric(v.total), 0);
+  // El buscador afecta solo la tabla: los KPIs y el gráfico siguen representando el período completo.
+  const operationalRows = useMemo(() => {
+    const query = ticketQuery.trim().replace(/^#/, '');
+    return filteredOperational
+      .filter(v => !query || String(v.id).includes(query))
+      .sort((a, b) => b.fecha.localeCompare(a.fecha) || b.id - a.id);
+  }, [filteredOperational, ticketQuery]);
+  const ticketTotalPages = Math.max(1, Math.ceil(operationalRows.length / TICKETS_PER_PAGE));
+  const actualTicketPage = Math.min(ticketPage, ticketTotalPages);
+  const visibleTickets = operationalRows.slice(
+    (actualTicketPage - 1) * TICKETS_PER_PAGE, actualTicketPage * TICKETS_PER_PAGE,
+  );
   const totalPages=Math.max(1,Math.ceil(numeric(report?.filas)/40));
   const changeMode=(next:Modo)=>{
     setModo(next);setMessage('');setPage(0);setFilter('');setError('');
-    setPeriodo(next==='unificado'?'todo':'mes');
-    if(next==='operativo' || next==='unificado') setAnchor(todayLocal());
-    else void resumenHistorico().then(s=>{if(s.hasta)setAnchor(s.hasta);}).catch(()=>{});
+    setTicketQuery('');setTicketPage(1);
+    setPeriodo(next==='operativo'?'mes':'todo');
+    if(next==='operativo') setAnchor(todayLocal());
+
   };
-  const submit=async(e:FormEvent)=>{
-    e.preventDefault();
-    if(!productId||amount<=0||busy)return;
-    setBusy(true);setMessage('');setError('');
-    try{
-      const sale=await registrarVenta(Number(productId),amount);
-      setMessage(`Venta #${sale.id} registrada correctamente. El inventario descontó ${amount} unidades.`);
-      await refreshOperational();
-    }catch(e){setError(e instanceof Error?e.message:'No se pudo registrar venta');}
-    finally{setBusy(false);}
+  const registerSale = async (items: SaleItemPayload[]): Promise<boolean> => {
+    if (busy || !items.length) return false;
+    setBusy(true); setMessage(''); setError('');
+    try {
+      const sale = await registrarVentaConItems(items);
+      setMessage(`Venta #${sale.id} registrada correctamente con ${items.length} producto(s). El inventario se actualizó en el servidor.`);
+      setTicketPage(1); setTicketQuery('');
+      // Una falla al releer el listado NO significa que el registro haya fallado.
+      try {
+        await refreshOperational();
+      } catch {
+        setError('La venta se registró, pero no fue posible actualizar el listado. Vuelve a abrir Ventas para consultar los cambios.');
+      }
+      return true;
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'No se pudo registrar la venta.');
+      return false;
+    } finally {
+      setBusy(false);
+    }
   };
 
   return <main className="diza-test-page">
-    <header className="diza-test-heading"><div><span className="diza-test-eyebrow">BODEGA D'IZA · REPORTES ORGANIZADOS</span><h1>Ventas</h1><p>Consulta por día, semana, mes o año sin alterar el historial ni el stock.</p></div><Link to="/datos-prueba" className="diza-test-link">Importar histórico CSV →</Link></header>
+    <PageHeader title="Ventas"
+      description="Registra y consulta ventas."
+      actions={modo==='historico' ? <Link to="/ventas/importar-historico" className="diza-test-link">Importar histórico →</Link> : undefined} />
     <div className="diza-test-tabs" role="group" aria-label="Origen de las ventas">
-      <button aria-pressed={modo==='historico'} onClick={()=>changeMode('historico')}>Histórico CSV</button>
-      <button aria-pressed={modo==='operativo'} onClick={()=>changeMode('operativo')}>Ventas operativas</button>
       <button aria-pressed={modo==='unificado'} onClick={()=>changeMode('unificado')}>Vista general</button>
+      <button aria-pressed={modo==='operativo'} onClick={()=>changeMode('operativo')}>Ventas registradas</button>
+      <button aria-pressed={modo==='historico'} onClick={()=>changeMode('historico')}>Histórico importado</button>
     </div>
-    <PeriodControls mode={periodo} setMode={v=>{setPeriodo(v);setPage(0);}} anchor={anchor} setAnchor={v=>{setAnchor(v);setPage(0);}} />
-    {error&&<p className="diza-test-error" role="alert">{error}</p>}
-    {message&&<p className="diza-test-success" role="status">{message}</p>}
+    <PeriodControls mode={periodo} setMode={v=>{setPeriodo(v);setPage(0);setTicketPage(1);}} anchor={anchor} setAnchor={v=>{setAnchor(v);setPage(0);setTicketPage(1);}} />
+    {modo !== 'operativo' && error && <p className="diza-test-error" role="alert">{error}</p>}
+    {modo==='unificado'&&<p className="diza-test-note">Consulta ambos orígenes con el mismo período. Los importes históricos y las ventas registradas se muestran por separado para evitar contar una venta dos veces. El filtro de producto afecta solo al histórico.</p>}
+    {modo !== 'operativo' && message && <p className="diza-test-success" role="status">{message}</p>}
     {(modo==='historico'||modo==='unificado')&&<>
       <section className="diza-test-panel">
         <div className="diza-test-heading"><div><h2>Ventas históricas · análisis</h2><p className="diza-kpi-note">Son unidades diarias por producto, no tickets; nunca descuentan stock.</p></div><label>Producto <select className="diza-test-input" value={filter} onChange={e=>{setFilter(e.target.value);setPage(0);}}><option value="">Todos</option>{histProducts.map(p=><option value={p.id} key={p.id}>{p.id} · {p.nombre}</option>)}</select></label></div>
         <div className="diza-stat-grid">
-          <div className="diza-stat"><span>Registros diarios</span><strong>{formatNumber(numeric(report?.filas))}</strong></div>
-          <div className="diza-stat"><span>Unidades vendidas</span><strong>{formatNumber(numeric(report?.unidades))}</strong></div>
-          <div className="diza-stat"><span>Ingresos referenciales</span><strong>{formatMoney(numeric(report?.ingresos))}</strong></div>
-          <div className="diza-stat"><span>Productos con ventas</span><strong>{formatNumber(numeric(report?.productos))}</strong></div>
+          <StatCard label="Registros diarios" value={formatNumber(numeric(report?.filas))} />
+          <StatCard label="Unidades vendidas" value={formatNumber(numeric(report?.unidades))} />
+          <StatCard label="Ingresos referenciales" value={formatMoney(numeric(report?.ingresos))} />
+          <StatCard label="Productos con ventas" value={formatNumber(numeric(report?.productos))} />
         </div>
         <div className="diza-sales-trend-heading">
           <div>
@@ -213,36 +252,67 @@ export const SalesPage = () => {
                 data={(trendReport?.tendencia || []).map(x => ({ periodo: x.periodo, ingresos: numeric(x.ingresos) }))} />}
         {periodo === 'mes' && trendGrouping === 'dia' && !trendLoading && !loading && !trendError &&
           <p className="diza-kpi-note">Desliza el gráfico horizontalmente para consultar los demás días del mes.</p>}
-        <div className="diza-test-overflow"><table className="diza-test-table"><thead><tr><th>Fecha</th><th>Producto</th><th>Unidades</th><th>Ingreso referencial</th><th>Stock histórico cierre</th></tr></thead><tbody>{(report?.registros||[]).map(v=><tr key={`${v.fecha}-${v.id}`}><td>{readableFullDate(v.fecha)}</td><td>{v.id} · {v.nombre}</td><td>{formatNumber(numeric(v.cantidad))}</td><td>{formatMoney(numeric(v.cantidad)*numeric(v.precio))}</td><td>{formatNumber(numeric(v.stockFinal))}</td></tr>)}</tbody></table></div>
+        <TableFrame label="Tabla de ventas históricas" className="diza-test-overflow"><table className="diza-test-table"><thead><tr><th>Fecha</th><th>Producto</th><th>Unidades</th><th>Ingreso referencial</th><th>Stock histórico cierre</th></tr></thead><tbody>{(report?.registros||[]).map(v=><tr key={`${v.fecha}-${v.id}`}><td>{readableFullDate(v.fecha)}</td><td>{v.id} · {v.nombre}</td><td>{formatNumber(numeric(v.cantidad))}</td><td>{formatMoney(numeric(v.cantidad)*numeric(v.precio))}</td><td>{formatNumber(numeric(v.stockFinal))}</td></tr>)}</tbody></table></TableFrame>
         {!loading&&report?.registros.length===0&&<p className="diza-test-muted">No hay ventas históricas para el período seleccionado.</p>}
         <div className="diza-pagination"><span className="diza-kpi-note">Página {page+1} de {totalPages} · 40 filas por página</span><button disabled={page===0||loading} onClick={()=>setPage(p=>p-1)}>← Anterior</button><button disabled={page+1>=totalPages||loading} onClick={()=>setPage(p=>p+1)}>Siguiente →</button></div>
       </section>
     </>}
     {(modo==='operativo'||modo==='unificado')&&<>
-      <section className="diza-test-panel">
-        <h2>Ventas operativas · movimientos reales de TEST</h2>
-        <p className="diza-kpi-note">Estas sí registran tickets y descuentan el stock de los lotes. Se mantienen separadas del histórico importado.</p>
-        <div className="diza-stat-grid">
-          <div className="diza-stat"><span>Tickets registrados</span><strong>{filteredOperational.length}</strong></div>
-          <div className="diza-stat"><span>Ingresos operativos</span><strong>{formatMoney(operationalRevenue)}</strong></div>
-          <div className="diza-stat"><span>Ticket promedio</span><strong>{formatMoney(filteredOperational.length?operationalRevenue/filteredOperational.length:0)}</strong></div>
-          <div className="diza-stat"><span>Productos operativos</span><strong>{opProducts.length}</strong></div>
-        </div>
-        <div className="diza-sales-trend-heading"><h3>Ingresos operativos por {periodo === 'todo' || periodo === 'anio' ? 'mes' : 'día'}</h3></div>
-        <SalesRevenueBars data={agruparPorFecha(filteredOperational,periodo)} grouping={periodo === 'todo' || periodo === 'anio' ? 'mes' : 'dia'} />
-        <div className="diza-test-overflow"><table className="diza-test-table"><thead><tr><th>ID</th><th>Fecha</th><th>Total</th></tr></thead><tbody>{filteredOperational.slice(0,80).map(v=><tr key={v.id}><td>#{v.id}</td><td>{v.fecha.replace('T',' ')}</td><td>{formatMoney(v.total)}</td></tr>)}</tbody></table></div>
-        {!filteredOperational.length&&<p className="diza-test-muted">No hay tickets registrados en este período.</p>}
-      </section>
-      {modo==='operativo'&&<section className="diza-test-panel"><h2>Registrar venta (TEST)</h2>
-        <form className="diza-test-form" onSubmit={e=>{void submit(e);}}>
-          <label>Producto con stock disponible<select value={productId} onChange={e=>setProductId(e.target.value)} required><option value="">Selecciona un producto</option>{opProducts.filter(p=>p.activo&&p.stockTotal>0).map(p=><option value={p.id} key={p.id}>{p.sku} · {p.nombre} · Stock {p.stockTotal}</option>)}</select></label>
-          <label>Cantidad<input type="number" value={amount} onChange={e=>setAmount(Number(e.target.value))} min="1" step="1" required/></label>
-          <button type="submit" disabled={!productId||amount<=0||busy}>{busy?'Registrando...':'Registrar venta'}</button>
-        </form>
-        {!opProducts.some(p=>p.stockTotal>0&&p.activo)&&<p className="diza-test-muted">Primero registra una entrada de inventario; todos los productos tienen stock 0.</p>}
+      {modo === 'operativo' && <section className="diza-test-panel" aria-label="Registrar venta">
+        <h2>Registrar venta</h2>
+        <p className="diza-kpi-note">El sistema verifica las existencias antes de registrar la venta.</p>
+        <SaleRegistrationForm products={opProducts} busy={busy} loading={operationalLoading} onRegister={registerSale} />
+        {error && <p className="diza-test-error" role="alert">{error}</p>}
+        {message && <p className="diza-test-success" role="status">{message}</p>}
       </section>}
+      <section className="diza-test-panel">
+        <h2>Ventas registradas</h2>
+        {operationalLoading&&<p role="status">Cargando ventas registradas...</p>}
+        <div className="diza-stat-grid">
+          <StatCard label="Tickets registrados" value={filteredOperational.length} />
+          <StatCard label="Total vendido" value={formatMoney(operationalRevenue)} />
+          <StatCard label="Ticket promedio" value={formatMoney(filteredOperational.length?operationalRevenue/filteredOperational.length:0)} />
+          <StatCard label="Productos en catálogo" value={opProducts.length} />
+        </div>
+        <div className="diza-sales-trend-heading"><h3>Ventas por {periodo === 'todo' || periodo === 'anio' ? 'mes' : 'día'}</h3></div>
+        <SalesRevenueBars data={agruparPorFecha(filteredOperational,periodo)} grouping={periodo === 'todo' || periodo === 'anio' ? 'mes' : 'dia'} />
+        <div className="diza-sale-list-head">
+          <div>
+            <h3>Tickets del período</h3>
+            <p className="diza-kpi-note">La búsqueda no modifica los indicadores.</p>
+          </div>
+          <label className="diza-sale-search" htmlFor="sale-ticket-search">
+            Buscar número de ticket
+            <input id="sale-ticket-search" type="search" placeholder="Ej. 125" value={ticketQuery}
+              onChange={event => { setTicketQuery(event.target.value); setTicketPage(1); }} />
+          </label>
+        </div>
+        <TableFrame label="Tabla de ventas registradas" className="diza-test-overflow">
+          <table className="diza-test-table diza-sale-operations-table">
+            <thead><tr><th scope="col">Ticket</th><th scope="col">Fecha</th><th scope="col">Total</th></tr></thead>
+            <tbody>{visibleTickets.map(v => <tr key={v.id}>
+              <td>#{v.id}</td><td>{v.fecha.replace('T', ' ')}</td><td>{formatMoney(v.total)}</td>
+            </tr>)}</tbody>
+          </table>
+        </TableFrame>
+        {!operationalLoading && !operationalRows.length && (
+          <p className="diza-test-muted" role="status">
+            {filteredOperational.length ? 'No se encontraron tickets con ese número.' : 'No hay tickets registrados en este período.'}
+          </p>
+        )}
+        {operationalRows.length > 0 && <nav className="diza-sale-pagination" aria-label="Paginación de tickets">
+          <span>Mostrando {(actualTicketPage - 1) * TICKETS_PER_PAGE + 1}–{Math.min(actualTicketPage * TICKETS_PER_PAGE, operationalRows.length)} de {operationalRows.length} tickets</span>
+          <div className="diza-sale-pagination-controls">
+            <button type="button" disabled={actualTicketPage === 1 || operationalLoading}
+              onClick={() => setTicketPage(p => Math.max(1, p - 1))}>← Anterior</button>
+            <strong>Página {actualTicketPage} de {ticketTotalPages}</strong>
+            <button type="button" disabled={actualTicketPage >= ticketTotalPages || operationalLoading}
+              onClick={() => setTicketPage(p => Math.min(ticketTotalPages, p + 1))}>Siguiente →</button>
+          </div>
+        </nav>}
+      </section>
+
     </>}
-    {modo==='unificado'&&<p className="diza-test-note">Vista general: ambos orígenes se muestran por separado. No se suman como tickets las 2,400 filas del CSV ni se descuenta stock histórico por segunda vez.</p>}
   </main>;
 };
 export default SalesPage;

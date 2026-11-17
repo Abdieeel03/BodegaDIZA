@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import apiClient from '../../api/axios';
+import { Button, FormField, PageHeader } from '../../components/ui';
 import type { ApiResponse } from '../../types';
 import '../demo/demo.css';
 import '../../components/period/period-controls.css';
@@ -64,6 +65,7 @@ export const ProductCreatePage=()=>{
     if(saving)return;
     setError('');setSaving(true);
     try{
+      if(!sku.trim()||!name.trim()) throw Error('Completa el SKU y el nombre del producto.');
       if(!categoryId||!supplierId) throw Error('Selecciona categoría y proveedor.');
       if(!Number.isFinite(toNumber(salePrice))||toNumber(salePrice)<0||!Number.isFinite(toNumber(minStock))||toNumber(minStock)<0) throw Error('Precio y stock mínimo deben ser números válidos.');
       if(withLot){
@@ -85,28 +87,85 @@ export const ProductCreatePage=()=>{
   };
 
   return <main className="diza-test-page">
-    <header className="diza-test-heading"><div><span className="diza-test-eyebrow">INVENTARIO · BASE TEST</span><h1>Agregar producto</h1><p>Registro individual de productos, vinculado a categorías y proveedores de PostgreSQL.</p></div><Link className="diza-test-link" to="/inventario">← Volver al inventario</Link></header>
-    <p className="diza-test-note">El registro se guarda realmente en la base bodega_diza_test. No crea proveedores ficticios automáticamente ni altera ventas históricas.</p>
-    {error&&<p className="diza-test-error" role="alert">{error}</p>}
-    {!ready?<p className="diza-test-muted">Verificando conexión a la base TEST y cargando listas...</p>:<form className="diza-create-form" onSubmit={e=>{void save(e);}}>
-      <section className="diza-test-panel"><h2>Información del producto</h2>
+    <PageHeader eyebrow="INVENTARIO · BASE TEST" title="Agregar producto"
+      description="Registra productos vinculados a categorías y proveedores de PostgreSQL."
+      actions={<Link className="diza-test-link" to="/inventario">← Volver al inventario</Link>} />
+    <p className="diza-test-note">El registro se guarda realmente en la base bodega_diza_test. No crea proveedores ficticios ni altera ventas históricas.</p>
+    {error && <p className="diza-test-error" role="alert">{error}</p>}
+    {!ready ? (
+      !error && <p className="diza-test-muted" role="status">Verificando conexión a la base TEST y cargando listas...</p>
+    ) : <form className="diza-create-form" onSubmit={e=>{void save(e);}}>
+      <section className="diza-test-panel" aria-labelledby="create-product-general">
+        <h2 id="create-product-general">Información del producto</h2>
+        <p className="diza-kpi-note">Identifica el producto y define su precio y stock mínimo.</p>
         <div className="diza-create-grid">
-          <label>SKU *<input required maxLength={50} value={sku} onChange={e=>setSku(e.target.value)} placeholder="P021" /></label>
-          <label>Nombre *<input required maxLength={150} value={name} onChange={e=>setName(e.target.value)} placeholder="Nuevo producto" /></label>
-          <label>Categoría *<select required value={categoryId} onChange={e=>setCategoryId(e.target.value)}><option value="">Selecciona categoría</option>{categories.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}</select></label>
-          <label>Proveedor *<select required value={supplierId} onChange={e=>setSupplierId(e.target.value)}><option value="">Selecciona proveedor</option>{suppliers.map(s=><option key={s.id} value={s.id}>{s.nombre}</option>)}</select></label>
-          <label>Precio de venta (S/) *<input required type="number" min="0" step="0.01" value={salePrice} onChange={e=>setSalePrice(e.target.value)}/></label>
-          <label>Stock mínimo *<input required type="number" min="0" step="0.001" value={minStock} onChange={e=>setMinStock(e.target.value)}/></label>
-          <label>Unidad de medida *<select value={unit} onChange={e=>setUnit(e.target.value as Unit)}>{UNITS.map(u=><option key={u} value={u}>{u}</option>)}</select></label>
-          <label className="diza-create-wide">Descripción<textarea rows={3} maxLength={500} value={description} onChange={e=>setDescription(e.target.value)}/></label>
+          <FormField controlId="create-sku" label="Código SKU" required>
+            <input id="create-sku" required maxLength={50} value={sku} onChange={e=>setSku(e.target.value)} placeholder="Ej. P021" autoComplete="off" />
+          </FormField>
+          <FormField controlId="create-name" label="Nombre del producto" required>
+            <input id="create-name" required maxLength={150} value={name} onChange={e=>setName(e.target.value)} placeholder="Nombre del producto" />
+          </FormField>
+          <FormField controlId="create-category" label="Categoría" required>
+            <select id="create-category" required value={categoryId} onChange={e=>setCategoryId(e.target.value)}>
+              <option value="">Selecciona categoría</option>
+              {categories.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}
+            </select>
+          </FormField>
+          <FormField controlId="create-supplier" label="Proveedor" required>
+            <select id="create-supplier" required value={supplierId} onChange={e=>setSupplierId(e.target.value)}>
+              <option value="">Selecciona proveedor</option>
+              {suppliers.map(provider=><option key={provider.id} value={provider.id}>{provider.nombre}</option>)}
+            </select>
+          </FormField>
+          <FormField controlId="create-price" label="Precio de venta (S/)" required>
+            <input id="create-price" required type="number" min="0" step="0.01" inputMode="decimal"
+              value={salePrice} onChange={e=>setSalePrice(e.target.value)} />
+          </FormField>
+          <FormField controlId="create-minimum" label="Stock mínimo" required>
+            <input id="create-minimum" required type="number" min="0" step="0.001" inputMode="decimal"
+              value={minStock} onChange={e=>setMinStock(e.target.value)} />
+          </FormField>
+          <FormField controlId="create-unit" label="Unidad de medida" required>
+            <select id="create-unit" value={unit} onChange={e=>setUnit(e.target.value as Unit)}>
+              {UNITS.map(value=><option key={value} value={value}>{value}</option>)}
+            </select>
+          </FormField>
+          <FormField controlId="create-description" label="Descripción" className="diza-create-wide"
+            hint="Opcional, hasta 500 caracteres.">
+            <textarea id="create-description" rows={3} maxLength={500} value={description}
+              onChange={e=>setDescription(e.target.value)} />
+          </FormField>
         </div>
       </section>
-      <section className="diza-test-panel"><label className="diza-create-check"><input type="checkbox" checked={withLot} onChange={e=>setWithLot(e.target.checked)}/> Registrar stock inicial con lote (opcional)</label>
-        {withLot&&<div className="diza-create-grid"><label>Código del lote *<input required value={lotCode} onChange={e=>setLotCode(e.target.value)}/></label><label>Cantidad *<input required type="number" min="0.001" step="0.001" value={lotAmount} onChange={e=>setLotAmount(e.target.value)}/></label><label>Vencimiento futuro *<input required type="date" value={expiry} onChange={e=>setExpiry(e.target.value)}/></label></div>}
-        <p className="diza-kpi-note">Si no registras lote, el producto se crea con stock 0. Para fines de prueba, identifica claramente cualquier lote ficticio como DEMO.</p>
+      <section className="diza-test-panel" aria-labelledby="create-product-stock">
+        <h2 id="create-product-stock">Stock inicial</h2>
+        <label className="diza-create-check" htmlFor="create-with-lot">
+          <input id="create-with-lot" type="checkbox" checked={withLot} onChange={e=>setWithLot(e.target.checked)} />
+          Registrar stock inicial con lote (opcional)
+        </label>
+        {withLot && <div className="diza-create-grid">
+          <FormField controlId="create-lot-code" label="Código de lote" required>
+            <input id="create-lot-code" required value={lotCode} onChange={e=>setLotCode(e.target.value)} />
+          </FormField>
+          <FormField controlId="create-lot-amount" label="Cantidad inicial" required>
+            <input id="create-lot-amount" required type="number" min="0.001" step="0.001" inputMode="decimal"
+              value={lotAmount} onChange={e=>setLotAmount(e.target.value)} />
+          </FormField>
+          <FormField controlId="create-lot-expiry" label="Fecha de vencimiento" required>
+            <input id="create-lot-expiry" required type="date" value={expiry} onChange={e=>setExpiry(e.target.value)} />
+          </FormField>
+        </div>}
+        <p className="diza-kpi-note">Si no registras un lote, el producto se creará con stock 0. Identifica los lotes ficticios como DEMO.</p>
       </section>
-      <div className="diza-create-actions"><Link to="/inventario" className="diza-period-link">Cancelar</Link><button className="btn-primary" disabled={!ready||saving||categories.length===0||suppliers.length===0} type="submit">{saving?'Guardando...':'Guardar producto en TEST'}</button></div>
-      {(!categories.length||!suppliers.length)&&<p className="diza-test-error">Necesitas al menos una categoría activa y un proveedor activo. Puedes crearlos mediante Carga Masiva.</p>}
+      <div className="diza-create-actions">
+        <Link to="/inventario" className="diza-period-link">Cancelar</Link>
+        <Button type="submit" loading={saving} disabled={!ready || categories.length===0 || suppliers.length===0}>
+          {saving ? 'Guardando...' : 'Guardar producto en TEST'}
+        </Button>
+      </div>
+      {(!categories.length || !suppliers.length) && <p className="diza-test-error" role="alert">
+        Necesitas al menos una categoría activa y un proveedor activo antes de registrar productos.
+      </p>}
     </form>}
   </main>;
 };

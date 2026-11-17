@@ -6,7 +6,7 @@ export const AuthLayout = () => {
       <div className="auth-card">
         <div className="auth-header">
           <Link to="/" className="brand-logo">
-            🍷 Bodega<strong>DIZA</strong>
+            <span className="diza-brand-monogram" aria-hidden="true">BD</span>Bodega<strong>DIZA</strong>
           </Link>
           <p className="auth-subtitle">Acceso seguro al sistema</p>
         </div>

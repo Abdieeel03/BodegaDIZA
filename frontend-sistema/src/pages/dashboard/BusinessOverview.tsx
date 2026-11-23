@@ -5,8 +5,7 @@ import { DataFeedback } from '../../components/common/DataFeedback';
 import { SalesHistoryChart } from '../../components/charts/SalesHistoryChart';
 import { useRemoteResource } from '../../hooks/useRemoteResource';
 import { getSalesReport, peruToday } from '../../services/salesReportService';
-import { getLowStockAlerts, getExpiryAlerts } from '../../services/dashboardService';
-import { listDashboardAlerts } from './dashboardSelectors';
+import { getOperationalAlerts } from '../../services/alertsService';
 import { formatMoney } from '../../components/period/PeriodControls';
 import './business-overview.css';
 
@@ -30,13 +29,12 @@ export function BusinessOverview({ revision }: { revision: number }) {
     void revision; void retry;
     return getSalesReport({ desde: from, hasta: today, origen: 'todos', agrupacion: period === 'mes' ? 'dia' : 'mes' }, signal);
   }, [revision, retry, from, today, period]);
-  const loadStock = useCallback(() => { void revision; void retry; return getLowStockAlerts(); }, [revision, retry]);
-  const loadExpiry = useCallback(() => { void revision; void retry; return getExpiryAlerts(7); }, [revision, retry]);
+  const loadAlerts = useCallback(() => { void revision; void retry; return getOperationalAlerts(); }, [revision, retry]);
   const summary = useRemoteResource(loadSummary, true);
   const history = useRemoteResource(loadHistory, true);
-  const stock = useRemoteResource(loadStock, true);
-  const expiry = useRemoteResource(loadExpiry, true);
-  const alerts = listDashboardAlerts(stock.data ?? [], expiry.data ?? []);
+  const alertsResource = useRemoteResource(loadAlerts, true);
+  const alerts = alertsResource.data?.alerts ?? [];
+  const stockAlerts = alertsResource.data?.stockAlerts ?? [];
   const reload = () => setRetry(value => value + 1);
   const salesLink = `/ventas?desde=${from}&hasta=${today}&agrupacion=${period === 'mes' ? 'dia' : 'mes'}`;
   const metric = (value?: number | null) => summary.status === 'loading' ? 'Consultando…' : value == null ? '—' : formatMoney(value);
@@ -50,7 +48,7 @@ export function BusinessOverview({ revision }: { revision: number }) {
       <StatCard label="Ventas de hoy" value={metric(summary.data?.day.total)} note="Total del día" />
       <StatCard label="Ventas del mes" value={metric(summary.data?.month.total)} note="Desde el primer día hasta hoy" />
       <StatCard label="Tickets de hoy" value={summary.status === 'loading' ? 'Consultando…' : summary.data?.day.tickets ?? '—'} />
-      <StatCard label="Productos agotados" value={stock.status === 'loading' ? 'Consultando…' : stock.data ? stock.data.filter(item => Number(item.stockActual) <= 0).length : '—'} note="Stock disponible actual" />
+      <StatCard label="Productos agotados" value={alertsResource.status === 'loading' ? 'Consultando…' : alertsResource.data ? stockAlerts.filter(item => Number(item.stockActual) <= 0).length : '—'} note="Stock disponible actual" />
     </div>
     {summary.status === 'error' && <DataFeedback status="error" title="Resumen de ventas no disponible" description={summary.error ?? undefined} onRetry={reload} />}
     <div className="diza-dashboard-analytics">
@@ -66,14 +64,14 @@ export function BusinessOverview({ revision }: { revision: number }) {
       </section>
       <section className="diza-dashboard-panel" aria-labelledby="business-alerts-title">
         <div className="diza-dashboard-panel-heading"><h3 id="business-alerts-title">Requieren atención</h3><StatusBadge tone="warning">Inventario</StatusBadge></div>
-        {(stock.status === 'loading' || expiry.status === 'loading') && <p role="status" className="diza-kpi-note">Consultando existencias y vencimientos…</p>}
-        {(stock.status === 'error' || expiry.status === 'error') && <div className="diza-dashboard-notice" role="status"><p>No se pudo consultar {stock.status === 'error' && expiry.status === 'error' ? 'stock y vencimientos' : stock.status === 'error' ? 'stock' : 'vencimientos'}. Los demás avisos siguen disponibles.</p><Button variant="secondary" size="sm" onClick={reload}>Reintentar</Button></div>}
-        <ul className="diza-business-alerts">{alerts.map(alert => <li key={alert.id}>
-          <StatusBadge tone={alert.tone}>{alert.tone === 'danger' ? 'Urgente' : 'Revisar'}</StatusBadge>
+        {alertsResource.status === 'loading' && <p role="status" className="diza-kpi-note">Consultando existencias, vencimientos y reposición…</p>}
+        {alertsResource.status === 'error' && <div className="diza-dashboard-notice" role="status"><p>No se pudieron consultar las alertas operativas. Los demás avisos siguen disponibles.</p><Button variant="secondary" size="sm" onClick={reload}>Reintentar</Button></div>}
+        <ul className="diza-business-alerts">{alerts.slice(0, 4).map(alert => <li key={alert.id}>
+          <StatusBadge tone={alert.priority === 'urgent' ? 'danger' : 'warning'}>{alert.priority === 'urgent' ? 'Urgente' : 'Revisar'}</StatusBadge>
           <strong>{alert.title}</strong><p>{alert.message}</p>
         </li>)}</ul>
-        {stock.status === 'success' && expiry.status === 'success' && alerts.length === 0 && <p className="diza-kpi-note">Sin alertas de stock ni vencimientos en los próximos 7 días.</p>}
-        <Link to="/inventario" className="diza-dashboard-panel-action">Consultar inventario <span aria-hidden="true">→</span></Link>
+        {alertsResource.status === 'success' && alerts.length === 0 && <p className="diza-kpi-note">Sin alertas de stock ni vencimientos en los próximos 7 días.</p>}
+        <Link to="/alertas" className="diza-dashboard-panel-action">Ver todas las alertas <span aria-hidden="true">→</span></Link>
       </section>
     </div>
     {history.data && <section className="diza-dashboard-panel diza-business-ranking" aria-labelledby="business-ranking-title">

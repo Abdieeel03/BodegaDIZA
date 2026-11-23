@@ -29,6 +29,7 @@ class TrainingResult(ApiModel):
     validation_rows_rejected:int
     validation_metrics:Metrics|None=None
     evaluated_observations:int=0
+    sales_cutoff_date:date|None=None
     forecast_from_date:date|None=None
     forecast_to_date:date|None=None
     history_coverage_ratio:float=0.0

@@ -21,6 +21,8 @@ const readableName = (text: string) => text
 
 const dateLabel = (value?: string | null) => value
   ? new Date(value + 'T12:00:00').toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' }) : 'No disponible';
+const dateTimeLabel = (value?: string | null) => value
+  ? new Date(value).toLocaleString('es-PE', { timeZone: 'America/Lima', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'No disponible';
 const dayLabel = (start: string | null | undefined, index: number) => {
   if (!start) return 'Día ' + (index + 1);
   const date = new Date(start + 'T12:00:00');
@@ -49,6 +51,7 @@ export const PredictionPage = ({ view = 'summary' }: { view?: PredictionView }) 
   const [replenishments, setReplenishments] = useState<ReplenishmentRecommendation[]>([]);
   const [search, setSearch] = useState('');
   const [training, setTraining] = useState<TrainingResult | null>(null);
+  const [inventoryAsOf, setInventoryAsOf] = useState<string | null>(null);
   const [trainingLoading, setTrainingLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -85,13 +88,14 @@ export const PredictionPage = ({ view = 'summary' }: { view?: PredictionView }) 
     setLoading(true);
     setError('');
     setOptResult(null);
-    Promise.all([mlService.getLatestPredictions(), mlService.getLatestReplenishments()])
+    Promise.all([mlService.getLatestPredictions(), mlService.getLatestReplenishmentSnapshot()])
       .then(([items, stock]) => {
         if (!active) return;
         setPredictions(items);
-        setReplenishments(stock);
+        setReplenishments(stock.items);
+        setInventoryAsOf(stock.inventoryAsOf);
       })
-      .catch(err => { if (active) { setPredictions([]); setReplenishments([]); setError(err instanceof Error ? err.message : 'No se pudo consultar la predicción.'); } })
+      .catch(err => { if (active) { setPredictions([]); setReplenishments([]); setInventoryAsOf(null); setError(err instanceof Error ? err.message : 'No se pudo consultar la predicción.'); } })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [refresh]);
@@ -162,12 +166,11 @@ export const PredictionPage = ({ view = 'summary' }: { view?: PredictionView }) 
       </div>}
     />
 
-    {training && view !== 'summary' && (
-      <p className="prediction-period" aria-label="Período del pronóstico">
-        Pronóstico: {dateLabel(training.forecastFromDate)} – {dateLabel(training.forecastToDate)}
-        {expired && <strong className="prediction-period-expired"> · Período finalizado. Actualiza el modelo para tener una estimación reciente.</strong>}
-      </p>
-    )}
+    {training && <section className="prediction-data-freshness" aria-label="Vigencia de los datos">
+      <div><span>Pronóstico guardado</span><strong>Generado: {dateTimeLabel(training.trainedAt)}</strong><small>Ventas consideradas hasta: {dateLabel(training.salesCutoffDate)}</small></div>
+      <div><span>Inventario actual</span><strong>Consultado: {dateTimeLabel(inventoryAsOf)}</strong><small>La reposición se recalcula con el stock actual.</small></div>
+      <div><span>Período estimado</span><strong>{dateLabel(training.forecastFromDate)} – {dateLabel(training.forecastToDate)}</strong>{expired && <small className="prediction-period-expired">Período finalizado. Actualiza el modelo.</small>}</div>
+    </section>}
     {error && <div className="diza-ml-error" role="alert">{error}<p>Intenta recargar los resultados. Si aún no hay un modelo, utiliza «Actualizar modelo».</p></div>}
     {priceError && !loading && <p className="diza-ml-disclaimer" role="status">No se pueden mostrar los ingresos estimados: {priceError}. Las predicciones en unidades siguen disponibles.</p>}
     {loading ? <div className="diza-ml-card">Consultando las predicciones...</div> : !predictions.length ? <div className="diza-ml-card">

@@ -45,6 +45,7 @@ export interface TrainingResult {
   productsCount: number;
   observationsCount: number;
   validationRowsRejected: number;
+  salesCutoffDate?: string | null;
   hillClimbing?: HillClimbingSummary | null;
   classification?: ClassificationSummary | null;
 }
@@ -72,6 +73,11 @@ export interface ReplenishmentRecommendation {
   stockoutProbability?: number | null;
   stockoutRiskLevel?: StockoutRiskLevel | null;
   daysOfStockRemaining?: number | null;
+}
+
+export interface ReplenishmentSnapshot {
+  items: ReplenishmentRecommendation[];
+  inventoryAsOf: IsoDateTime;
 }
 
 export interface ReplenishmentOptimizationItem {

@@ -104,6 +104,7 @@ class TrainingEngine:
                 'trainedAt':now,'metrics':test_metrics,'validationMetrics':tuned_val_metrics,
                 'productsCount':int(sales.id_producto.nunique()),'observationsCount':int(len(sales)),
                 'validationRowsRejected':rejected,'evaluatedObservations':int(len(actual)),
+                'salesCutoffDate':last_date.date().isoformat(),
                 'forecastFromDate':(last_date+timedelta(days=1)).date().isoformat(),
                 'forecastToDate':(last_date+timedelta(days=HORIZON)).date().isoformat(),
                 'historyCoverageRatio':coverage_info['coverageRatio'],

@@ -24,7 +24,7 @@ const menuItems: MenuItem[] = [
     icon: 'prediction',
   },
   { label: 'Próximos a vencer', mobileLabel: 'Vence', icon: 'calendar' },
-  { label: 'Alertas', mobileLabel: 'Alertas', icon: 'warning' },
+  { to: '/alertas', label: 'Alertas', mobileLabel: 'Alertas', icon: 'warning' },
 ];
 
 const mobileItems = menuItems.filter(

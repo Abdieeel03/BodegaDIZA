@@ -53,6 +53,11 @@ public class MlController {
         return ResponseEntity.ok(ApiResponse.success(mlReplenishmentService.latest()));
     }
 
+    @GetMapping("/replenishments/latest/snapshot")
+    public ResponseEntity<ApiResponse<ReplenishmentSnapshotResponse>> getLatestReplenishmentSnapshot() {
+        return ResponseEntity.ok(ApiResponse.success(mlReplenishmentService.latestSnapshot()));
+    }
+
     @GetMapping("/replenishments/optimize")
     public ResponseEntity<ApiResponse<ReplenishmentOptimizationResponse>> optimizeReplenishments(
         @RequestParam("budget") double budget

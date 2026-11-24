@@ -3,14 +3,6 @@ import type { ExpiringLot, StockAlert } from '../../services/dashboardService';
 
 export type MonthlyTotal = { key: string; label: string; amount: number };
 export type ProductSales = { id: number; name: string; units: number; unitLabel: string };
-export type DashboardAlert = {
-  id: string;
-  title: string;
-  message: string;
-  tone: 'danger' | 'warning';
-  days?: number;
-};
-
 const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 const datePart = (value: string) => value.slice(0, 10);
 const finite = (value: number) => Number.isFinite(Number(value)) ? Number(value) : 0;
@@ -90,26 +82,4 @@ export function getProductSalesRanking(
     least: ranked.sort((a, b) => a.units - b.units || byName(a, b)).slice(0, 5),
     detailsAvailable: true,
   };
-}
-
-export function listDashboardAlerts(stock: StockAlert[], lots: ExpiringLot[]): DashboardAlert[] {
-  const lowStock: DashboardAlert[] = stock.map(item => ({
-    id: `stock-${item.productoId}`,
-    title: item.stockActual <= 0 ? `Agotado: ${item.nombre}` : `Stock bajo: ${item.nombre}`,
-    message: `Disponible: ${finite(item.stockActual).toLocaleString('es-PE')} · Mínimo: ${finite(item.stockMinimo).toLocaleString('es-PE')}`,
-    tone: item.stockActual <= 0 ? 'danger' : 'warning',
-  }));
-  const expiry: DashboardAlert[] = lots
-    .filter(lot => finite(lot.cantidadDisponible) > 0)
-    .map(lot => ({
-      id: `lot-${lot.id}`,
-      title: lot.vencido ? `Lote vencido: ${lot.productoNombre}` : `Próximo a vencer: ${lot.productoNombre}`,
-      message: `Lote ${lot.codigoLote} · ${lot.vencido ? 'Vencido' : `${lot.diasParaVencer} días restantes`}`,
-      tone: lot.vencido || lot.diasParaVencer <= 7 ? 'danger' : 'warning',
-      days: lot.diasParaVencer,
-    }));
-  return [...lowStock, ...expiry]
-    .sort((a, b) => (a.tone === 'danger' ? 0 : 1) - (b.tone === 'danger' ? 0 : 1)
-      || (a.days ?? 9999) - (b.days ?? 9999))
-    .slice(0, 4);
 }

@@ -4,6 +4,7 @@ import com.diza.api.product.ProductoResponse;
 import com.diza.api.product.ProductoService;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -30,6 +31,10 @@ public class MlReplenishmentService {
     }
 
     public List<ReplenishmentResponse> latest() {
+        return latestSnapshot().items();
+    }
+
+    public ReplenishmentSnapshotResponse latestSnapshot() {
         List<ReplenishmentResponse> forecast = mlServiceClient.getLatestReplenishments();
         Map<String, ProductoResponse> bySku = productoService.listar(null, null, true)
             .stream()
@@ -37,7 +42,7 @@ public class MlReplenishmentService {
 
         // Nunca presentar existencias obsoletas de un CSV como si fueran stock en vivo.
         // Se excluyen SKU no existentes/inactivos hasta sincronizar el catálogo.
-        return forecast.stream()
+        List<ReplenishmentResponse> items = forecast.stream()
             .filter(item -> bySku.containsKey(normalizedSku(item.productId())))
             .map(item -> {
                 ProductoResponse current = bySku.get(normalizedSku(item.productId()));
@@ -46,9 +51,10 @@ public class MlReplenishmentService {
             .sorted(Comparator.comparingDouble((ReplenishmentResponse r) ->
                     r.stockoutProbability() != null ? r.stockoutProbability() : -1.0)
                 .reversed()
-                .thenComparing(Comparator.comparingDouble(ReplenishmentResponse::recommendedReplenishment).reversed())
-                .thenComparing(ReplenishmentResponse::productId))
+            .thenComparing(Comparator.comparingDouble(ReplenishmentResponse::recommendedReplenishment).reversed())
+            .thenComparing(ReplenishmentResponse::productId))
             .toList();
+        return new ReplenishmentSnapshotResponse(items, OffsetDateTime.now());
     }
 
     static ReplenishmentResponse recalculate(

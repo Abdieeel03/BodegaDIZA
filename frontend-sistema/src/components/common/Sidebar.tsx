@@ -23,7 +23,7 @@ const menuItems: MenuItem[] = [
     mobileLabel: 'Predicción',
     icon: 'prediction',
   },
-  { label: 'Próximos a vencer', mobileLabel: 'Vence', icon: 'calendar' },
+  { to: '/proximos-a-vencer', label: 'Próximos a vencer', mobileLabel: 'Vence', icon: 'calendar' },
   { to: '/alertas', label: 'Alertas', mobileLabel: 'Alertas', icon: 'warning' },
 ];
 

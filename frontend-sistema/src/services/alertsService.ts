@@ -39,7 +39,7 @@ export function buildOperationalAlerts(
       priority: lot.vencido ? 'urgent' as const : 'review' as const,
       title: lot.vencido ? `Lote vencido: ${lot.productoNombre}` : `Vence en ${lot.diasParaVencer} días: ${lot.productoNombre}`,
       message: `Lote ${lot.codigoLote} · ${numberValue(lot.cantidadDisponible).toLocaleString('es-PE')} unidades disponibles`,
-      actionUrl: '/inventario/movimientos',
+      actionUrl: '/proximos-a-vencer',
     }));
   const ml = replenishments
     .filter(item => !stockSkus.has(item.productId.trim().toUpperCase()))

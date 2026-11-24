@@ -17,6 +17,7 @@ export type ExpiringLot = {
   productoId: number;
   productoNombre: string;
   productoSku: string;
+  productoCategoria: string;
   codigoLote: string;
   cantidadDisponible: number;
   fechaIngreso: string;

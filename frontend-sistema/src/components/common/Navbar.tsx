@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { UiIcon } from './UiIcon';
@@ -19,7 +19,31 @@ const titulos: Record<string, string> = {
   '/prediccion-demanda/actualizar-modelo': 'Actualizar modelo',
 };
 
-export const Navbar = ({ placement = 'mobile' }: { placement?: 'mobile' | 'sidebar' }) => {
+const mobileQuery = '(max-width: 800px)';
+
+function subscribeViewport(callback: () => void) {
+  const query = window.matchMedia(mobileQuery);
+  query.addEventListener('change', callback);
+  return () => query.removeEventListener('change', callback);
+}
+
+const isMobileViewport = () => window.matchMedia(mobileQuery).matches;
+
+type NavbarProps = { placement?: 'mobile' | 'sidebar' };
+
+export const Navbar = ({ placement = 'mobile' }: NavbarProps) => {
+  const mobile = useSyncExternalStore(
+    subscribeViewport,
+    isMobileViewport,
+    () => false,
+  );
+
+  if (mobile !== (placement === 'mobile')) return null;
+
+  return <AccountNavbar placement={placement} />;
+};
+
+const AccountNavbar = ({ placement = 'mobile' }: NavbarProps) => {
   const { user, logout } = useAuth();
   const { pathname } = useLocation();
   const menuRef = useRef<HTMLDetailsElement>(null);

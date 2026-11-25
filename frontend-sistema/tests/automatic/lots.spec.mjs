@@ -17,6 +17,8 @@ test('LOT-01: recepción múltiple desde interfaz conserva precisión y stock', 
   const row = await inventoryRow(page, catalog.empty);
   await row.getByRole('link', { name: 'Reponer', exact: true }).click();
   await page.getByRole('textbox', { name: 'Código de lote', exact: true }).fill('PENDIENTE');
+  await expect(page.getByLabel('Tipo de vencimiento')).toHaveValue('EXACTA');
+  await page.getByLabel('Tipo de vencimiento').selectOption('PENDIENTE');
   await page.getByLabel('Cantidad a ingresar').fill('2.125');
   await page.getByRole('button', { name: 'Añadir otro lote' }).click();
   const extra = page.getByRole('region', { name: 'Lote adicional 2' });
@@ -66,11 +68,12 @@ for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: 900 });
     await page.getByRole('searchbox').fill(catalog.empty.sku);
     await page.getByRole('button', { name: 'Regularizar', exact: true }).filter({ visible: true }).click();
+    await page.getByRole('checkbox', { name: 'Dividir lote' }).check();
     await page.getByLabel('Cantidad a regularizar').fill('3.125');
     await page.getByLabel('Código del nuevo lote').fill('VERIFICADO');
     await page.getByLabel('Tipo de vencimiento').selectOption('EXACTA');
     await page.getByLabel('Fecha de vencimiento').fill(businessDate(3));
-    await page.getByLabel('Motivo y evidencia de la corrección').fill('Etiqueta revisada en recepción');
+    await page.getByLabel('Motivo de la corrección').fill('Etiqueta revisada en recepción');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await testInfo.attach(`Regularización ${width}px`, { body: await page.screenshot({ fullPage: true }), contentType: 'image/png' });
     await page.getByRole('button', { name: 'Confirmar regularización' }).click();

@@ -140,11 +140,17 @@ export const InventoryPage = () => {
     const categoriaId = Number(datos.get('categoriaId'));
     const proveedorId = Number(datos.get('proveedorId'));
     const precioVenta = Number(datos.get('precioVenta'));
+    const costoTexto = String(datos.get('precioCosto') ?? '').trim();
+    const precioCosto = costoTexto ? Number(costoTexto) : null;
     const stockMinimo = Number(datos.get('stockMinimo'));
     const unidadMedida = String(datos.get('unidadMedida') ?? editing.unidadMedida ?? 'UNIDAD');
 
     if (!nombre || !categoriaId || !proveedorId) {
       setEditError('Completa el nombre, la categoría y el proveedor.');
+      return;
+    }
+    if (precioCosto !== null && (!Number.isFinite(precioCosto) || precioCosto <= 0 || precioCosto > 9999999999.99)) {
+      setEditError('El costo de adquisición debe ser positivo.');
       return;
     }
     if (!Number.isFinite(precioVenta) || precioVenta < 0 || !Number.isFinite(stockMinimo) || stockMinimo < 0) {
@@ -162,6 +168,7 @@ export const InventoryPage = () => {
         categoriaId,
         proveedorId,
         precioVenta,
+        precioCosto,
         stockMinimo,
         unidadMedida,
       });
@@ -298,7 +305,7 @@ export const InventoryPage = () => {
           <div>
             <span className="inventory-summary-label">VALORIZADO</span>
             <strong className="inventory-summary-value">{valorInventario === null ? 'No disponible' : moneda(valorInventario)}</strong>
-            <span className="inventory-summary-subline">{MODO_API ? 'El catálogo no devuelve costo de compra' : 'Suma del stock × costo de ejemplo'}</span>
+            <span className="inventory-summary-subline">{MODO_API ? (valorInventario === null ? 'Faltan costos de adquisición' : 'Stock vendible × costo de adquisición') : 'Suma del stock × costo de ejemplo'}</span>
           </div>
           <span className="inventory-summary-icon inventory-summary-icon--green"><IconoDinero /></span>
         </article>
@@ -620,6 +627,9 @@ export const InventoryPage = () => {
                     {!editing.proveedorId && <option value="">Selecciona proveedor</option>}
                     {editSuppliers.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
                   </select>
+                </label>
+                <label>Costo de adquisición (S/)
+                  <input name="precioCosto" type="number" min="0.01" max="9999999999.99" step="0.01" defaultValue={editing.precioCosto ?? ''} placeholder="Sin costo registrado" required={editing.precioCosto !== null} />
                 </label>
                 <label>Precio venta (S/)
                   <input name="precioVenta" type="number" min="0" step="0.01" required defaultValue={editing.precioVenta} />

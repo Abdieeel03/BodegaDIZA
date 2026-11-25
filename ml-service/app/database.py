@@ -36,6 +36,7 @@ def load_products_from_db(conn=None) -> pd.DataFrame:
             ), 0)::float8 AS stock_actual,
             p.stock_minimo::float8 AS stock_minimo_seguridad,
             p.precio_venta::float8 AS precio_venta_unitario,
+            p.precio_costo::float8 AS costo_compra_unitario,
             pr.nombre AS proveedor
         FROM public.productos p
         JOIN public.categorias c ON c.id = p.categoria_id

@@ -190,9 +190,9 @@ def optimize_replenishment_hill_climbing(
             if math.isfinite(c) and c > 0:
                 unit_cost = c
         if unit_cost is None:
-            unit_cost = float(row.precio_venta_unitario)
-        if not math.isfinite(unit_cost) or unit_cost <= 0:
-            continue
+            raise ValueError(f'Falta un costo de adquisición válido para {sku}; edita el producto antes de planificar')
+        if round(unit_cost, 2) <= 0:
+            raise ValueError(f'Costo de adquisición inválido para {sku}')
         min_deficit = max(0.0, float(item['stockMinimoSeguridad']) - float(item['stockActual']))
         candidates.append({
             'productId': sku,

@@ -46,6 +46,7 @@ export const ProductCreatePage = () => {
   const [categoryId, setCategoryId] = useState('');
   const [supplierId, setSupplierId] = useState('');
   const [salePrice, setSalePrice] = useState('');
+  const [costPrice, setCostPrice] = useState('');
   const [minStock, setMinStock] = useState('');
   const [unit, setUnit] = useState<Unit>('UNIDAD');
   const [withLot, setWithLot] = useState(false);
@@ -98,6 +99,7 @@ export const ProductCreatePage = () => {
     try {
       if (!sku.trim() || !name.trim()) throw Error('Completa el SKU y el nombre del producto.');
       if (!categoryId || !supplierId) throw Error('Selecciona categoría y proveedor.');
+      if (costPrice.trim() && (!Number.isFinite(toNumber(costPrice)) || toNumber(costPrice) <= 0 || toNumber(costPrice) > 9999999999.99)) throw Error('El costo de adquisición debe ser positivo.');
       if (!Number.isFinite(toNumber(salePrice)) || toNumber(salePrice) < 0 || !Number.isFinite(toNumber(minStock)) || toNumber(minStock) < 0) {
         throw Error('Precio y stock mínimo deben ser números válidos.');
       }
@@ -111,6 +113,7 @@ export const ProductCreatePage = () => {
         categoriaId: Number(categoryId),
         proveedorId: Number(supplierId),
         precioVenta: toNumber(salePrice),
+        precioCosto: costPrice.trim() ? toNumber(costPrice) : null,
         stockMinimo: toNumber(minStock),
         unidadMedida: unit,
         loteInicial: withLot ? { codigoLote: lotCode.trim(), cantidad: toNumber(lotAmount), vencimiento: expiry } : null,
@@ -209,6 +212,10 @@ export const ProductCreatePage = () => {
                   <option value="">Selecciona proveedor</option>
                   {suppliers.map(provider => <option key={provider.id} value={provider.id}>{provider.nombre}</option>)}
                 </select>
+              </FormField>
+              <FormField controlId="create-cost" label="Costo de adquisición (S/)">
+                <input id="create-cost" type="number" min="0.01" max="9999999999.99" step="0.01" inputMode="decimal"
+                  value={costPrice} onChange={e => setCostPrice(e.target.value)} placeholder="Opcional" />
               </FormField>
               <FormField controlId="create-price" label="Precio de venta (S/)" required>
                 <input id="create-price" required type="number" min="0" step="0.01" inputMode="decimal"

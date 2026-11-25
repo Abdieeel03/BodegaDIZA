@@ -93,6 +93,7 @@ public class ProductoService {
             request.stockMinimo(),
             request.unidadMedida()
         );
+        if (request.precioCosto() != null) producto.definirPrecioCosto(request.precioCosto());
         producto = productoRepository.save(producto);
 
         if (request.loteInicial() != null) {
@@ -149,6 +150,7 @@ public class ProductoService {
             request.stockMinimo(),
             request.unidadMedida()
         );
+        if (request.precioCosto() != null) producto.definirPrecioCosto(request.precioCosto());
 
         BigDecimal stock = loteProductoRepository.sumStockDisponibleByProductoId(id, LocalDate.now(java.time.ZoneId.of("America/Lima")));
         return ProductoResponse.of(producto, stock, loteProductoRepository.sumStockFisicoByProductoId(producto.getId()));

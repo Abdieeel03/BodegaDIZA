@@ -58,6 +58,21 @@ public class Producto {
     @Column(name = "precio_venta", nullable = false, precision = 12, scale = 2)
     private BigDecimal precioVenta;
 
+    @DecimalMin("0.01")
+    @jakarta.validation.constraints.Digits(integer = 10, fraction = 2)
+    @Column(name = "precio_costo", precision = 12, scale = 2)
+    private BigDecimal precioCosto;
+
+    public BigDecimal getPrecioCosto() { return precioCosto; }
+
+    public void definirPrecioCosto(BigDecimal costo) {
+        if (costo == null || costo.signum() <= 0 || costo.stripTrailingZeros().scale() > 2
+            || costo.compareTo(new BigDecimal("9999999999.99")) > 0) {
+            throw new com.diza.api.common.BusinessException("El costo de adquisición debe ser positivo y tener hasta dos decimales");
+        }
+        precioCosto = costo;
+    }
+
     @NotNull
     @DecimalMin("0.00")
     @Column(name = "stock_minimo", nullable = false, precision = 12, scale = 3)

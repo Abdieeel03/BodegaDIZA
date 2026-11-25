@@ -42,17 +42,22 @@ public class MlServiceClient {
             .block());
     }
 
-    public record LatestComparison(TrainingResponse training) {}
+    public record OperationalForecastResponse(
+        TrainingResponse training,
+        List<PredictionResponse> predictions,
+        List<ReplenishmentResponse> replenishments
+    ) {}
+
+    public OperationalForecastResponse getOperationalForecast() {
+        return request(() -> webClient.get()
+            .uri("/trainings/latest/operational")
+            .retrieve()
+            .bodyToMono(OperationalForecastResponse.class)
+            .block(java.time.Duration.ofSeconds(60)));
+    }
 
     public TrainingResponse getLatestTraining() {
-        return request(() -> {
-            LatestComparison comparison = webClient.get()
-                .uri("/trainings/latest/comparison")
-                .retrieve()
-                .bodyToMono(LatestComparison.class)
-                .block();
-            return comparison == null ? null : comparison.training();
-        });
+        return getOperationalForecast().training();
     }
 
     public TrainingResponse getTraining(String trainingId) {
@@ -64,21 +69,11 @@ public class MlServiceClient {
     }
 
     public List<PredictionResponse> getLatestPredictions() {
-        return request(() -> webClient.get()
-            .uri("/trainings/latest/predictions")
-            .retrieve()
-            .bodyToFlux(PredictionResponse.class)
-            .collectList()
-            .block());
+        return getOperationalForecast().predictions();
     }
 
     public List<ReplenishmentResponse> getLatestReplenishments() {
-        return request(() -> webClient.get()
-            .uri("/trainings/latest/replenishments")
-            .retrieve()
-            .bodyToFlux(ReplenishmentResponse.class)
-            .collectList()
-            .block());
+        return getOperationalForecast().replenishments();
     }
 
     public ReplenishmentOptimizationResponse optimizeReplenishment(double budget) {

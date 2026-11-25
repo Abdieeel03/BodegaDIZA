@@ -162,14 +162,14 @@ export const PredictionPage = ({ view = 'summary' }: { view?: PredictionView }) 
           </Button>
         )}
         <Button type="button" variant="secondary" disabled={loading || trainingLoading || optLoading}
-          onClick={() => setRefresh(value => value + 1)}>Recargar resultados</Button>
+          onClick={() => setRefresh(value => value + 1)}>Actualizar predicciones</Button>
       </div>}
     />
 
     {training && <section className="prediction-data-freshness" aria-label="Vigencia de los datos">
-      <div><span>Pronóstico guardado</span><strong>Generado: {dateTimeLabel(training.trainedAt)}</strong><small>Ventas consideradas hasta: {dateLabel(training.salesCutoffDate)}</small></div>
+      <div><span>Pronóstico actual</span><strong>Generado: {dateTimeLabel(training.forecastGeneratedAt ?? training.trainedAt)}</strong><small>Ventas consideradas hasta: {dateLabel(training.forecastSalesCutoffDate ?? training.salesCutoffDate)}</small><small>Modelo entrenado: {dateTimeLabel(training.trainedAt)}</small></div>
       <div><span>Inventario actual</span><strong>Consultado: {dateTimeLabel(inventoryAsOf)}</strong><small>La reposición se recalcula con el stock actual.</small></div>
-      <div><span>Período estimado</span><strong>{dateLabel(training.forecastFromDate)} – {dateLabel(training.forecastToDate)}</strong>{expired && <small className="prediction-period-expired">Período finalizado. Actualiza el modelo.</small>}</div>
+      <div><span>Período estimado</span><strong>{dateLabel(training.forecastFromDate)} – {dateLabel(training.forecastToDate)}</strong>{expired && <small className="prediction-period-expired">Período finalizado. Verifica el historial de ventas y actualiza las predicciones.</small>}</div>
     </section>}
     {error && <div className="diza-ml-error" role="alert">{error}<p>Intenta recargar los resultados. Si aún no hay un modelo, utiliza «Actualizar modelo».</p></div>}
     {priceError && !loading && <p className="diza-ml-disclaimer" role="status">No se pueden mostrar los ingresos estimados: {priceError}. Las predicciones en unidades siguen disponibles.</p>}

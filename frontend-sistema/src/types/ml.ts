@@ -41,6 +41,8 @@ export interface TrainingResult {
   trainedAt: IsoDateTime;
   forecastFromDate?: string | null;
   forecastToDate?: string | null;
+  forecastSalesCutoffDate?: string | null;
+  forecastGeneratedAt?: IsoDateTime | null;
   metrics: PredictionMetrics;
   productsCount: number;
   observationsCount: number;

@@ -1,6 +1,9 @@
 from __future__ import annotations
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from starlette.concurrency import run_in_threadpool
+import psycopg
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from ..database import load_products_from_db
 from ..hill_climbing import optimize_replenishment_hill_climbing
 from ..schemas import TrainingResult,PredictionResult,ReplenishmentResult
@@ -32,6 +35,19 @@ def latest_replenishments():
     try:return service.get_latest_replenishments()
     except FileNotFoundError as exc:raise HTTPException(status_code=404,detail='No hay un modelo entrenado') from exc
 
+@router.get('/latest/operational')
+def latest_operational():
+    """Consultar pronóstico actual sin entrenar ni cambiar el modelo guardado."""
+    try:
+        return service.operational.latest()
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404,detail='No hay un modelo entrenado') from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422,detail=str(exc)) from exc
+    except psycopg.Error as exc:
+        raise HTTPException(status_code=503,detail='No fue posible consultar las ventas e inventario actuales') from exc
+
+
 @router.get('/latest/comparison')
 def latest_comparison():
     try:return service.get_latest_comparison()
@@ -40,16 +56,18 @@ def latest_comparison():
 @router.get('/latest/optimize-replenishment')
 def optimize_replenishment(budget:float=Query(...,gt=0,description='Presupuesto máximo en soles')):
     from ..preprocessing import prepare_products
-    from ..replenishment import recommend
     try:
-        latest=service.store.latest()
+        latest=service.operational.latest()
+        if latest['training']['forecastToDate'] < datetime.now(ZoneInfo('America/Lima')).date().isoformat():
+            raise ValueError('El período del pronóstico ha finalizado; verifica las ventas registradas')
         products=prepare_products(load_products_from_db())
-        replenishments=recommend(latest['predictions'],products)
-        return optimize_replenishment_hill_climbing(replenishments,products,budget)
+        return optimize_replenishment_hill_climbing(latest['replenishments'],products,budget)
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404,detail='No hay un modelo entrenado') from exc
     except ValueError as exc:
         raise HTTPException(status_code=422,detail=str(exc)) from exc
+    except psycopg.Error as exc:
+        raise HTTPException(status_code=503,detail='No fue posible consultar el inventario actual') from exc
 
 @router.post('/latest/infer')
 async def infer_latest(sales_file:UploadFile|None=File(default=None),products_file:UploadFile|None=File(default=None)):

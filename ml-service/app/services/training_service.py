@@ -9,11 +9,13 @@ from ..ingestion import read_table
 from ..schemas import TrainingResult,PredictionResult,ReplenishmentResult
 from ..storage import ModelStore
 from ..training_engine import TrainingEngine
+from ..operational_forecast import OperationalForecast
 
 class TrainingService:
     def __init__(self,model_dir:str|Path|None=None):
         self.store=ModelStore(model_dir or os.environ.get('ML_MODEL_DIR','data/models'))
         self.engine=TrainingEngine(self.store)
+        self.operational=OperationalForecast(self.store)
 
     async def train(self,sales_file:UploadFile|None=None,products_file:UploadFile|None=None,
                     suppliers_file:UploadFile|None=None)->TrainingResult:

@@ -87,7 +87,7 @@ export const ModelTrainingPanel = ({ onCompleted }: ModelTrainingPanelProps) => 
       <div className="diza-model-panel-heading">
         <div>
           <span className="diza-model-eyebrow">MODELO DE DEMANDA</span>
-          <h2 id="diza-model-training-title">Generar predicciones</h2>
+          <h2 id="diza-model-training-title">Entrenamiento del modelo</h2>
           <p>Utiliza el historial de ventas y el inventario registrados.</p>
         </div>
         <span className="diza-model-horizon">Horizonte: 7 días</span>
@@ -96,7 +96,7 @@ export const ModelTrainingPanel = ({ onCompleted }: ModelTrainingPanelProps) => 
       <form onSubmit={handleSubmit} className="diza-model-action-row">
         <p>No requiere archivos ni modifica el stock. El entrenamiento puede tardar unos minutos.</p>
         <Button type="submit" loading={isLoading} disabled={isLoading || latestLoading}>
-          {isLoading ? 'Generando predicciones...' : 'Generar nuevas predicciones'}
+          {isLoading ? 'Entrenando modelo...' : 'Entrenar modelo'}
         </Button>
       </form>
 
@@ -119,7 +119,7 @@ export const ModelTrainingPanel = ({ onCompleted }: ModelTrainingPanelProps) => 
           <span className="diza-model-success">Modelo listo</span>
         </div>
         <div className="diza-model-kpis">
-          <div><span>Última actualización</span><strong>{formatDateTime(result.trainedAt)}</strong></div>
+          <div><span>Último entrenamiento</span><strong>{formatDateTime(result.trainedAt)}</strong></div>
           <div><span>Productos</span><strong>{result.productsCount}</strong></div>
           <div><span>Observaciones</span><strong>{result.observationsCount}</strong></div>
           <div><span>Modelo seleccionado</span><strong>{result.modelName.replaceAll('_', ' ')}</strong></div>

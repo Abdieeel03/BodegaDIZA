@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+from contextlib import nullcontext
 import pandas as pd
 import psycopg
 
@@ -19,7 +20,7 @@ def _connection():
     )
 
 
-def load_products_from_db() -> pd.DataFrame:
+def load_products_from_db(conn=None) -> pd.DataFrame:
     """Obtiene el catálogo activo y su stock vigente desde public.productos y lotes_producto."""
     query = """
         SELECT
@@ -44,7 +45,7 @@ def load_products_from_db() -> pd.DataFrame:
         GROUP BY p.id, p.sku, p.nombre, c.nombre, p.stock_minimo, p.precio_venta, pr.nombre
         ORDER BY p.sku
     """
-    with _connection() as conn:
+    with (_connection() if conn is None else nullcontext(conn)) as conn:
         with conn.cursor() as cur:
             cur.execute(query)
             rows = cur.fetchall()
@@ -55,7 +56,7 @@ def load_products_from_db() -> pd.DataFrame:
     return df
 
 
-def load_providers_from_db() -> pd.DataFrame:
+def load_providers_from_db(conn=None) -> pd.DataFrame:
     """Obtiene los proveedores activos desde public.proveedores."""
     query = """
         SELECT
@@ -65,7 +66,7 @@ def load_providers_from_db() -> pd.DataFrame:
         WHERE activo = true
         ORDER BY id
     """
-    with _connection() as conn:
+    with (_connection() if conn is None else nullcontext(conn)) as conn:
         with conn.cursor() as cur:
             cur.execute(query)
             rows = cur.fetchall()
@@ -76,7 +77,7 @@ def load_providers_from_db() -> pd.DataFrame:
     return df
 
 
-def load_sales_from_db() -> pd.DataFrame:
+def load_sales_from_db(conn=None) -> pd.DataFrame:
     """Carga todas las ventas desde public.ventas y public.detalles_venta."""
     query = """
         SELECT
@@ -92,7 +93,7 @@ def load_sales_from_db() -> pd.DataFrame:
         GROUP BY v.fecha::date, p.sku
         ORDER BY v.fecha::date, p.sku
     """
-    with _connection() as conn:
+    with (_connection() if conn is None else nullcontext(conn)) as conn:
         with conn.cursor() as cur:
             cur.execute(query)
             rows = cur.fetchall()
@@ -103,9 +104,15 @@ def load_sales_from_db() -> pd.DataFrame:
     return df
 
 
+def load_operational_inputs() -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Ventas y stock de una misma instantánea de lectura PostgreSQL."""
+    with _connection() as conn:
+        conn.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY')
+        return load_sales_from_db(conn), load_products_from_db(conn)
+
+
 def load_from_db() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Carga ventas, productos y proveedores desde PostgreSQL."""
-    products = load_products_from_db()
-    providers = load_providers_from_db()
-    sales = load_sales_from_db()
-    return sales, products, providers
+    """Carga ventas, productos y proveedores de una misma instantánea."""
+    with _connection() as conn:
+        conn.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY')
+        return load_sales_from_db(conn), load_products_from_db(conn), load_providers_from_db(conn)

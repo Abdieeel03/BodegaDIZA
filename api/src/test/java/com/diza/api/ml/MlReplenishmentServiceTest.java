@@ -2,6 +2,7 @@ package com.diza.api.ml;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 
@@ -34,6 +35,25 @@ class MlReplenishmentServiceTest {
             "Galletas de soda", new BigDecimal("25"), new BigDecimal("16"));
         assertEquals(1.0, result.recommendedReplenishment());
         assertEquals("AMARILLO", result.alertStatus());
+    }
+
+    @Test
+    void conservaProbabilidadSiCoincideElStock() {
+        var prediction = new ReplenishmentResponse("P002", "Arroz", "Abarrotes", 29, 18, 9, 0, "VERDE", 0.42, "MEDIO", 22.5);
+        var result = MlReplenishmentService.recalculate(prediction, "Arroz", new BigDecimal("29"), new BigDecimal("18"));
+        assertEquals(0.42, result.stockoutProbability(), 1e-9);
+        assertEquals("MEDIO", result.stockoutRiskLevel());
+    }
+
+    @Test
+    void invalidaProbabilidadCuandoCambiaStockOMinimo() {
+        var prediction = new ReplenishmentResponse("P002", "Arroz", "Abarrotes", 29, 18, 9, 0, "VERDE", 0.42, "MEDIO", 22.5);
+        var result = MlReplenishmentService.recalculate(prediction, "Arroz", BigDecimal.ZERO, new BigDecimal("18"));
+        assertNull(result.stockoutProbability());
+        assertNull(result.stockoutRiskLevel());
+        assertEquals("ROJO", result.alertStatus());
+        var changedMinimum = MlReplenishmentService.recalculate(prediction, "Arroz", new BigDecimal("29"), new BigDecimal("20"));
+        assertNull(changedMinimum.stockoutProbability());
     }
 
     @Test

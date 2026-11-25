@@ -61,11 +61,14 @@ class SalesReportServiceTest {
     }
 
     @Test
-    void overlapSuppressesOnlyConsolidatedTotalsAndRanking() {
+    void conflictingOverlapSuppressesConsolidatedTotalsTrendAndRanking() {
         history();
         jdbc.update("insert into staging_diza.ventas_csv values ('2026-11-16','P001','Arroz',3,4,10)");
         var report = service.get(null, null, null, "todos", "dia", 0, 20);
         assertThat(report.coincidencias()).isEqualTo(1);
+        assertThat(report.conciliadas()).isZero();
+        assertThat(report.conflictos()).isEqualTo(1);
+        assertThat(report.tendencia()).isEmpty();
         assertThat(report.total()).isNull();
         assertThat(report.ranking()).isEmpty();
         assertThat(report.historico()).isEqualByComparingTo("58");
@@ -74,6 +77,66 @@ class SalesReportServiceTest {
         assertThat(operational.total()).isEqualByComparingTo("17");
         assertThat(operational.coincidencias()).isZero();
         assertThat(operational.tickets()).isEqualTo(1);
+    }
+
+    @Test
+    void exactOverlapCountsOnceAndPreservesOriginalHistory() {
+        history();
+        jdbc.update("insert into staging_diza.ventas_csv values ('2026-11-16','P002','Leche',1,6,10), ('2026-11-18','P001','Arroz',0,4,10)");
+        var report = service.get(null, null, null, "todos", "dia", 0, 20);
+        assertThat(report.coincidencias()).isEqualTo(1);
+        assertThat(report.conciliadas()).isEqualTo(1);
+        assertThat(report.conflictos()).isZero();
+        assertThat(report.total()).isEqualByComparingTo("77");
+        assertThat(report.historico()).isEqualByComparingTo("46");
+        assertThat(report.operativo()).isEqualByComparingTo("31");
+        assertThat(report.filas()).isEqualTo(6);
+        assertThat(report.tickets()).isEqualTo(2);
+        assertThat(report.registros()).filteredOn(row -> row.fecha().equals(LocalDate.parse("2026-11-16")) && row.sku().equals("P002"))
+            .singleElement().satisfies(row -> assertThat(row.origen()).isEqualTo("operativo"));
+        assertThat(report.registros()).anyMatch(row -> row.fecha().equals(LocalDate.parse("2026-11-18")) && row.importe().signum() == 0);
+        assertThat(report.ranking()).filteredOn(row -> row.sku().equals("P002"))
+            .singleElement().satisfies(row -> assertThat(row.importe()).isEqualByComparingTo("14"));
+        var day = report.tendencia().stream().filter(point -> point.periodo().equals(LocalDate.parse("2026-11-16"))).findFirst().orElseThrow();
+        assertThat(day.historico()).isNull();
+        assertThat(day.operativo()).isEqualByComparingTo("23");
+        var raw = service.get(null, null, null, "historico", "dia", 0, 20);
+        assertThat(raw.total()).isEqualByComparingTo("52");
+        assertThat(raw.conciliadas()).isZero();
+        assertThat(raw.filas()).isEqualTo(4);
+        assertThat(jdbc.queryForObject("select count(*) from staging_diza.ventas_csv", Integer.class)).isEqualTo(4);
+        var paged = service.get(null, null, null, "todos", "dia", 1, 1);
+        assertThat(paged.total()).isEqualByComparingTo("77");
+        assertThat(paged.conciliadas()).isEqualTo(1);
+        assertThat(paged.tendencia()).isEqualTo(report.tendencia());
+    }
+
+    @Test
+    void equalAmountWithDifferentQuantityRemainsAConflict() {
+        history();
+        jdbc.update("insert into staging_diza.ventas_csv values ('2026-11-16','P002','Leche',2,3,10)");
+        var report = service.get(null, null, null, "todos", "mes", 0, 20);
+        assertThat(report.conciliadas()).isZero();
+        assertThat(report.conflictos()).isEqualTo(1);
+        assertThat(report.total()).isNull();
+        assertThat(report.tendencia()).isEmpty();
+    }
+
+    @Test
+    void multipleHistoricalRowsAreAmbiguousEvenIfAmountsMatch() {
+        history();
+        jdbc.update("insert into staging_diza.ventas_csv values ('2026-11-16','P002','Leche',1,6,10), ('2026-11-16','P002','Leche',0,6,10), ('2026-10-01','P001','Arroz',0,4,20)");
+        var report = service.get(null, null, null, "todos", "mes", 0, 20);
+        assertThat(report.coincidencias()).isEqualTo(1);
+        assertThat(report.conflictos()).isEqualTo(2);
+        assertThat(report.conciliadas()).isZero();
+        assertThat(report.total()).isNull();
+        assertThat(report.ranking()).isEmpty();
+        assertThat(report.tendencia()).isEmpty();
+        assertThat(report.filas()).isEqualTo(8);
+        var operational = service.get(null, null, null, "operativo", "mes", 0, 20);
+        assertThat(operational.total()).isEqualByComparingTo("31");
+        assertThat(operational.conflictos()).isZero();
     }
 
     @Test

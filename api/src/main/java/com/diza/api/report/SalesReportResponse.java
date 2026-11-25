@@ -6,7 +6,7 @@ import java.util.List;
 
 public record SalesReportResponse(
     BigDecimal total, BigDecimal historico, BigDecimal operativo,
-    long tickets, int productos, int coincidencias, boolean historicoDisponible,
+    long tickets, int productos, int coincidencias, int conciliadas, int conflictos, boolean historicoDisponible,
     List<Point> tendencia, List<Row> registros, List<Product> catalogo,
     List<Ranking> ranking, int filas, int pagina, int tamanio
 ) {

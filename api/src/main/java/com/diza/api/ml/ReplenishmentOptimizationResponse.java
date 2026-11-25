@@ -9,6 +9,12 @@ public record ReplenishmentOptimizationResponse(
     double budgetRemaining,
     int iterations,
     double coverageScore,
-    List<ReplenishmentOptimizationItemResponse> items
+    List<ReplenishmentOptimizationItemResponse> items,
+    double initialCoverageScore,
+    long totalNeededUnits,
+    long totalAllocatedUnits,
+    long totalUnmetUnits,
+    Double coveragePercent,
+    boolean searchLimited
 ) {
 }

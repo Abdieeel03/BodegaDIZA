@@ -140,11 +140,17 @@ export const InventoryPage = () => {
     const categoriaId = Number(datos.get('categoriaId'));
     const proveedorId = Number(datos.get('proveedorId'));
     const precioVenta = Number(datos.get('precioVenta'));
+    const costoTexto = String(datos.get('precioCosto') ?? '').trim();
+    const precioCosto = costoTexto ? Number(costoTexto) : null;
     const stockMinimo = Number(datos.get('stockMinimo'));
     const unidadMedida = String(datos.get('unidadMedida') ?? editing.unidadMedida ?? 'UNIDAD');
 
     if (!nombre || !categoriaId || !proveedorId) {
       setEditError('Completa el nombre, la categoría y el proveedor.');
+      return;
+    }
+    if (precioCosto !== null && (!Number.isFinite(precioCosto) || precioCosto <= 0 || precioCosto > 9999999999.99)) {
+      setEditError('El costo de adquisición debe ser positivo.');
       return;
     }
     if (!Number.isFinite(precioVenta) || precioVenta < 0 || !Number.isFinite(stockMinimo) || stockMinimo < 0) {
@@ -162,6 +168,7 @@ export const InventoryPage = () => {
         categoriaId,
         proveedorId,
         precioVenta,
+        precioCosto,
         stockMinimo,
         unidadMedida,
       });
@@ -236,8 +243,8 @@ export const InventoryPage = () => {
     <Link className="inventory-action inventory-action-add" to="/inventario/agregar">
       <span aria-hidden="true">＋</span> Nuevo producto
     </Link>
-    <Link className="inventory-action inventory-action-bulk" to="/inventario/agregar?modo=restock">
-      Reponer stock
+    <Link className="inventory-action inventory-action-bulk" to="/inventario/recibir">
+      Recibir mercadería
     </Link>
   </>
 ) : (
@@ -298,7 +305,7 @@ export const InventoryPage = () => {
           <div>
             <span className="inventory-summary-label">VALORIZADO</span>
             <strong className="inventory-summary-value">{valorInventario === null ? 'No disponible' : moneda(valorInventario)}</strong>
-            <span className="inventory-summary-subline">{MODO_API ? 'El catálogo no devuelve costo de compra' : 'Suma del stock × costo de ejemplo'}</span>
+            <span className="inventory-summary-subline">{MODO_API ? (valorInventario === null ? 'Faltan costos de adquisición' : 'Stock vendible × costo de adquisición') : 'Suma del stock × costo de ejemplo'}</span>
           </div>
           <span className="inventory-summary-icon inventory-summary-icon--green"><IconoDinero /></span>
         </article>
@@ -384,13 +391,14 @@ export const InventoryPage = () => {
             <thead>
               <tr>
                 <th>CÓDIGO SKU</th>
-                <th>NOMBRE DEL PRODUCTO</th>
+                <th>PRODUCTO</th>
                 <th>CATEGORÍA</th>
-                <th>STOCK ACTUAL</th>
+                <th>STOCK VENDIBLE</th>
+                {MODO_API && <th>STOCK FÍSICO</th>}
                 <th>STOCK MÍNIMO</th>
                 <th>PRECIO COSTO</th>
                 <th>PRECIO VENTA</th>
-                <th>ESTADO DE DISPONIBILIDAD</th>
+                <th>ESTADO</th>
                 {MODO_API && <th>ACCIONES</th>}
               </tr>
             </thead>
@@ -400,14 +408,16 @@ export const InventoryPage = () => {
                   <td className="inventory-sku">{producto.sku}</td>
                   <td className="inventory-name">{producto.nombre}</td>
                   <td className="inventory-category-cell">{producto.categoria}</td>
-                  <td className={`inventory-stock inventory-stock--${getStockStatus(producto)}`}>{producto.stock}</td>
+                  <td><span className={`inventory-stock inventory-stock--${getStockStatus(producto)}`}>{producto.stock}</span></td>
+                  {MODO_API && <td className="inventory-physical-stock">{producto.stockFisico ?? '—'}</td>}
                   <td>{producto.stockMinimo}</td>
                   <td>{producto.precioCosto === null ? '—' : moneda(producto.precioCosto)}</td>
                   <td className="inventory-sale-price">{moneda(producto.precioVenta)}</td>
                   <td><EtiquetaEstado producto={producto} /></td>
                   {MODO_API && (
                     <td className="inventory-row-actions">
-                      <Link className="inventory-row-btn" to={`/inventario/agregar?modo=restock&${producto.id ? `productoId=${producto.id}` : `sku=${encodeURIComponent(producto.sku)}`}`}>
+                      <Link className="inventory-row-btn" to={`/proximos-a-vencer?sku=${encodeURIComponent(producto.sku)}`}>Lotes</Link>
+                      <Link className="inventory-row-btn" to={`/inventario/recibir?${producto.id ? `productoId=${producto.id}` : `sku=${encodeURIComponent(producto.sku)}`}`}>
                         Reponer
                       </Link>
                       {producto.id && (
@@ -421,7 +431,7 @@ export const InventoryPage = () => {
               ))}
               {mostrados.length === 0 && (
                 <tr>
-                  <td colSpan={MODO_API ? 9 : 8} className="inventory-empty">
+                  <td colSpan={MODO_API ? 10 : 8} className="inventory-empty">
                     <strong>{productos.length === 0 ? 'Aún no hay productos' : 'Sin resultados'}</strong>
                     <p>{productos.length === 0
                       ? 'No se han registrado productos en esta vista.'
@@ -450,7 +460,7 @@ export const InventoryPage = () => {
                 <div>
                   <span>STOCK ACTUAL</span>
                   <strong className={`inventory-stock--${getStockStatus(producto)}`}>
-                    {producto.stock} <small>/ mín {producto.stockMinimo}</small>
+                    {producto.stock} <small>vendibles / mín {producto.stockMinimo} · Físico: {producto.stockFisico ?? producto.stock}</small>
                   </strong>
                 </div>
                 <div>
@@ -464,7 +474,7 @@ export const InventoryPage = () => {
               </div>
               {MODO_API && (
                 <div className="inventory-row-actions inventory-row-actions--mobile">
-                  <Link className="inventory-row-btn" to={`/inventario/agregar?modo=restock&${producto.id ? `productoId=${producto.id}` : `sku=${encodeURIComponent(producto.sku)}`}`}>
+                  <Link className="inventory-row-btn" to={`/inventario/recibir?${producto.id ? `productoId=${producto.id}` : `sku=${encodeURIComponent(producto.sku)}`}`}>
                     Reponer stock
                   </Link>
                   {producto.id && (
@@ -619,6 +629,9 @@ export const InventoryPage = () => {
                     {!editing.proveedorId && <option value="">Selecciona proveedor</option>}
                     {editSuppliers.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
                   </select>
+                </label>
+                <label>Costo de adquisición (S/)
+                  <input name="precioCosto" type="number" min="0.01" max="9999999999.99" step="0.01" defaultValue={editing.precioCosto ?? ''} placeholder="Sin costo registrado" required={editing.precioCosto !== null} />
                 </label>
                 <label>Precio venta (S/)
                   <input name="precioVenta" type="number" min="0" step="0.01" required defaultValue={editing.precioVenta} />

@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "skills": {
+    "agent-browser": {
+      "source": "vercel-labs/agent-browser",
+      "commit": "0a923358ea989d7602f0d06507ad3447c62ffe9b",
+      "sourceType": "github",
+      "skillPath": "skills/agent-browser/SKILL.md",
+      "computedHash": "a0dfac7503f69bcf529b2660fc79964064c4f179eb65695904ddc45fc0d99d20"
+    },
+    "pdf-pro": {
+      "source": "YuniorGlez/gemini-elite-core",
+      "commit": "efbf87fe151dc5d8a25cd97a219dc7043163a185",
+      "sourceType": "github",
+      "skillPath": "skills/pdf-pro/SKILL.md",
+      "computedHash": "bd12131f0d7747bdf5aeaac5ba8745d201ab5c4850859e65021e7ca99af1fda9"
+    }
+  }
+}

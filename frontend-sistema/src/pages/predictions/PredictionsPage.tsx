@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { ApiError, type TrainingResult } from '../../types';
 import { mlService } from '../../services/mlService';
 import { Button } from '../../components/ui';
+import { ClassificationDiagnostics, modelDisplayName } from './ClassificationDiagnostics';
 import './predictions-ml.css';
 
 type ModelTrainingPanelProps = {
@@ -87,7 +88,7 @@ export const ModelTrainingPanel = ({ onCompleted }: ModelTrainingPanelProps) => 
       <div className="diza-model-panel-heading">
         <div>
           <span className="diza-model-eyebrow">MODELO DE DEMANDA</span>
-          <h2 id="diza-model-training-title">Generar predicciones</h2>
+          <h2 id="diza-model-training-title">Entrenamiento del modelo</h2>
           <p>Utiliza el historial de ventas y el inventario registrados.</p>
         </div>
         <span className="diza-model-horizon">Horizonte: 7 días</span>
@@ -96,7 +97,7 @@ export const ModelTrainingPanel = ({ onCompleted }: ModelTrainingPanelProps) => 
       <form onSubmit={handleSubmit} className="diza-model-action-row">
         <p>No requiere archivos ni modifica el stock. El entrenamiento puede tardar unos minutos.</p>
         <Button type="submit" loading={isLoading} disabled={isLoading || latestLoading}>
-          {isLoading ? 'Generando predicciones...' : 'Generar nuevas predicciones'}
+          {isLoading ? 'Entrenando modelo...' : 'Entrenar modelo'}
         </Button>
       </form>
 
@@ -119,14 +120,14 @@ export const ModelTrainingPanel = ({ onCompleted }: ModelTrainingPanelProps) => 
           <span className="diza-model-success">Modelo listo</span>
         </div>
         <div className="diza-model-kpis">
-          <div><span>Última actualización</span><strong>{formatDateTime(result.trainedAt)}</strong></div>
+          <div><span>Último entrenamiento</span><strong>{formatDateTime(result.trainedAt)}</strong></div>
           <div><span>Productos</span><strong>{result.productsCount}</strong></div>
           <div><span>Observaciones</span><strong>{result.observationsCount}</strong></div>
-          <div><span>Modelo seleccionado</span><strong>{result.modelName.replaceAll('_', ' ')}</strong></div>
+          <div><span>Modelo seleccionado</span><strong>{modelDisplayName(result.modelName)}</strong></div>
         </div>
 
         <section className="diza-model-technical" aria-labelledby="diza-model-metrics-title">
-          <h4 id="diza-model-metrics-title">Métricas del entrenamiento</h4>
+          <h4 id="diza-model-metrics-title">Métricas de demanda · prueba temporal</h4>
           <div className="diza-model-metrics">
             <div><span>MAE</span><strong>{result.metrics.mae.toFixed(2)}</strong></div>
             <div><span>RMSE</span><strong>{result.metrics.rmse.toFixed(2)}</strong></div>
@@ -138,14 +139,18 @@ export const ModelTrainingPanel = ({ onCompleted }: ModelTrainingPanelProps) => 
             <p>Parámetros: {Object.entries(result.hillClimbing.bestParams).map(([key, value]) => `${key}=${value}`).join(' · ')}</p>
           </div>}
           {result.classification && <div className="diza-model-technical-detail">
-            <strong>Clasificador de riesgo de agotamiento: {result.classification.modelName.replaceAll('_', ' ')}</strong>
+            <strong>Clasificador de riesgo de agotamiento: {modelDisplayName(result.classification.modelName)}</strong>
+            {result.classification.horizonDays && <p>Riesgo de insuficiencia en {result.classification.horizonDays} días sin reposición · Evaluación temporal independiente.</p>}
             <div className="diza-model-metrics">
               <div><span>F1-Score</span><strong>{(result.classification.metrics.f1 * 100).toFixed(1)}%</strong></div>
               <div><span>Exactitud</span><strong>{(result.classification.metrics.accuracy * 100).toFixed(1)}%</strong></div>
               <div><span>Sensibilidad</span><strong>{(result.classification.metrics.recall * 100).toFixed(1)}%</strong></div>
               <div><span>Precisión</span><strong>{(result.classification.metrics.precision * 100).toFixed(1)}%</strong></div>
-              <div><span>ROC-AUC</span><strong>{result.classification.metrics.rocAuc.toFixed(3)}</strong></div>
+              <div><span>ROC-AUC</span><strong>{result.classification.metrics.rocAuc?.toFixed(3) ?? '—'}</strong></div>
+              {result.classification.metrics.brierScore != null && <div><span>Brier Score</span><strong>{result.classification.metrics.brierScore.toFixed(3)}</strong></div>}
             </div>
+            {result.classification.partitions && <p>Prueba final: {result.classification.partitions.test.n} casos · {result.classification.partitions.test.positive} positivos · {result.classification.partitions.test.negative} negativos.</p>}
+            <ClassificationDiagnostics classification={result.classification} />
           </div>}
         </section>
       </div>}

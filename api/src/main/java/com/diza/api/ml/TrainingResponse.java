@@ -15,6 +15,8 @@ public record TrainingResponse(
     String salesCutoffDate,
     String forecastFromDate,
     String forecastToDate,
+    String forecastSalesCutoffDate,
+    OffsetDateTime forecastGeneratedAt,
     Map<String, Object> hillClimbing,
     Map<String, Object> classification
 ) {

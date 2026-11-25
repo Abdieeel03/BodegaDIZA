@@ -54,9 +54,50 @@ public class LoteProducto {
     @Column(name = "fecha_ingreso", nullable = false)
     private LocalDate fechaIngreso;
 
-    @NotNull
-    @Column(name = "fecha_vencimiento", nullable = false)
+    @Column(name = "fecha_vencimiento")
     private LocalDate fechaVencimiento;
+
+    // NULL identifica registros anteriores: conserva su fecha y regla de venta.
+    @jakarta.persistence.Enumerated(jakarta.persistence.EnumType.STRING)
+    @Column(name = "precision_vencimiento", length = 20)
+    private PrecisionVencimiento precisionVencimiento;
+
+    @Column(name = "mes_vencimiento", length = 7)
+    private String mesVencimiento;
+
+    @jakarta.persistence.Version
+    @Column(nullable = false)
+    private long version;
+
+    public long getVersion() { return version; }
+    public PrecisionVencimiento getPrecisionVencimiento() { return precisionVencimiento; }
+    public String getMesVencimiento() { return mesVencimiento; }
+    public boolean isFechaHeredada() { return precisionVencimiento == null; }
+
+    public VencimientoRequest vencimientoActual() {
+        return new VencimientoRequest(precisionVencimiento != null ? precisionVencimiento :
+            (fechaVencimiento != null ? PrecisionVencimiento.EXACTA : PrecisionVencimiento.PENDIENTE), fechaVencimiento, mesVencimiento);
+    }
+
+    public void regularizar(VencimientoRequest dato) {
+        dato.validar(producto);
+        precisionVencimiento = dato.precision();
+        fechaVencimiento = dato.fecha();
+        mesVencimiento = dato.mes();
+    }
+
+    public boolean esVendible(LocalDate hoy) {
+        return cantidadDisponible.signum() > 0 && (
+            ((precisionVencimiento == null || precisionVencimiento == PrecisionVencimiento.EXACTA)
+                && fechaVencimiento != null && !fechaVencimiento.isBefore(hoy))
+            || (precisionVencimiento == PrecisionVencimiento.NO_APLICA && producto.isPermiteSinVencimiento()));
+    }
+
+    public void comprobarCompatibilidad(VencimientoRequest dato) {
+        dato.validar(producto);
+        if (!vencimientoActual().equals(dato))
+            throw new BusinessException("El código de lote ya existe con otro vencimiento; usa otro código o regulariza el lote");
+    }
 
     protected LoteProducto() {
     }

@@ -74,7 +74,7 @@ public class CompraService {
         List<DetalleCompra> detalles = new ArrayList<>();
 
         for (ItemCompraRequest item : request.items()) {
-            Producto producto = productoRepository.findById(item.productoId())
+            Producto producto = productoRepository.findForUpdate(item.productoId())
                 .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado con ID: " + item.productoId()));
 
             if (!producto.isActivo()) {
@@ -87,10 +87,12 @@ public class CompraService {
                     producto,
                     item.codigoLote().trim(),
                     BigDecimal.ZERO,
-                    LocalDate.now(),
+                    LocalDate.now(java.time.ZoneId.of("America/Lima")),
                     item.fechaVencimiento()
                 ));
 
+            if (lote.getId() == null) lote.regularizar(com.diza.api.inventory.VencimientoRequest.resolver(item.fechaVencimiento(), null));
+            lote.comprobarCompatibilidad(com.diza.api.inventory.VencimientoRequest.resolver(item.fechaVencimiento(), null));
             lote.incrementarStock(item.cantidad());
             lote = loteProductoRepository.save(lote);
 

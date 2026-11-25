@@ -10,7 +10,7 @@ export type SalesReportFilters = {
 export type SalesPoint = { periodo: string; historico: number | null; operativo: number | null };
 export type SalesReport = {
   total: number | null; historico: number; operativo: number; tickets: number;
-  productos: number; coincidencias: number; historicoDisponible: boolean;
+  productos: number; coincidencias: number; conciliadas: number; conflictos: number; historicoDisponible: boolean;
   tendencia: SalesPoint[];
   registros: { fecha: string; sku: string; nombre: string; origen: Exclude<SalesOrigin, 'todos'>;
     cantidad: number; unidad: string | null; importe: number; stockCierre: number | null }[];

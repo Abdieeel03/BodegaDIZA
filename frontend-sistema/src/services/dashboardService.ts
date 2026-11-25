@@ -17,12 +17,21 @@ export type ExpiringLot = {
   productoId: number;
   productoNombre: string;
   productoSku: string;
+  productoCategoria: string;
   codigoLote: string;
   cantidadDisponible: number;
   fechaIngreso: string;
-  fechaVencimiento: string;
+  fechaVencimiento: string | null;
   vencido: boolean;
-  diasParaVencer: number;
+  diasParaVencer: number | null;
+  precisionVencimiento: import('../pages/expiry/VencimientoFields').Precision;
+  mesVencimiento: string | null;
+  vendible: boolean;
+  estadoVencimiento: 'VENCIDO' | 'HOY' | 'CRITICO' | 'PROXIMO' | 'PREVENTIVO' | 'SEGUIMIENTO' | 'PENDIENTE' | 'NO_APLICA';
+  fechaHeredada: boolean;
+  advertencia: string | null;
+  version: number;
+  permiteSinVencimiento: boolean;
 };
 
 function extract<T>(response: ApiResponse<T>): T {

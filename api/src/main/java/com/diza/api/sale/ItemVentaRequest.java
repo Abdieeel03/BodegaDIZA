@@ -10,6 +10,7 @@ public record ItemVentaRequest(
 
     @NotNull(message = "La cantidad es obligatoria")
     @DecimalMin(value = "0.001", message = "La cantidad debe ser mayor a 0")
+    @jakarta.validation.constraints.Digits(integer = 9, fraction = 3)
     BigDecimal cantidad,
 
     Long loteId,

@@ -5,6 +5,7 @@ import { Button, PageHeader, StatCard } from '../../components/ui';
 import { ForecastLineChart } from '../../components/charts/ForecastLineChart';
 import { estimatedRevenue, estimatedRevenueSummary, formatSoles, getCurrentSalePrices, type PriceMap } from '../../services/mlRevenue';
 import type { DemandPrediction, ReplenishmentOptimizationResult, ReplenishmentRecommendation, TrainingResult } from '../../types';
+import { PurchaseOrdersPanel } from './PurchaseOrdersPanel';
 import './prediction-live.css';
 
 const fmt = (value: number, digits = 2) => Number(value).toLocaleString('es-PE', {
@@ -63,15 +64,19 @@ export const PredictionPage = ({ view = 'summary' }: { view?: PredictionView }) 
   const [optResult, setOptResult] = useState<ReplenishmentOptimizationResult | null>(null);
   const [optLoading, setOptLoading] = useState(false);
   const [optError, setOptError] = useState('');
+  const [supplierFilter, setSupplierFilter] = useState('');
+  const [purchasePriority, setPurchasePriority] = useState('');
+  const [allocationFilter, setAllocationFilter] = useState('all');
 
   const handleOptimizeBudget = async (event: FormEvent) => {
     event.preventDefault();
     const numericBudget = Number(budgetInput);
-    if (!Number.isFinite(numericBudget) || numericBudget <= 0) {
-      setOptError('Ingresa un presupuesto mayor a cero.');
+    if (!Number.isFinite(numericBudget) || numericBudget <= 0 || numericBudget > 9999999999.99 || Math.abs(numericBudget * 100 - Math.round(numericBudget * 100)) > 0.001) {
+      setOptError('Ingresa un presupuesto positivo con hasta dos decimales.');
       return;
     }
     setOptResult(null);
+    setSupplierFilter(''); setPurchasePriority(''); setAllocationFilter('all');
     setOptLoading(true);
     setOptError('');
     try {
@@ -149,6 +154,10 @@ export const PredictionPage = ({ view = 'summary' }: { view?: PredictionView }) 
     ? 'No disponible' : formatSoles(revenue.total);
   const selectedRevenue = current ? estimatedRevenue(current, prices) : null;
   const selectedPrice = current ? prices[current.productId.trim().toUpperCase()] : undefined;
+  const planItems = optResult?.items ?? [];
+  const suppliers = Array.from(new Set(planItems.map(item => item.supplier))).sort((a,b) => a.localeCompare(b,'es'));
+  const visiblePlan = planItems.filter(item => (!supplierFilter || item.supplier === supplierFilter) && (!purchasePriority || item.alertStatus === purchasePriority) && (allocationFilter === 'all' || (allocationFilter === 'allocated' ? item.allocatedUnits > 0 : item.unmetUnits > 0)));
+  const budgetPercent = optResult && optResult.budget > 0 ? Math.max(0, Math.min(100, optResult.budgetUsed / optResult.budget * 100)) : 0;
 
   return <main className="diza-ml-page">
     <PageHeader
@@ -162,14 +171,14 @@ export const PredictionPage = ({ view = 'summary' }: { view?: PredictionView }) 
           </Button>
         )}
         <Button type="button" variant="secondary" disabled={loading || trainingLoading || optLoading}
-          onClick={() => setRefresh(value => value + 1)}>Recargar resultados</Button>
+          onClick={() => setRefresh(value => value + 1)}>Actualizar predicciones</Button>
       </div>}
     />
 
     {training && <section className="prediction-data-freshness" aria-label="Vigencia de los datos">
-      <div><span>Pronóstico guardado</span><strong>Generado: {dateTimeLabel(training.trainedAt)}</strong><small>Ventas consideradas hasta: {dateLabel(training.salesCutoffDate)}</small></div>
+      <div><span>Pronóstico actual</span><strong>Generado: {dateTimeLabel(training.forecastGeneratedAt ?? training.trainedAt)}</strong><small>Ventas consideradas hasta: {dateLabel(training.forecastSalesCutoffDate ?? training.salesCutoffDate)}</small><small>Modelo entrenado: {dateTimeLabel(training.trainedAt)}</small></div>
       <div><span>Inventario actual</span><strong>Consultado: {dateTimeLabel(inventoryAsOf)}</strong><small>La reposición se recalcula con el stock actual.</small></div>
-      <div><span>Período estimado</span><strong>{dateLabel(training.forecastFromDate)} – {dateLabel(training.forecastToDate)}</strong>{expired && <small className="prediction-period-expired">Período finalizado. Actualiza el modelo.</small>}</div>
+      <div><span>Período estimado</span><strong>{dateLabel(training.forecastFromDate)} – {dateLabel(training.forecastToDate)}</strong>{expired && <small className="prediction-period-expired">Período finalizado. Verifica el historial de ventas y actualiza las predicciones.</small>}</div>
     </section>}
     {error && <div className="diza-ml-error" role="alert">{error}<p>Intenta recargar los resultados. Si aún no hay un modelo, utiliza «Actualizar modelo».</p></div>}
     {priceError && !loading && <p className="diza-ml-disclaimer" role="status">No se pueden mostrar los ingresos estimados: {priceError}. Las predicciones en unidades siguen disponibles.</p>}
@@ -231,7 +240,7 @@ export const PredictionPage = ({ view = 'summary' }: { view?: PredictionView }) 
         <h2>Qué necesitas reponer</h2>
         <div className="prediction-filters"><label>Buscar producto<input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Nombre o código" /></label><label>Prioridad<select value={priorityFilter} onChange={e => setPriorityFilter(e.target.value)}><option value="">Todas</option><option value="ROJO">Alta</option><option value="AMARILLO">Media</option><option value="VERDE">Baja</option></select></label></div>
         {recommended.length === 0 ? <p>No hay sugerencias de reposición para el stock consultado.</p> : <div className="diza-ml-table-scroll">
-          <table><thead><tr><th>Producto</th><th>Stock</th><th>Demanda 7 días</th><th>Cobertura actual</th><th>Prob. agotamiento</th><th>Reponer</th><th>Prioridad</th><th>Acción</th></tr></thead><tbody>
+          <table><thead><tr><th>Producto</th><th>Stock</th><th>Demanda 7 días</th><th>Cobertura actual</th><th>Riesgo estimado · 3 días (%)</th><th>Reponer</th><th>Prioridad</th><th>Acción</th></tr></thead><tbody>
             {visibleRecommendations.map(item => <tr key={item.productId}>
               <td><Link to={`/prediccion-demanda/producto?producto=${encodeURIComponent(item.productId)}`}>{readableName(item.productName)}</Link></td><td>{fmt(Number(item.stockActual), 0)}</td>
               <td>{fmt(Number(item.predictedDemand7Days))} u.</td>
@@ -270,23 +279,24 @@ export const PredictionPage = ({ view = 'summary' }: { view?: PredictionView }) 
           </div>
           <div className="prediction-insights">
             <article><span className="prediction-card-label">INDICADOR ACTUAL</span><h3>Stock disponible</h3><strong>{stock ? fmt(stock.stockActual, 0) : '—'} <small>unidades</small></strong><p>Stock mínimo: {stock ? fmt(stock.stockMinimoSeguridad, 0) : '—'} unidades.</p><p>Cobertura estimada: {stock?.daysOfStockRemaining != null ? fmt(stock.daysOfStockRemaining, 1) + ' días' : 'No disponible'}.</p></article>
-            <article><span className="prediction-card-label">DEMANDA PREVISTA</span><h3>Estimación del modelo</h3><strong>{fmt(current.predictedDemand7Days, 1)} <small>unidades</small></strong><p>Ingresos estimados: {pricesLoading ? 'Calculando...' : selectedRevenue === null ? 'No disponible' : formatSoles(selectedRevenue)}.</p><p>Probabilidad de agotamiento: {stock?.stockoutProbability != null ? fmt(stock.stockoutProbability * 100, 1) + '%' : 'No disponible'}.</p>{stock?.stockoutRiskLevel && <span className={`diza-ml-status ${riskClass(stock.stockoutRiskLevel)}`}>Riesgo {stock.stockoutRiskLevel.toLowerCase()}</span>}</article>
-            <article className="prediction-action-card"><span className="prediction-card-label">ACCIÓN RECOMENDADA</span><h3>Reposición sugerida</h3><strong>{stock ? fmt(stock.recommendedReplenishment, 0) : '—'} <small>unidades</small></strong><p>Cantidad sugerida para cubrir la demanda y mantener el stock mínimo.</p><div className="prediction-actions"><Link className="diza-ml-button" to={`/inventario/agregar?modo=restock&sku=${encodeURIComponent(current.productId)}&cantidad=${stock ? Math.ceil(Number(stock.recommendedReplenishment)) : ''}`}>Reponer stock →</Link><Link className="prediction-secondary" to="/prediccion-demanda/compras">Planificar compra</Link></div></article>
+            <article><span className="prediction-card-label">DEMANDA PREVISTA</span><h3>Estimación del modelo</h3><strong>{fmt(current.predictedDemand7Days, 1)} <small>unidades</small></strong><p>Ingresos estimados: {pricesLoading ? 'Calculando...' : selectedRevenue === null ? 'No disponible' : formatSoles(selectedRevenue)}.</p><p>Riesgo de insuficiencia a 3 días sin reposición: {stock?.stockoutProbability != null ? fmt(stock.stockoutProbability * 100, 1) + '%' : 'No disponible'}.</p>{stock?.stockoutRiskLevel && <span className={`diza-ml-status ${riskClass(stock.stockoutRiskLevel)}`}>Riesgo {stock.stockoutRiskLevel.toLowerCase()}</span>}</article>
+            <article className="prediction-action-card"><span className="prediction-card-label">ACCIÓN RECOMENDADA</span><h3>Reposición sugerida</h3><strong>{stock ? fmt(stock.recommendedReplenishment, 0) : '—'} <small>unidades</small></strong><p>Cantidad sugerida para cubrir la demanda y mantener el stock mínimo.</p><div className="prediction-actions">{stock && Number(stock.recommendedReplenishment) > 0 ? <><Link className="diza-ml-button" to={`/inventario/agregar?modo=restock&sku=${encodeURIComponent(current.productId)}&cantidad=${Math.ceil(Number(stock.recommendedReplenishment))}`}>Reponer stock →</Link><Link className="prediction-secondary" to="/prediccion-demanda/compras">Planificar compra</Link></> : <span className={`diza-ml-status ${stock ? 'diza-ml-verde' : ''}`}>{stock ? 'Stock suficiente' : 'Reposición no disponible'}</span>}</div></article>
           </div>
         </>}
       </section>}
       {view === 'purchases' && <section className="diza-ml-card">
         <div className="diza-ml-card-heading">
           <div>
-            <h2>Planificar compras</h2>
+            <h2>Presupuesto disponible</h2>
             <p>Indica cuánto puedes gastar y consulta qué cantidades comprar. Este plan no registra compras ni modifica el inventario.</p>
           </div>
           <form onSubmit={handleOptimizeBudget} style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
             <label>Presupuesto (S/)
               <input
                 type="number"
-                min="1"
-                step="0.5"
+                min="0.01"
+                max="9999999999.99"
+                step="0.01"
                 value={budgetInput}
                 disabled={optLoading} onChange={e => { setBudgetInput(e.target.value); setOptResult(null); setOptError(''); }}
                 style={{ border: '1px solid #d4deec', borderRadius: 8, padding: '10px 12px', fontSize: 13, width: 140 }}
@@ -306,22 +316,48 @@ export const PredictionPage = ({ view = 'summary' }: { view?: PredictionView }) 
             <article><span>Saldo restante</span><strong>{formatSoles(optResult.budgetRemaining)}</strong></article>
             <article><span>Productos incluidos</span><strong>{optResult.items.filter(item => item.allocatedUnits > 0).length}</strong></article>
           </div>
-          <div className="diza-ml-table-scroll">
-            <table><thead><tr><th>Producto</th><th>Prioridad</th><th>Sugerido</th><th>Compra asignada</th><th>Costo unit.</th><th>Costo total</th><th>Acción</th></tr></thead><tbody>
-              {optResult.items.filter(item => item.allocatedUnits > 0).map(item => <tr key={item.productId}>
-                <td>{readableName(item.productName)}</td>
-                <td><span className={`diza-ml-status diza-ml-${item.alertStatus.toLowerCase()}`}>{priorityLabel[item.alertStatus]}</span></td>
-                <td>{item.recommendedReplenishment}</td>
-                <td><strong>{item.allocatedUnits} unidades</strong></td>
-                <td>{formatSoles(item.unitCost)}</td>
-                <td><strong>{formatSoles(item.totalCost)}</strong></td>
-                <td><Link className="diza-ml-link" to={`/inventario/agregar?modo=restock&sku=${encodeURIComponent(item.productId)}&cantidad=${Math.ceil(Number(item.allocatedUnits))}`}>Reponer</Link></td>
-              </tr>)}
-            </tbody></table>
+          <div className="diza-ml-stats diza-ml-stats-inside" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
+            <article><span>Necesidad total</span><strong>{fmt(optResult.totalNeededUnits, 0)} u.</strong></article>
+            <article><span>Compra asignada</span><strong>{fmt(optResult.totalAllocatedUnits, 0)} u.</strong></article>
+            <article><span>Unidades pendientes</span><strong>{fmt(optResult.totalUnmetUnits, 0)} u.</strong></article>
+            <article><span>Necesidad cubierta</span><strong>{optResult.coveragePercent == null ? '—' : `${fmt(optResult.coveragePercent, 1)}%`}</strong></article>
           </div>
+          <div className="diza-purchase-progress">
+            <div><strong>Uso del presupuesto</strong><span>{fmt(budgetPercent, 2)}%</span><progress max={100} value={budgetPercent} aria-label="Uso del presupuesto"/><small>{formatSoles(optResult.budgetUsed)} de {formatSoles(optResult.budget)}</small></div>
+            <div><strong>Cobertura de necesidades</strong><span>{optResult.coveragePercent == null ? '—' : `${fmt(optResult.coveragePercent,1)}%`}</span><progress max={100} value={optResult.coveragePercent == null ? 0 : Math.max(0,Math.min(100,optResult.coveragePercent))} aria-label="Cobertura de necesidades"/><small>{optResult.totalAllocatedUnits} de {optResult.totalNeededUnits} unidades · {optResult.totalUnmetUnits} pendientes</small></div>
+          </div>
+          {optResult.searchLimited && <p role="status">Se alcanzó el límite de búsqueda. El plan es factible, pero puede mejorarse.</p>}
+          {!optResult.items.length && <p role="status">No hay necesidades de reposición en este momento.</p>}
+          {!!optResult.items.length && <><div className="diza-plan-filters">
+            <label>Proveedor<select value={supplierFilter} onChange={e => setSupplierFilter(e.target.value)}><option value="">Todos</option>{suppliers.filter(Boolean).map(supplier => <option key={supplier}>{supplier}</option>)}</select></label>
+            <label>Prioridad<select value={purchasePriority} onChange={e => setPurchasePriority(e.target.value)}><option value="">Todas</option><option value="ROJO">Alta</option><option value="AMARILLO">Media</option><option value="VERDE">Baja</option></select></label>
+            <label>Asignación<select value={allocationFilter} onChange={e => setAllocationFilter(e.target.value)}><option value="all">Todos</option><option value="allocated">Con compra asignada</option><option value="unmet">Con necesidad pendiente</option></select></label>
+          </div><p className="diza-diagnostic-note">{visiblePlan.length} de {planItems.length} productos. Los filtros no cambian el presupuesto ni la propuesta completa.</p>
+          <div className="diza-ml-table-scroll">
+            <table><thead><tr><th>Producto</th><th>Prioridad</th><th>Riesgo 3 días</th><th>Sugerido</th><th>Asignado</th><th>Pendiente</th><th>Costo unit.</th><th>Subtotal</th></tr></thead>
+              {Array.from(new Set(visiblePlan.map(item => item.supplier))).map(supplier => {
+                const group = visiblePlan.filter(item => item.supplier === supplier);
+                return <tbody key={supplier}>
+                  <tr><td colSpan={8} style={{ background: '#eef3fb' }}><strong>{supplier || 'Proveedor no disponible'}</strong> · {formatSoles(group.reduce((sum, item) => sum + Math.round(item.totalCost * 100), 0) / 100)}</td></tr>
+                  {group.map(item => <tr key={item.productId}>
+                    <td>{readableName(item.productName)}</td>
+                    <td><span className={`diza-ml-status diza-ml-${item.alertStatus.toLowerCase()}`}>{priorityLabel[item.alertStatus]}</span></td>
+                    <td>{item.stockoutProbability == null ? '—' : `${fmt(item.stockoutProbability * 100, 1)}%`}</td>
+                    <td>{item.recommendedReplenishment}</td>
+                    <td><strong className={item.allocatedUnits > 0 ? 'diza-plan-allocated' : ''}>{item.allocatedUnits}</strong></td>
+                    <td className={item.unmetUnits > 0 ? 'diza-plan-unmet' : ''}>{item.unmetUnits}</td>
+                    <td>{formatSoles(item.unitCost)}</td>
+                    <td><strong>{formatSoles(item.totalCost)}</strong></td>
+                  </tr>)}
+                </tbody>;
+              })}
+            </table>
+          </div>{!visiblePlan.length && <p role="status">No hay productos con estos filtros.</p>}<div className="diza-plan-next"><a className="diza-ml-button" href="#diza-purchase-orders">Revisar propuesta y pedidos ↓</a></div></>}
+          <p><small>Hill Climbing · Utilidad inicial {fmt(optResult.initialCoverageScore, 2)} · Utilidad final {fmt(optResult.coverageScore, 2)} · {optResult.iterations} mejoras locales. La utilidad es un puntaje de priorización, no un porcentaje de precisión.</small></p>
         </>}
       </section>}
     </>}
+    {view === 'purchases' && <PurchaseOrdersPanel plan={optResult} onChange={() => { setOptResult(null); setRefresh(v => v + 1); }} />}
   </main>;
 };
 

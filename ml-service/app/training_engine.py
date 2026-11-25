@@ -7,7 +7,7 @@ import pandas as pd
 from .features import historical_features
 from .hill_climbing import hill_climb_hyperparameters
 from .modeling import CANDIDATES,train_model,metrics
-from .forecasting import HORIZON, predict_horizon, to_prediction_objects, validate_on_observed_days
+from .forecasting import HORIZON, predict_horizon, to_prediction_objects, validate_on_observed_days, demand_shift
 from .preprocessing import prepare_products,prepare_providers,prepare_sales,coverage
 from .replenishment import recommend
 from .stockout_classifier import predict_stockout_risk, train_stockout_classifier
@@ -36,11 +36,12 @@ def cutoffs(sales:pd.DataFrame):
 
 def origins_in_window(start:pd.Timestamp,end:pd.Timestamp,count:int,sales:pd.DataFrame|None=None)->list[pd.Timestamp]:
     """Cortes espaciados, sin superposición entre ventanas de 7 días."""
-    earliest=pd.Timestamp(start).normalize()
+    earliest=pd.Timestamp(start).normalize()-timedelta(days=1)
     latest=pd.Timestamp(end).normalize()-timedelta(days=HORIZON)
     if latest<earliest:
         return []
-    possible=list(pd.date_range(earliest,latest,freq=f'{HORIZON}D'))
+    # Alinear con el final: incluir siempre los últimos siete días completos.
+    possible=list(pd.date_range(end=latest, periods=(latest-earliest).days//HORIZON+1, freq=f'{HORIZON}D'))
     if sales is not None and possible:
         non_empty=[
             origin for origin in possible
@@ -57,7 +58,7 @@ class TrainingEngine:
     def __init__(self,store:ModelStore):self.store=store
 
     def train(self,sales_input:pd.DataFrame,products_input:pd.DataFrame,
-              providers_input:pd.DataFrame|None=None)->dict:
+              providers_input:pd.DataFrame|None=None, simulate_stockout:bool=False)->dict:
         products=prepare_products(products_input)
         providers=prepare_providers(providers_input,products)
         sales,rejected=prepare_sales(sales_input,products)
@@ -89,15 +90,32 @@ class TrainingEngine:
         if len(actual)<5:
             raise ValueError('Muy pocas observaciones en el período final de evaluación')
         test_metrics=metrics(actual,forecast)
+        # Mismos cortes y mismo modelo: medir el efecto de la adaptación sin usar
+        # el test para elegir parámetros o sustituir al ganador de validación.
+        old_actual, old_forecast=validate_on_observed_days(evaluation_model,selected,sales,test_origins,adaptive=False)
+        baseline_actual, baseline_forecast=validate_on_observed_days(None,'media_reciente',sales,test_origins,adaptive=False)
+        evaluation_details={
+            'testOrigins':[x.date().isoformat() for x in test_origins],
+            'validationOrigins':[x.date().isoformat() for x in validation_origins],
+            'withoutAdaptation':metrics(old_actual,old_forecast),
+            'recentMeanBaseline':metrics(baseline_actual,baseline_forecast),
+            'strategy':'FIXED_MODEL_ROLLING_ORIGIN',
+        }
         full_model=train_model(selected,features,best_params)
         future=predict_horizon(full_model,selected,sales,last_date,last_date+timedelta(days=1))
         predictions=to_prediction_objects(future)
         replenishments=recommend(predictions,products)
-        classifier,classification_report=train_stockout_classifier(sales,products)
+        classifier,classification_report=train_stockout_classifier(sales,products,simulate=simulate_stockout)
         replenishments=predict_stockout_risk(classifier,sales,products,replenishments)
         now=datetime.now(timezone.utc).isoformat()
         training_id=str(uuid4())
         coverage_info=coverage(sales)
+        coverage_info['evaluationDetails']=evaluation_details
+        coverage_info['classificationAvailability']='AVAILABLE' if classification_report else 'INSUFFICIENT_LABELED_DATA'
+        coverage_info['demandChanges']=[
+            {'productId':str(sku), **demand_shift(group,last_date)}
+            for sku, group in sales.groupby('id_producto',sort=True)
+        ]
         report={
             'training':{
                 'id':training_id,'status':'COMPLETED','modelName':selected,

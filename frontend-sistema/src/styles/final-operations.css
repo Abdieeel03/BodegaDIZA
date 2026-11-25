@@ -1,0 +1,40 @@
+/* Bloque 05B — presentación de operaciones, sin cambios de servicios. */
+.inventory-actions .inventory-action { order: 0; }
+.inventory-actions .inventory-action-add { background: var(--diza-color-action); border-color: var(--diza-color-action); }
+.inventory-actions .inventory-action-bulk { color: var(--diza-color-brand); border-color: var(--diza-color-border-strong); }
+.inventory-table .inventory-physical-stock { color: var(--diza-color-text-secondary); font-variant-numeric: tabular-nums; }
+.inventory-table :is(th,td) { padding-inline: 8px; }
+.inventory-table .inventory-name { min-width: 130px; }
+.inventory-table td.inventory-row-actions { display: table-cell; white-space: normal; }
+.inventory-table .inventory-row-btn { margin: 2px 2px 2px 0; padding-inline: 8px; }
+.inventory-table .inventory-row-btn:last-child { margin-right: 0; }
+.inventory-table td.inventory-row-actions .inventory-row-btn { white-space: nowrap; }
+.diza-receipt-context { margin: 0 0 12px; padding: 10px 13px; background: var(--diza-color-info-soft); border-radius: var(--diza-radius-md); color: var(--diza-color-text-secondary); }
+.diza-receipt-context a { font-weight: 700; color: var(--diza-color-brand); }
+.diza-receipt-total { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; padding: 13px 16px; border: 1px solid var(--diza-color-border); background: var(--diza-color-surface); border-radius: var(--diza-radius-lg); }
+.diza-receipt-total strong { font-variant-numeric: tabular-nums; color: var(--diza-color-brand); font-size: 18px; }
+.diza-expiry-page,.diza-alerts-page { max-width: none; gap: 12px; }
+.diza-expiry-page > .diza-ui-page-header,.diza-alerts-page > .diza-ui-page-header { margin-bottom: 3px; }
+.diza-expiry-kpis { grid-template-columns: repeat(auto-fit,minmax(145px,1fr)); gap: 10px; }
+.diza-expiry-heading { padding: 14px 15px 10px; }
+.diza-expiry-filters { padding: 0 15px 12px; gap: 10px; }
+.diza-expiry-table th,.diza-expiry-table td { padding: 10px 11px; }
+.diza-expiry-table th { letter-spacing: 0; }
+.diza-expiry-code { min-width: 115px; overflow-wrap: anywhere; }
+.diza-expiry-observation summary { cursor: pointer; color: var(--diza-color-brand); font-size: 12px; }
+.diza-expiry-observation { margin-top: 4px; }
+.diza-expiry-regularize { padding: 16px; }
+.diza-expiry-regularize .diza-create-check { margin: 0; }
+.diza-expiry-regularize > form > p { background: var(--diza-color-surface-soft); padding: 10px 12px; border-radius: var(--diza-radius-md); }
+.diza-alerts-list { padding: 14px; }
+.diza-alerts-filters :is(input,select) { min-height: 42px; font-size: 14px; padding: 8px 10px; }
+.diza-alert-item { padding: 11px 10px; grid-template-columns: minmax(112px,auto) minmax(0,1fr) auto; }
+.diza-alert-item > span { justify-self: start; }
+.diza-alert-item > a { border: 1px solid var(--diza-color-border); border-radius: var(--diza-radius-md); padding: 8px 12px; }
+.diza-alert-item > a:hover { background: var(--diza-color-brand-subtle); text-decoration: none; }
+.diza-sales-actions { gap: 8px; }
+.diza-sales-registration { margin-block: 12px; }
+.diza-sales-registration > summary { padding: 4px 0; }
+.diza-sales-registration > summary:focus-visible { outline-offset: 4px; }
+@media(max-width:760px) { .diza-expiry-kpis { grid-template-columns: repeat(auto-fit,minmax(140px,1fr)); } }
+@media(max-width:600px) { .diza-alert-item { grid-template-columns: minmax(0,1fr); } }

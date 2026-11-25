@@ -12,6 +12,7 @@ public record AjusteInventarioRequest(
 
     @NotNull(message = "La nueva cantidad es obligatoria")
     @DecimalMin(value = "0.000", message = "La cantidad no puede ser negativa")
+    @jakarta.validation.constraints.Digits(integer = 9, fraction = 3)
     BigDecimal nuevaCantidadDisponible,
 
     @NotBlank(message = "El motivo del ajuste es obligatorio")

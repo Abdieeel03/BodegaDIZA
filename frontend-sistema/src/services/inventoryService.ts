@@ -4,7 +4,7 @@ import type { InventoryProduct } from '../types/inventory';
 /**
  * Lectura de productos del backend real BodegaDIZA.
  * Contrato verificado: GET /productos -> { success, data: ProductoResponse[] }.
- * GET /productos incluye stockTotal y categoria.nombre, pero NO precioCosto.
+ * GET /productos incluye stockTotal, categoria.nombre y precioCosto opcional.
  * La API solo se consulta si VITE_INVENTORY_MODE=api en .env.local.
  */
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -43,9 +43,9 @@ function parseProduct(value: unknown): InventoryProduct {
     proveedorId: isRecord(value.proveedor) && typeof value.proveedor.id === 'number' ? value.proveedor.id : undefined,
     unidadMedida: typeof value.unidadMedida === 'string' ? value.unidadMedida : 'UNIDAD',
     stock: readNumber(value.stockTotal, 'stockTotal'),
+    stockFisico: readNumber(value.stockFisico, 'stockFisico'),
     stockMinimo: readNumber(value.stockMinimo, 'stockMinimo'),
-    // El DTO /productos no entrega precio de costo. No inventar valores.
-    precioCosto: null,
+    precioCosto: value.precioCosto == null ? null : readNumber(value.precioCosto, 'precioCosto'),
     precioVenta: readNumber(value.precioVenta, 'precioVenta'),
   };
 }
@@ -57,6 +57,7 @@ export type UpdateInventoryProductPayload = {
   categoriaId: number;
   proveedorId: number;
   precioVenta: number;
+  precioCosto?: number | null;
   stockMinimo: number;
   unidadMedida: string;
 };

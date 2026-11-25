@@ -50,12 +50,12 @@ public class ProductoService {
     public List<ProductoResponse> listar(String search, Long categoriaId, Boolean soloActivos) {
         String cleanSearch = (search == null || search.isBlank()) ? "" : search.trim();
         List<Producto> productos = productoRepository.buscarProductos(cleanSearch, categoriaId, soloActivos);
-        LocalDate hoy = LocalDate.now();
+        LocalDate hoy = LocalDate.now(java.time.ZoneId.of("America/Lima"));
 
         return productos.stream()
             .map(p -> {
                 BigDecimal stock = loteProductoRepository.sumStockDisponibleByProductoId(p.getId(), hoy);
-                return ProductoResponse.of(p, stock);
+                return ProductoResponse.of(p, stock, loteProductoRepository.sumStockFisicoByProductoId(p.getId()));
             })
             .toList();
     }
@@ -63,8 +63,8 @@ public class ProductoService {
     @Transactional(readOnly = true)
     public ProductoResponse obtenerPorId(Long id) {
         Producto producto = buscarEntidadPorId(id);
-        BigDecimal stock = loteProductoRepository.sumStockDisponibleByProductoId(id, LocalDate.now());
-        return ProductoResponse.of(producto, stock);
+        BigDecimal stock = loteProductoRepository.sumStockDisponibleByProductoId(id, LocalDate.now(java.time.ZoneId.of("America/Lima")));
+        return ProductoResponse.of(producto, stock, loteProductoRepository.sumStockFisicoByProductoId(producto.getId()));
     }
 
     @Transactional
@@ -103,9 +103,11 @@ public class ProductoService {
                 producto,
                 request.loteInicial().codigoLote().trim(),
                 request.loteInicial().cantidad(),
-                LocalDate.now(),
+                LocalDate.now(java.time.ZoneId.of("America/Lima")),
                 request.loteInicial().fechaVencimiento()
             );
+            lote.regularizar(com.diza.api.inventory.VencimientoRequest.resolver(
+                request.loteInicial().fechaVencimiento(), request.loteInicial().vencimiento()));
             lote = loteProductoRepository.save(lote);
 
             MovimientoInventario movimiento = new MovimientoInventario(
@@ -122,8 +124,8 @@ public class ProductoService {
             movimientoInventarioRepository.save(movimiento);
         }
 
-        BigDecimal stock = loteProductoRepository.sumStockDisponibleByProductoId(producto.getId(), LocalDate.now());
-        return ProductoResponse.of(producto, stock);
+        BigDecimal stock = loteProductoRepository.sumStockDisponibleByProductoId(producto.getId(), LocalDate.now(java.time.ZoneId.of("America/Lima")));
+        return ProductoResponse.of(producto, stock, loteProductoRepository.sumStockFisicoByProductoId(producto.getId()));
     }
 
     @Transactional
@@ -148,16 +150,16 @@ public class ProductoService {
             request.unidadMedida()
         );
 
-        BigDecimal stock = loteProductoRepository.sumStockDisponibleByProductoId(id, LocalDate.now());
-        return ProductoResponse.of(producto, stock);
+        BigDecimal stock = loteProductoRepository.sumStockDisponibleByProductoId(id, LocalDate.now(java.time.ZoneId.of("America/Lima")));
+        return ProductoResponse.of(producto, stock, loteProductoRepository.sumStockFisicoByProductoId(producto.getId()));
     }
 
     @Transactional
     public ProductoResponse cambiarEstado(Long id, boolean activo) {
         Producto producto = buscarEntidadPorId(id);
         producto.setActivo(activo);
-        BigDecimal stock = loteProductoRepository.sumStockDisponibleByProductoId(id, LocalDate.now());
-        return ProductoResponse.of(producto, stock);
+        BigDecimal stock = loteProductoRepository.sumStockDisponibleByProductoId(id, LocalDate.now(java.time.ZoneId.of("America/Lima")));
+        return ProductoResponse.of(producto, stock, loteProductoRepository.sumStockFisicoByProductoId(producto.getId()));
     }
 
     public Producto buscarEntidadPorId(Long id) {

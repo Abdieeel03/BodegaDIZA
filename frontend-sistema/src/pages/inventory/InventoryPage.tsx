@@ -386,7 +386,7 @@ export const InventoryPage = () => {
                 <th>CÓDIGO SKU</th>
                 <th>NOMBRE DEL PRODUCTO</th>
                 <th>CATEGORÍA</th>
-                <th>STOCK ACTUAL</th>
+                <th>STOCK VENDIBLE / FÍSICO</th>
                 <th>STOCK MÍNIMO</th>
                 <th>PRECIO COSTO</th>
                 <th>PRECIO VENTA</th>
@@ -400,13 +400,14 @@ export const InventoryPage = () => {
                   <td className="inventory-sku">{producto.sku}</td>
                   <td className="inventory-name">{producto.nombre}</td>
                   <td className="inventory-category-cell">{producto.categoria}</td>
-                  <td className={`inventory-stock inventory-stock--${getStockStatus(producto)}`}>{producto.stock}</td>
+                  <td><span className={`inventory-stock inventory-stock--${getStockStatus(producto)}`}>{producto.stock}</span>{MODO_API && <small style={{ display: 'block' }}>Físico: {producto.stockFisico}</small>}</td>
                   <td>{producto.stockMinimo}</td>
                   <td>{producto.precioCosto === null ? '—' : moneda(producto.precioCosto)}</td>
                   <td className="inventory-sale-price">{moneda(producto.precioVenta)}</td>
                   <td><EtiquetaEstado producto={producto} /></td>
                   {MODO_API && (
                     <td className="inventory-row-actions">
+                      <Link className="inventory-row-btn" to={`/proximos-a-vencer?sku=${encodeURIComponent(producto.sku)}`}>Lotes</Link>
                       <Link className="inventory-row-btn" to={`/inventario/agregar?modo=restock&${producto.id ? `productoId=${producto.id}` : `sku=${encodeURIComponent(producto.sku)}`}`}>
                         Reponer
                       </Link>
@@ -450,7 +451,7 @@ export const InventoryPage = () => {
                 <div>
                   <span>STOCK ACTUAL</span>
                   <strong className={`inventory-stock--${getStockStatus(producto)}`}>
-                    {producto.stock} <small>/ mín {producto.stockMinimo}</small>
+                    {producto.stock} <small>vendibles / mín {producto.stockMinimo} · Físico: {producto.stockFisico ?? producto.stock}</small>
                   </strong>
                 </div>
                 <div>

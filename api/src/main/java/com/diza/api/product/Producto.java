@@ -71,6 +71,19 @@ public class Producto {
     @Column(nullable = false)
     private boolean activo = true;
 
+    @Column(name = "permite_sin_vencimiento", nullable = false)
+    private boolean permiteSinVencimiento;
+
+    @Column(name = "justificacion_sin_vencimiento", length = 500)
+    private String justificacionSinVencimiento;
+
+    public boolean isPermiteSinVencimiento() { return permiteSinVencimiento; }
+    public String getJustificacionSinVencimiento() { return justificacionSinVencimiento; }
+    public void definirPoliticaVencimiento(boolean permite, String motivo) {
+        permiteSinVencimiento = permite;
+        justificacionSinVencimiento = motivo;
+    }
+
     protected Producto() {
     }
 

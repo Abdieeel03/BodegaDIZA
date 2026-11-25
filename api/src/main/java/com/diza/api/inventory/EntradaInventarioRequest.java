@@ -1,7 +1,6 @@
 package com.diza.api.inventory;
 
 import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -18,12 +17,16 @@ public record EntradaInventarioRequest(
 
     @NotNull(message = "La cantidad es obligatoria")
     @DecimalMin(value = "0.001", message = "La cantidad debe ser mayor a 0")
+    @jakarta.validation.constraints.Digits(integer = 9, fraction = 3)
     BigDecimal cantidad,
 
-    @NotNull(message = "La fecha de vencimiento es obligatoria")
-    @Future(message = "La fecha de vencimiento debe ser una fecha futura")
     LocalDate fechaVencimiento,
 
     @Size(max = 500, message = "El motivo no puede superar los 500 caracteres")
-    String motivo
-) {}
+    String motivo,
+    @jakarta.validation.Valid com.diza.api.inventory.VencimientoRequest vencimiento
+) {
+    public EntradaInventarioRequest(Long productoId, String codigoLote, BigDecimal cantidad, LocalDate fechaVencimiento, String motivo) {
+        this(productoId, codigoLote, cantidad, fechaVencimiento, motivo, null);
+    }
+}

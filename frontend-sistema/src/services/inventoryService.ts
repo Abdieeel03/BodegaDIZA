@@ -43,6 +43,7 @@ function parseProduct(value: unknown): InventoryProduct {
     proveedorId: isRecord(value.proveedor) && typeof value.proveedor.id === 'number' ? value.proveedor.id : undefined,
     unidadMedida: typeof value.unidadMedida === 'string' ? value.unidadMedida : 'UNIDAD',
     stock: readNumber(value.stockTotal, 'stockTotal'),
+    stockFisico: readNumber(value.stockFisico, 'stockFisico'),
     stockMinimo: readNumber(value.stockMinimo, 'stockMinimo'),
     // El DTO /productos no entrega precio de costo. No inventar valores.
     precioCosto: null,

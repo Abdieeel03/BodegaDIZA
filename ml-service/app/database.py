@@ -27,7 +27,11 @@ def load_products_from_db() -> pd.DataFrame:
             p.nombre AS nombre_producto,
             c.nombre AS categoria,
             COALESCE(SUM(l.cantidad_disponible) FILTER (
-                WHERE l.cantidad_disponible > 0 AND l.fecha_vencimiento >= CURRENT_DATE
+                WHERE l.cantidad_disponible > 0 AND (
+                    ((l.precision_vencimiento IS NULL OR l.precision_vencimiento = 'EXACTA')
+                        AND l.fecha_vencimiento >= (CURRENT_TIMESTAMP AT TIME ZONE 'America/Lima')::date)
+                    OR (l.precision_vencimiento = 'NO_APLICA' AND p.permite_sin_vencimiento = true)
+                )
             ), 0)::float8 AS stock_actual,
             p.stock_minimo::float8 AS stock_minimo_seguridad,
             p.precio_venta::float8 AS precio_venta_unitario,

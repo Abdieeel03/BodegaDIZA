@@ -65,4 +65,28 @@ public class InventarioController {
     ) {
         return ResponseEntity.ok(ApiResponse.success(inventarioService.obtenerAlertasVencimiento(dias)));
     }
+
+    @PostMapping("/recepciones")
+    public ResponseEntity<ApiResponse<List<LoteResponse>>> recibirLotes(
+        @Valid @RequestBody RecepcionLotesRequest request, Authentication authentication) {
+        return ResponseEntity.ok(ApiResponse.success(inventarioService.recibirLotes(request, authentication.getName())));
+    }
+
+    @PostMapping("/regularizaciones")
+    public ResponseEntity<ApiResponse<List<LoteResponse>>> regularizar(
+        @Valid @RequestBody RegularizacionLoteRequest request, Authentication authentication) {
+        return ResponseEntity.ok(ApiResponse.success(inventarioService.regularizar(request, authentication.getName())));
+    }
+
+    @PostMapping("/politica-vencimiento")
+    public ResponseEntity<ApiResponse<String>> politica(
+        @Valid @RequestBody PoliticaVencimientoRequest request, Authentication authentication) {
+        inventarioService.definirPolitica(request, authentication.getName());
+        return ResponseEntity.ok(ApiResponse.success("Política registrada"));
+    }
+
+    @GetMapping("/regularizaciones")
+    public ResponseEntity<ApiResponse<List<RegularizacionLote.Response>>> historial(@RequestParam Long loteId) {
+        return ResponseEntity.ok(ApiResponse.success(inventarioService.historial(loteId)));
+    }
 }

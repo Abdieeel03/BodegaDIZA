@@ -6,10 +6,11 @@ import type { ApiResponse } from '../../types';
 import '../demo/demo.css';
 import '../../components/period/period-controls.css';
 import './product-create.css';
+import { VencimientoFields, pendingExpiry, type Vencimiento } from '../expiry/VencimientoFields';
 
 type Category = { id: number; nombre: string; activa: boolean };
 type Supplier = { id: number; nombre: string; activo: boolean };
-type Product = { id: number; sku: string; nombre: string; stockTotal: number; unidadMedida: string; activo: boolean };
+type Product = { id: number; sku: string; nombre: string; stockTotal: number; unidadMedida: string; activo: boolean; permiteSinVencimiento: boolean };
 type Mode = 'new' | 'restock';
 
 const UNITS = ['UNIDAD', 'BOTELLA', 'CAJA', 'PACK', 'LITRO', 'BOLSA', 'LATA', 'KILOGRAMO'] as const;
@@ -21,13 +22,6 @@ function unwrap<T>(r: ApiResponse<T>): T {
 }
 
 const toNumber = (s: string) => Number(s);
-
-function isFutureDate(dateStr: string): boolean {
-  const d = new Date(`${dateStr}T00:00:00`);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return !Number.isNaN(d.getTime()) && d > today;
-}
 
 export const ProductCreatePage = () => {
   const navigate = useNavigate();
@@ -57,13 +51,15 @@ export const ProductCreatePage = () => {
   const [withLot, setWithLot] = useState(false);
   const [lotCode, setLotCode] = useState('');
   const [lotAmount, setLotAmount] = useState('');
-  const [expiry, setExpiry] = useState('');
+  const [expiry, setExpiry] = useState<Vencimiento>(pendingExpiry);
 
   // Campos de reposición de producto existente
   const [restockProductId, setRestockProductId] = useState('');
   const [restockLotCode, setRestockLotCode] = useState('');
   const [restockAmount, setRestockAmount] = useState(() => (Number(paramAmount) > 0 ? paramAmount : ''));
-  const [restockExpiry, setRestockExpiry] = useState('');
+  const [restockExpiry, setRestockExpiry] = useState<Vencimiento>(pendingExpiry);
+  const [extraLots, setExtraLots] = useState<{ key: number; code: string; amount: string; expiry: Vencimiento }[]>([]);
+  const [nextKey, setNextKey] = useState(1);
   const [restockReason, setRestockReason] = useState('Reposición de stock');
 
   useEffect(() => {
@@ -106,8 +102,7 @@ export const ProductCreatePage = () => {
         throw Error('Precio y stock mínimo deben ser números válidos.');
       }
       if (withLot) {
-        if (!lotCode.trim() || toNumber(lotAmount) <= 0 || !expiry) throw Error('Completa código, cantidad positiva y vencimiento del lote.');
-        if (!isFutureDate(expiry)) throw Error('La fecha de vencimiento debe ser futura.');
+        if (!lotCode.trim() || toNumber(lotAmount) <= 0) throw Error('Completa código, cantidad positiva y vencimiento del lote.');
       }
       const response = await apiClient.post<ApiResponse<Product>>('/productos', {
         sku: sku.trim().toUpperCase(),
@@ -118,7 +113,7 @@ export const ProductCreatePage = () => {
         precioVenta: toNumber(salePrice),
         stockMinimo: toNumber(minStock),
         unidadMedida: unit,
-        loteInicial: withLot ? { codigoLote: lotCode.trim(), cantidad: toNumber(lotAmount), fechaVencimiento: expiry } : null,
+        loteInicial: withLot ? { codigoLote: lotCode.trim(), cantidad: toNumber(lotAmount), vencimiento: expiry } : null,
       });
       unwrap(response.data);
       navigate('/inventario', { replace: true });
@@ -136,16 +131,13 @@ export const ProductCreatePage = () => {
     setSaving(true);
     try {
       if (!restockProductId) throw Error('Selecciona el producto que deseas reponer.');
-      if (!restockLotCode.trim() || !Number.isFinite(toNumber(restockAmount)) || toNumber(restockAmount) <= 0 || !restockExpiry) {
+      if (!restockLotCode.trim() || !Number.isFinite(toNumber(restockAmount)) || toNumber(restockAmount) <= 0) {
         throw Error('Completa código de lote, cantidad positiva y fecha de vencimiento.');
       }
-      if (!isFutureDate(restockExpiry)) throw Error('La fecha de vencimiento debe ser futura.');
-      const response = await apiClient.post<ApiResponse<unknown>>('/inventario/entradas', {
-        productoId: Number(restockProductId),
-        codigoLote: restockLotCode.trim(),
-        cantidad: toNumber(restockAmount),
-        fechaVencimiento: restockExpiry,
-        motivo: restockReason.trim() || 'Reposición de stock',
+      const rows = [{ code: restockLotCode, amount: restockAmount, expiry: restockExpiry }, ...extraLots];
+      if (rows.some(row => !row.code.trim() || !Number.isFinite(Number(row.amount)) || Number(row.amount) <= 0)) throw Error('Completa el código y la cantidad de cada lote.');
+      const response = await apiClient.post<ApiResponse<unknown>>('/inventario/recepciones', {
+        lotes: rows.map(row => ({ productoId: Number(restockProductId), codigoLote: row.code.trim(), cantidad: Number(row.amount), vencimiento: row.expiry, motivo: restockReason.trim() || 'Recepción de mercadería' })),
       });
       unwrap(response.data);
       navigate('/inventario', { replace: true });
@@ -252,9 +244,7 @@ export const ProductCreatePage = () => {
                 <input id="create-lot-amount" required type="number" min="0.001" step="0.001" inputMode="decimal"
                   value={lotAmount} onChange={e => setLotAmount(e.target.value)} />
               </FormField>
-              <FormField controlId="create-lot-expiry" label="Fecha de vencimiento" required>
-                <input id="create-lot-expiry" required type="date" value={expiry} onChange={e => setExpiry(e.target.value)} />
-              </FormField>
+              <VencimientoFields prefix="create-lot" value={expiry} onChange={setExpiry} />
             </div>}
             <p className="diza-kpi-note">Si no registras un lote, el producto se creará con stock 0.</p>
           </section>
@@ -279,7 +269,7 @@ export const ProductCreatePage = () => {
             </p>
             <div className="diza-create-grid">
               <FormField controlId="restock-product" label="Producto existente" required className="diza-create-wide">
-                <select id="restock-product" required value={restockProductId} onChange={e => setRestockProductId(e.target.value)}>
+                <select id="restock-product" required value={restockProductId} onChange={e => { setRestockProductId(e.target.value); setRestockExpiry(pendingExpiry()); setExtraLots([]); }}>
                   <option value="">Selecciona un producto</option>
                   {products.map(p => (
                     <option key={p.id} value={p.id}>
@@ -296,16 +286,24 @@ export const ProductCreatePage = () => {
                 <input id="restock-amount" required type="number" min="0.001" step="0.001" inputMode="decimal"
                   value={restockAmount} onChange={e => setRestockAmount(e.target.value)} placeholder="Ej. 24" />
               </FormField>
-              <FormField controlId="restock-expiry" label="Fecha de vencimiento" required>
-                <input id="restock-expiry" required type="date" value={restockExpiry}
-                  onChange={e => setRestockExpiry(e.target.value)} />
-              </FormField>
+              <VencimientoFields prefix="restock" value={restockExpiry} onChange={setRestockExpiry} allowsNone={selectedProduct?.permiteSinVencimiento} />
               <FormField controlId="restock-reason" label="Motivo" hint="Opcional, hasta 500 caracteres.">
                 <input id="restock-reason" maxLength={500} value={restockReason}
                   onChange={e => setRestockReason(e.target.value)} placeholder="Reposición de stock" />
               </FormField>
             </div>
           </section>
+          {extraLots.map((row, index) => <section className="diza-test-panel" key={row.key} aria-label={`Lote adicional ${index + 2}`}>
+            <h2>Lote {index + 2}</h2>
+            <div className="diza-create-grid">
+              <FormField controlId={`extra-${row.key}-code`} label="Código de lote" required><input id={`extra-${row.key}-code`} required maxLength={100} value={row.code} onChange={e => setExtraLots(items => items.map(item => item.key === row.key ? { ...item, code: e.target.value } : item))} /></FormField>
+              <FormField controlId={`extra-${row.key}-amount`} label="Cantidad a ingresar" required><input id={`extra-${row.key}-amount`} required type="number" min="0.001" step="0.001" value={row.amount} onChange={e => setExtraLots(items => items.map(item => item.key === row.key ? { ...item, amount: e.target.value } : item))} /></FormField>
+              <VencimientoFields prefix={`extra-${row.key}`} value={row.expiry} allowsNone={selectedProduct?.permiteSinVencimiento} onChange={value => setExtraLots(items => items.map(item => item.key === row.key ? { ...item, expiry: value } : item))} />
+            </div>
+            <Button type="button" variant="secondary" disabled={saving} onClick={() => setExtraLots(items => items.filter(item => item.key !== row.key))}>Quitar lote {index + 2}</Button>
+          </section>)}
+          <Button type="button" variant="secondary" disabled={saving || extraLots.length >= 99} onClick={() => { setExtraLots(items => [...items, { key: nextKey, code: '', amount: '', expiry: pendingExpiry() }]); setNextKey(value => value + 1); }}>Añadir otro lote</Button>
+          <p className="diza-kpi-note">Todos los lotes se registran juntos. Usa códigos distintos para fechas distintas. Las fechas pendientes, mes/año y vencidas no habilitan ventas.</p>
           <div className="diza-create-actions">
             <Link to="/inventario" className="diza-period-link">Cancelar</Link>
             <Button type="submit" loading={saving} disabled={!ready || products.length === 0}>

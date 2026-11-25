@@ -20,8 +20,11 @@ public interface LoteProductoRepository extends JpaRepository<LoteProducto, Long
         SELECT l FROM LoteProducto l
         WHERE l.producto.id = :productoId
           AND l.cantidadDisponible > 0
-          AND l.fechaVencimiento >= :fechaActual
-        ORDER BY l.fechaVencimiento ASC, l.id ASC
+          AND (((l.precisionVencimiento IS NULL OR l.precisionVencimiento = com.diza.api.inventory.PrecisionVencimiento.EXACTA)
+                AND l.fechaVencimiento >= :fechaActual)
+            OR (l.precisionVencimiento = com.diza.api.inventory.PrecisionVencimiento.NO_APLICA
+                AND l.producto.permiteSinVencimiento = true))
+        ORDER BY CASE WHEN l.fechaVencimiento IS NULL THEN 1 ELSE 0 END, l.fechaVencimiento ASC, l.fechaIngreso ASC, l.id ASC
     """)
     List<LoteProducto> findLotesDisponiblesParaVenta(
         @Param("productoId") Long productoId,
@@ -32,7 +35,10 @@ public interface LoteProductoRepository extends JpaRepository<LoteProducto, Long
         SELECT COALESCE(SUM(l.cantidadDisponible), 0)
         FROM LoteProducto l
         WHERE l.producto.id = :productoId
-          AND l.fechaVencimiento >= :fechaActual
+          AND (((l.precisionVencimiento IS NULL OR l.precisionVencimiento = com.diza.api.inventory.PrecisionVencimiento.EXACTA)
+                AND l.fechaVencimiento >= :fechaActual)
+            OR (l.precisionVencimiento = com.diza.api.inventory.PrecisionVencimiento.NO_APLICA
+                AND l.producto.permiteSinVencimiento = true))
     """)
     BigDecimal sumStockDisponibleByProductoId(
         @Param("productoId") Long productoId,
@@ -46,6 +52,9 @@ public interface LoteProductoRepository extends JpaRepository<LoteProducto, Long
         ORDER BY l.fechaVencimiento ASC
     """)
     List<LoteProducto> findLotesPorVencer(@Param("fechaLimite") LocalDate fechaLimite);
+
+    @Query("SELECT COALESCE(SUM(l.cantidadDisponible), 0) FROM LoteProducto l WHERE l.producto.id = :productoId")
+    BigDecimal sumStockFisicoByProductoId(@Param("productoId") Long productoId);
 
     List<LoteProducto> findByCantidadDisponibleGreaterThanOrderByFechaVencimientoAsc(BigDecimal cantidad);
 }

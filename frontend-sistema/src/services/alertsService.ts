@@ -33,13 +33,13 @@ export function buildOperationalAlerts(
     actionUrl: `/inventario/agregar?modo=restock&sku=${encodeURIComponent(alert.sku)}&cantidad=${Math.ceil(numberValue(alert.deficit))}`,
   }));
   const expiry = expiringLots
-    .filter(lot => numberValue(lot.cantidadDisponible) > 0)
+    .filter(lot => numberValue(lot.cantidadDisponible) > 0 && lot.estadoVencimiento !== 'NO_APLICA')
     .map(lot => ({
       id: `lot-${lot.id}`,
       priority: lot.vencido ? 'urgent' as const : 'review' as const,
-      title: lot.vencido ? `Lote vencido: ${lot.productoNombre}` : `Vence en ${lot.diasParaVencer} días: ${lot.productoNombre}`,
-      message: `Lote ${lot.codigoLote} · ${numberValue(lot.cantidadDisponible).toLocaleString('es-PE')} unidades disponibles`,
-      actionUrl: '/proximos-a-vencer',
+      title: lot.diasParaVencer === null ? `Vencimiento pendiente: ${lot.productoNombre}` : lot.vencido ? `Lote vencido: ${lot.productoNombre}` : `Vence en ${lot.diasParaVencer} días: ${lot.productoNombre}`,
+      message: `Lote ${lot.codigoLote} · ${numberValue(lot.cantidadDisponible).toLocaleString('es-PE')} unidades físicas`,
+      actionUrl: `/proximos-a-vencer?sku=${encodeURIComponent(lot.productoSku)}`,
     }));
   const ml = replenishments
     .filter(item => !stockSkus.has(item.productId.trim().toUpperCase()))

@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import apiClient from '../../api/axios';
 import type { ApiResponse, ReplenishmentOptimizationResult } from '../../types';
 import { formatSoles } from '../../services/mlRevenue';
+import { StatusBadge } from '../../components/ui';
 
 type Detail = { id: number; productoId: number; productoNombre: string; productoSku: string; loteId: number | null; codigoLote: string | null; cantidad: number; costoUnitario: number; subtotal: number };
 type Order = { id: number; proveedorNombre: string; fecha: string; fechaRecepcion: string | null; estado: 'PENDIENTE' | 'RECIBIDA' | 'CANCELADA'; total: number; usuarioPedido: string | null; detalles: Detail[] };
@@ -100,7 +101,7 @@ export function PurchaseOrdersPanel({ plan, onChange }: { plan: ReplenishmentOpt
     finally { setBusy(false); }
   };
 
-  return <section className="diza-ml-card" style={{ marginTop: 12 }}>
+  return <section id="diza-purchase-orders" className="diza-ml-card diza-purchase-orders">
     <div className="diza-ml-card-heading"><div><h2>Pedidos de compra</h2><p>Confirma las cantidades, recibe los lotes y consulta las compras registradas.</p></div>
       <button type="button" className="diza-ml-button" disabled={busy} onClick={() => { setError(''); void reload(); }}>Consultar pedidos</button></div>
     {error && <div className="diza-ml-error" role="alert">{error}</div>}
@@ -109,23 +110,23 @@ export function PurchaseOrdersPanel({ plan, onChange }: { plan: ReplenishmentOpt
     {plan && loaded && <div style={{ marginBottom: 16 }}>
       <button type="button" className="diza-ml-button" disabled={busy || !selectable.length} onClick={() => setReview(value => !value)}>{review ? 'Cerrar revisión' : 'Revisar propuesta de compra'}</button>
       {plan.items.some(item => pendingSkus.has(item.productId)) && <p>Los productos con un pedido pendiente se excluyen de esta confirmación. Recibe o cancela sus pedidos antes de volver a comprarlos.</p>}
-      {review && <form onSubmit={confirm} style={{ marginTop: 12 }}>
+      {review && <form onSubmit={confirm} className="diza-purchase-review">
         <p>Las cantidades se pueden ajustar hasta la necesidad sugerida. Los costos se validan nuevamente al confirmar.</p>
         <div className="diza-ml-table-scroll"><table><thead><tr><th>Producto</th><th>Proveedor</th><th>Máximo</th><th>Cantidad a comprar</th><th>Costo unit.</th><th>Subtotal</th></tr></thead><tbody>
           {lines.map(({ item, quantity }) => <tr key={item.productId}><td>{item.productName}</td><td>{item.supplier}</td><td>{item.recommendedReplenishment}</td>
             <td><input aria-label={`Cantidad ${item.productName}`} type="number" min="0" max={item.recommendedReplenishment} step="1" value={quantities[item.productId] ?? '0'} disabled={busy} required style={{ ...inputStyle, maxWidth: 110 }} onChange={e => setQuantities(previous => ({ ...previous, [item.productId]: e.target.value }))}/></td>
             <td>{formatSoles(item.unitCost)}</td><td>{formatSoles(quantity * cents(item.unitCost) / 100)}</td></tr>)}
         </tbody></table></div>
-        <p><strong>Total revisado: {formatSoles(totalCents / 100)}</strong> · Presupuesto {formatSoles(plan.budget)} · Saldo {formatSoles((cents(plan.budget) - totalCents) / 100)}</p>
+        <div className="diza-review-totals"><div><small>Total revisado</small><strong>{formatSoles(totalCents / 100)}</strong></div><div><small>Presupuesto</small><strong>{formatSoles(plan.budget)}</strong></div><div><small>Saldo</small><strong className={totalCents > cents(plan.budget) ? 'diza-plan-unmet' : ''}>{formatSoles((cents(plan.budget) - totalCents) / 100)}</strong></div></div>
         {!validPlan && <p role="status">Selecciona cantidades válidas y respeta el presupuesto.</p>}
         <button type="submit" className="diza-ml-button" disabled={!validPlan || busy}>{busy ? 'Procesando...' : 'Confirmar pedidos'}</button>
         <p><small>Se creará un pedido pendiente por proveedor. No se actualizará el stock hasta recibirlo.</small></p>
       </form>}
     </div>}
-    <label>Estado de pedidos <select aria-label="Estado de pedidos" value={status} onChange={event => setStatus(event.target.value)} style={{ ...inputStyle, width: 'auto' }}><option value="PENDIENTE">Pendientes</option><option value="RECIBIDA">Recibidos</option><option value="CANCELADA">Cancelados</option><option value="TODOS">Todos</option></select></label>
+    <div className="diza-orders-heading"><h3>Historial de pedidos</h3><label>Estado de pedidos <select aria-label="Estado de pedidos" value={status} onChange={event => setStatus(event.target.value)} style={{ ...inputStyle, width: 'auto' }}><option value="PENDIENTE">Pendientes</option><option value="RECIBIDA">Recibidos</option><option value="CANCELADA">Cancelados</option><option value="TODOS">Todos</option></select></label></div>
     {loaded && !orders.some(order => status === 'TODOS' || order.estado === status) && <p>No hay pedidos con este estado.</p>}
-    {loaded && orders.filter(order => status === 'TODOS' || order.estado === status).map(order => <details key={order.id} open={receiptId === order.id ? true : undefined} style={{ border: '1px solid #d4deec', padding: 12, borderRadius: 8, marginTop: 8 }}>
-      <summary style={{ cursor: 'pointer' }}><strong>#{order.id} · {order.proveedorNombre}</strong> · {formatSoles(order.total)} · {order.estado} · {dateTime(order.fecha)}</summary>
+    {loaded && orders.filter(order => status === 'TODOS' || order.estado === status).map(order => <details key={order.id} open={receiptId === order.id ? true : undefined} className="diza-order-detail">
+      <summary><span className="diza-order-summary"><strong>#{order.id} · {order.proveedorNombre}</strong><span>{dateTime(order.fecha)}</span><strong>{formatSoles(order.total)}</strong><StatusBadge tone={order.estado === 'RECIBIDA' ? 'success' : order.estado === 'PENDIENTE' ? 'warning' : 'neutral'}>{order.estado === 'RECIBIDA' ? 'Recibido' : order.estado === 'PENDIENTE' ? 'Pendiente' : 'Cancelado'}</StatusBadge></span></summary>
       {order.usuarioPedido && <p>Confirmado por: {order.usuarioPedido}{order.fechaRecepcion ? ` · Recibido: ${dateTime(order.fechaRecepcion)}` : ''}</p>}
       <div className="diza-ml-table-scroll"><table><thead><tr><th>Producto</th><th>Cantidad</th><th>Costo unit.</th><th>Subtotal</th><th>Lote</th></tr></thead><tbody>
         {order.detalles.map(detail => <tr key={detail.id}><td>{detail.productoNombre}</td><td>{detail.cantidad}</td><td>{formatSoles(detail.costoUnitario)}</td><td>{formatSoles(detail.subtotal)}</td><td>{detail.codigoLote || '—'}</td></tr>)}
@@ -134,11 +135,11 @@ export function PurchaseOrdersPanel({ plan, onChange }: { plan: ReplenishmentOpt
         <button type="button" className="diza-ml-button" disabled={busy} onClick={() => openReceipt(order)}>Recibir mercadería</button>
         <button type="button" className="diza-ml-link" disabled={busy} onClick={() => void cancel(order)}>Cancelar pedido</button>
       </div>}
-      {current?.id === order.id && <form onSubmit={receive} style={{ marginTop: 12 }}>
+      {current?.id === order.id && <form onSubmit={receive} className="diza-receipt-form">
         <h3>Recepción del pedido #{order.id}</h3><p>Registra los lotes reales. Puedes dividir las unidades en varios lotes; la suma debe coincidir con el pedido.</p>
-        {current.detalles.map(detail => <div key={detail.productoId} style={{ borderTop: '1px solid #d4deec', padding: '12px 0' }}>
+        {current.detalles.map(detail => <div key={detail.productoId} className="diza-receipt-product">
           <strong>{detail.productoNombre} · {detail.cantidad} unidades</strong>
-          {lots.map((lot, index) => lot.productoId === detail.productoId && <div key={index} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(125px, 1fr))', gap: 8, alignItems: 'end', marginTop: 8 }}>
+          {lots.map((lot, index) => lot.productoId === detail.productoId && <div key={index} className="diza-receipt-lot">
             <label>Código de lote<input style={inputStyle} maxLength={100} required value={lot.codigoLote} onChange={e => updateLot(index, { codigoLote: e.target.value })} disabled={busy}/></label>
             <label>Cantidad<input style={inputStyle} type="number" required min={1} max={detail.cantidad} step={1} value={lot.cantidad} onChange={e => updateLot(index, { cantidad: e.target.value })} disabled={busy}/></label>
             <label>Vencimiento<select style={inputStyle} value={lot.precision} onChange={e => updateLot(index, { precision: e.target.value as Precision, fecha: '', mes: '' })} disabled={busy}>

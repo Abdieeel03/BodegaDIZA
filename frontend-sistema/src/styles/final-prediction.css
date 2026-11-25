@@ -1,0 +1,57 @@
+/* Bloque 05C: presentación de datos existentes, sin cambios de negocio. */
+.prediction-data-freshness { gap: 8px; margin-bottom: 12px; }
+.prediction-data-freshness > div { padding: 10px 12px; gap: 3px; align-content: start; }
+.prediction-module .diza-model-screen { max-width: none; }
+.prediction-module .diza-model-screen .diza-model-panel { padding: 16px; }
+.diza-model-screen .diza-model-kpis { grid-template-columns: repeat(auto-fit,minmax(155px,1fr)); }
+.diza-model-screen .diza-model-metrics { grid-template-columns: repeat(auto-fit,minmax(130px,1fr)); }
+.diza-diagnostic-note { font-size: 13px; color: var(--diza-color-text-secondary); margin: 8px 0; }
+.diza-diagnostic-grid { display:grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,340px),1fr)); gap:12px; margin-top:14px; }
+.diza-diagnostic-card { min-width:0; padding:14px; border:1px solid var(--diza-color-border); border-radius:var(--diza-radius-lg); background:var(--diza-color-surface); }
+.diza-diagnostic-card h3 { margin:0 0 5px; font-size:16px; }
+.diza-diagnostic-card p { margin:0 0 10px; color:var(--diza-color-text-secondary); }
+.diza-diagnostic-scroll { overflow-x:auto; max-width:100%; }
+.diza-confusion, .diza-diagnostic-table { width:100%; border-collapse:separate; border-spacing:4px; text-align:left; font-size:13px; }
+.diza-confusion th, .diza-confusion td { padding:9px; border-radius:6px; }
+.diza-confusion th { color:var(--diza-color-text-secondary); font-weight:600; }
+.diza-confusion td { text-align:center; }
+.diza-confusion td strong { display:block; font-size:25px; }
+.diza-confusion td small { display:block; font-size:12px; }
+.diza-confusion .is-correct { background:var(--diza-color-success-soft); color:var(--diza-color-success); }
+.diza-confusion .is-error { background:var(--diza-color-warning-soft); color:var(--diza-color-warning); }
+.diza-calibration { display:block; width:100%; max-width:380px; margin:auto; height:auto; }
+.diza-calibration text { font-size:10px; fill:var(--diza-color-text-secondary); }
+.diza-calibration-legend { text-align:center; font-size:12px !important; }
+.diza-diagnostic-card summary { cursor:pointer; font-weight:600; color:var(--diza-color-brand); }
+.diza-candidates { margin-top:12px; }
+.diza-diagnostic-table { border-collapse:collapse; }
+.diza-diagnostic-table th,.diza-diagnostic-table td { padding:9px; border-bottom:1px solid var(--diza-color-border); }
+.diza-diagnostic-table th { background:var(--diza-color-surface-soft); }
+.diza-selected-model { display:block; color:var(--diza-color-success); font-size:12px; font-weight:600; }
+.diza-purchase-progress { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr)); gap:10px; margin:12px 0; }
+.diza-purchase-progress > div { display:grid; grid-template-columns:1fr auto; gap:6px; padding:12px; border:1px solid var(--diza-color-border); border-radius:8px; }
+.diza-purchase-progress progress { grid-column:1/-1; width:100%; height:10px; accent-color:var(--diza-color-action); }
+.diza-purchase-progress small { grid-column:1/-1; color:var(--diza-color-text-secondary); }
+.diza-plan-filters { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,165px),1fr)); gap:10px; margin-top:14px; }
+.diza-plan-filters label,.diza-orders-heading label,.diza-receipt-lot label { display:grid; gap:5px; font-size:13px; font-weight:600; min-width:0; }
+.diza-plan-allocated { color:var(--diza-color-success); }
+.diza-plan-unmet { color:var(--diza-color-warning); font-weight:650; }
+.diza-plan-next { display:flex; justify-content:flex-end; margin:12px 0; }
+.diza-purchase-orders { margin-top:12px; scroll-margin-top:16px; }
+.diza-purchase-review,.diza-receipt-form { margin-top:12px; padding:12px; background:var(--diza-color-surface-soft); border:1px solid var(--diza-color-border); border-radius:8px; }
+.diza-review-totals { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:8px; margin:12px 0; }
+.diza-review-totals > div { padding:10px; background:var(--diza-color-surface); border:1px solid var(--diza-color-border); border-radius:8px; }
+.diza-review-totals small,.diza-review-totals strong { display:block; }
+.diza-review-totals strong { font-size:18px; }
+.diza-orders-heading { display:flex; justify-content:space-between; align-items:end; flex-wrap:wrap; gap:12px; margin:14px 0 8px; }
+.diza-orders-heading h3 { margin:0; }
+.diza-order-detail { border:1px solid var(--diza-color-border); border-radius:8px; padding:12px; margin-top:8px; }
+.diza-order-detail > summary { cursor:pointer; }
+.diza-order-summary { display:inline-flex; flex-wrap:wrap; gap:10px; align-items:center; vertical-align:middle; width:calc(100% - 20px); }
+.diza-order-summary > strong:first-child { flex:1 1 200px; }
+.diza-order-summary > span:not(.diza-ui-badge) { color:var(--diza-color-text-secondary); font-size:12px; }
+.diza-order-detail[open] > summary { margin-bottom:12px; }
+.diza-receipt-form h3 { margin:0 0 8px; }
+.diza-receipt-product { margin:12px 0; padding:12px; background:var(--diza-color-surface); border:1px solid var(--diza-color-border); border-radius:8px; }
+.diza-receipt-lot { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,120px),1fr)); gap:8px; align-items:end; margin:10px 0; padding:10px; border:1px solid var(--diza-color-border); border-radius:6px; }
+.diza-receipt-form .diza-ml-link { min-height:40px; }

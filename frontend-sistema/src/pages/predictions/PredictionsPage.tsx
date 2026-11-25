@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { ApiError, type TrainingResult } from '../../types';
 import { mlService } from '../../services/mlService';
 import { Button } from '../../components/ui';
+import { ClassificationDiagnostics } from './ClassificationDiagnostics';
 import './predictions-ml.css';
 
 type ModelTrainingPanelProps = {
@@ -126,7 +127,7 @@ export const ModelTrainingPanel = ({ onCompleted }: ModelTrainingPanelProps) => 
         </div>
 
         <section className="diza-model-technical" aria-labelledby="diza-model-metrics-title">
-          <h4 id="diza-model-metrics-title">Métricas del entrenamiento</h4>
+          <h4 id="diza-model-metrics-title">Métricas de demanda · prueba temporal</h4>
           <div className="diza-model-metrics">
             <div><span>MAE</span><strong>{result.metrics.mae.toFixed(2)}</strong></div>
             <div><span>RMSE</span><strong>{result.metrics.rmse.toFixed(2)}</strong></div>
@@ -149,12 +150,7 @@ export const ModelTrainingPanel = ({ onCompleted }: ModelTrainingPanelProps) => 
               {result.classification.metrics.brierScore != null && <div><span>Brier Score</span><strong>{result.classification.metrics.brierScore.toFixed(3)}</strong></div>}
             </div>
             {result.classification.partitions && <p>Prueba final: {result.classification.partitions.test.n} casos · {result.classification.partitions.test.positive} positivos · {result.classification.partitions.test.negative} negativos.</p>}
-            {result.classification.metrics.confusionMatrix && <div className="diza-model-metrics">
-              <div><span>Verdaderos negativos</span><strong>{result.classification.metrics.confusionMatrix.tn}</strong></div>
-              <div><span>Falsos positivos</span><strong>{result.classification.metrics.confusionMatrix.fp}</strong></div>
-              <div><span>Falsos negativos</span><strong>{result.classification.metrics.confusionMatrix.fn}</strong></div>
-              <div><span>Verdaderos positivos</span><strong>{result.classification.metrics.confusionMatrix.tp}</strong></div>
-            </div>}
+            <ClassificationDiagnostics classification={result.classification} />
           </div>}
         </section>
       </div>}

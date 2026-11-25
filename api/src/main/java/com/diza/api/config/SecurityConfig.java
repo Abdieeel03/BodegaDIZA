@@ -51,7 +51,7 @@ public class SecurityConfig {
                     "/auth/verificar-codigo",
                     "/auth/restablecer-password"
                 ).permitAll()
-                .requestMatchers(HttpMethod.POST, "/auth/register").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/auth/register", "/compras/pedidos", "/compras/*/recibir", "/compras/*/cancelar").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
             .exceptionHandling(exceptions -> exceptions

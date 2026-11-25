@@ -12,7 +12,9 @@ public record CompraResponse(
     LocalDateTime fecha,
     EstadoCompra estado,
     BigDecimal total,
-    List<DetalleCompraResponse> detalles
+    List<DetalleCompraResponse> detalles,
+    String usuarioPedido,
+    LocalDateTime fechaRecepcion
 ) {
     public static CompraResponse of(Compra compra, List<DetalleCompra> detalles) {
         List<DetalleCompraResponse> itemResponses = detalles != null
@@ -27,7 +29,9 @@ public record CompraResponse(
             compra.getFecha(),
             compra.getEstado(),
             compra.getTotal(),
-            itemResponses
+            itemResponses,
+            compra.getUsuarioPedido() == null ? null : compra.getUsuarioPedido().getNombre(),
+            compra.getFechaRecepcion()
         );
     }
 }

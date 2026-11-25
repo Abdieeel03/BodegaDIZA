@@ -5,6 +5,7 @@ import { Button, PageHeader, StatCard } from '../../components/ui';
 import { ForecastLineChart } from '../../components/charts/ForecastLineChart';
 import { estimatedRevenue, estimatedRevenueSummary, formatSoles, getCurrentSalePrices, type PriceMap } from '../../services/mlRevenue';
 import type { DemandPrediction, ReplenishmentOptimizationResult, ReplenishmentRecommendation, TrainingResult } from '../../types';
+import { PurchaseOrdersPanel } from './PurchaseOrdersPanel';
 import './prediction-live.css';
 
 const fmt = (value: number, digits = 2) => Number(value).toLocaleString('es-PE', {
@@ -316,11 +317,11 @@ export const PredictionPage = ({ view = 'summary' }: { view?: PredictionView }) 
           {optResult.searchLimited && <p role="status">Se alcanzó el límite de búsqueda. El plan es factible, pero puede mejorarse.</p>}
           {!optResult.items.length && <p role="status">No hay necesidades de reposición en este momento.</p>}
           {!!optResult.items.length && <div className="diza-ml-table-scroll">
-            <table><thead><tr><th>Producto</th><th>Prioridad</th><th>Riesgo 3 días</th><th>Sugerido</th><th>Asignado</th><th>Pendiente</th><th>Costo unit.</th><th>Subtotal</th><th>Acción</th></tr></thead>
+            <table><thead><tr><th>Producto</th><th>Prioridad</th><th>Riesgo 3 días</th><th>Sugerido</th><th>Asignado</th><th>Pendiente</th><th>Costo unit.</th><th>Subtotal</th></tr></thead>
               {Array.from(new Set(optResult.items.map(item => item.supplier))).map(supplier => {
                 const group = optResult.items.filter(item => item.supplier === supplier);
                 return <tbody key={supplier}>
-                  <tr><td colSpan={9} style={{ background: '#eef3fb' }}><strong>{supplier || 'Proveedor no disponible'}</strong> · {formatSoles(group.reduce((sum, item) => sum + Math.round(item.totalCost * 100), 0) / 100)}</td></tr>
+                  <tr><td colSpan={8} style={{ background: '#eef3fb' }}><strong>{supplier || 'Proveedor no disponible'}</strong> · {formatSoles(group.reduce((sum, item) => sum + Math.round(item.totalCost * 100), 0) / 100)}</td></tr>
                   {group.map(item => <tr key={item.productId}>
                     <td>{readableName(item.productName)}</td>
                     <td><span className={`diza-ml-status diza-ml-${item.alertStatus.toLowerCase()}`}>{priorityLabel[item.alertStatus]}</span></td>
@@ -330,7 +331,6 @@ export const PredictionPage = ({ view = 'summary' }: { view?: PredictionView }) 
                     <td>{item.unmetUnits}</td>
                     <td>{formatSoles(item.unitCost)}</td>
                     <td><strong>{formatSoles(item.totalCost)}</strong></td>
-                    <td>{item.allocatedUnits > 0 ? <Link className="diza-ml-link" to={`/inventario/agregar?modo=restock&sku=${encodeURIComponent(item.productId)}&cantidad=${item.allocatedUnits}`}>Reponer</Link> : '—'}</td>
                   </tr>)}
                 </tbody>;
               })}
@@ -340,6 +340,7 @@ export const PredictionPage = ({ view = 'summary' }: { view?: PredictionView }) 
         </>}
       </section>}
     </>}
+    {view === 'purchases' && <PurchaseOrdersPanel plan={optResult} onChange={() => { setOptResult(null); setRefresh(v => v + 1); }} />}
   </main>;
 };
 

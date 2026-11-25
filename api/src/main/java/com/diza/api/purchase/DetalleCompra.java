@@ -39,9 +39,9 @@ public class DetalleCompra {
     @JoinColumn(name = "producto_id", nullable = false)
     private Producto producto;
 
-    @NotNull
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "lote_id", nullable = false)
+    // El pedido pendiente no conoce el lote hasta la recepción.
+    @ManyToOne
+    @JoinColumn(name = "lote_id")
     private LoteProducto lote;
 
     @NotNull
@@ -76,6 +76,14 @@ public class DetalleCompra {
         this.cantidad = cantidad;
         this.costoUnitario = costoUnitario;
         this.subtotal = subtotal;
+    }
+
+    public void recibirEnLote(LoteProducto lote, BigDecimal cantidad) {
+        if (this.lote != null || lote == null || cantidad.signum() <= 0)
+            throw new com.diza.api.common.BusinessException("Detalle de recepción inválido");
+        this.lote = lote;
+        this.cantidad = cantidad;
+        this.subtotal = costoUnitario.multiply(cantidad).setScale(2, java.math.RoundingMode.UNNECESSARY);
     }
 
     public Long getId() {

@@ -8,6 +8,8 @@ const titulos: Record<string, string> = {
   '/inventario': 'Inventario',
   '/prediccion-demanda': 'Predicción de demanda',
   '/ventas': 'Ventas',
+  '/alertas': 'Alertas',
+  '/proximos-a-vencer': 'Próximos a vencer',
   '/inventario/agregar': 'Gestionar inventario',
   '/inventario/movimientos': 'Movimientos de inventario',
   '/inventario/carga-masiva': 'Importar productos',
@@ -17,7 +19,7 @@ const titulos: Record<string, string> = {
   '/prediccion-demanda/actualizar-modelo': 'Actualizar modelo',
 };
 
-export const Navbar = () => {
+export const Navbar = ({ placement = 'mobile' }: { placement?: 'mobile' | 'sidebar' }) => {
   const { user, logout } = useAuth();
   const { pathname } = useLocation();
   const menuRef = useRef<HTMLDetailsElement>(null);
@@ -55,13 +57,11 @@ export const Navbar = () => {
     .join('')
     .toUpperCase();
   const titulo = titulos[pathname] || 'Panel de gestión';
-  const parentPath = ['/ventas', '/inventario', '/prediccion-demanda']
-    .find((path) => pathname.startsWith(`${path}/`));
   const rol = user?.rol === 'ADMIN' ? 'Administrador' : user?.rol === 'CAJERO' ? 'Cajero' : 'Usuario';
 
   return (
-    <header className="diza-topbar">
-      <div className="diza-topbar-left">
+    <div className={placement === 'sidebar' ? 'diza-sidebar-account' : 'diza-topbar diza-mobile-topbar'}>
+      {placement === 'mobile' && <div className="diza-topbar-left">
         <Link className="diza-mobile-brand" to="/" aria-label="BodegaDIZA, ir al inicio">
           <span className="diza-brand-monogram" aria-hidden="true">BD</span>
           <span className="diza-mobile-brand-copy">
@@ -69,18 +69,7 @@ export const Navbar = () => {
             <small>{titulo}</small>
           </span>
         </Link>
-        <nav className="diza-breadcrumb" aria-label="Ruta de navegación">
-          <Link to="/">BodegaDIZA</Link>
-          <span className="diza-breadcrumb-separator" aria-hidden="true">/</span>
-          {parentPath && (
-            <>
-              <Link to={parentPath}>{titulos[parentPath]}</Link>
-              <span className="diza-breadcrumb-separator" aria-hidden="true">/</span>
-            </>
-          )}
-          <span aria-current="page">{titulo}</span>
-        </nav>
-      </div>
+      </div>}
 
       <div className="diza-topbar-actions">
         <details className="diza-user-menu" ref={menuRef}>
@@ -102,7 +91,7 @@ export const Navbar = () => {
           </div>
         </details>
       </div>
-    </header>
+    </div>
   );
 };
 

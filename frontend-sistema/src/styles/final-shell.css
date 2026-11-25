@@ -1,0 +1,44 @@
+/* Bloque 05A: navegación y encabezados. No cambia los módulos ni sus gráficos. */
+.diza-shell { --diza-shell-sidebar-width: 248px; --diza-shell-sidebar-compact-width: 76px; }
+.diza-shell .diza-content { padding: 20px clamp(14px, 1.6vw, 26px) 28px; }
+.diza-sidebar { padding: 14px 12px; }
+.diza-sidebar-header { gap: 8px; margin-bottom: 22px; }
+.diza-sidebar-brand { flex: 1; gap: 8px; padding-left: 0; }
+.diza-sidebar-brand-text strong { font-size: 15px; letter-spacing: -.025em; }
+.diza-toggle-sidebar { flex-basis: 34px; width: 34px; height: 34px; }
+.diza-sidebar-nav { gap: 5px; }
+.diza-sidebar-link { min-height: 44px; padding: 9px 10px; gap: 9px; font-size: 13px; white-space: normal; }
+.diza-nav-label { min-width: 0; overflow-wrap: break-word; }
+.prediction-menu-row > .diza-sidebar-link { padding-right: 34px; }
+.prediction-menu-toggle { width: 30px; height: 36px; }
+.prediction-submenu { margin-left: 19px; padding-left: 10px; }
+.prediction-submenu a { min-height: 36px; font-size: 13px; }
+.diza-mobile-topbar { display: none; }
+.diza-sidebar-account { flex: 0 0 auto; min-width: 0; padding-top: 12px; margin-top: 8px; border-top: 1px solid var(--diza-color-border); }
+.diza-sidebar-account .diza-topbar-actions, .diza-sidebar-account .diza-user-menu { width: 100%; min-width: 0; }
+.diza-sidebar-account .diza-user-menu summary { min-height: 48px; gap: 9px; padding: 5px; }
+.diza-sidebar-account .diza-avatar { order: -1; }
+.diza-sidebar-account .diza-user-details { flex: 1; min-width: 0; max-width: none; text-align: left; }
+.diza-sidebar-account .diza-user-chevron { flex: 0 0 15px; transform: rotate(-90deg); }
+.diza-sidebar-account .diza-user-menu[open] .diza-user-chevron { transform: rotate(90deg); }
+.diza-sidebar-account .diza-user-popover { top: auto; bottom: calc(100% + 8px); right: 0; left: 0; min-width: 0; width: 100%; max-width: none; }
+.diza-shell.is-collapsed .diza-sidebar-account .diza-user-details,
+.diza-shell.is-collapsed .diza-sidebar-account .diza-user-chevron { display: none; }
+.diza-shell.is-collapsed .diza-sidebar-account summary { justify-content: center; }
+.diza-shell.is-collapsed .diza-sidebar-account .diza-user-popover { left: 0; right: auto; width: 230px; max-width: calc(100vw - 32px); }
+.diza-sidebar-account .diza-user-menu[open] { z-index: 61; }
+.diza-shell .diza-ui-page-header, .diza-shell .diza-dashboard .diza-ui-page-header { margin: 0 0 16px; gap: 12px; }
+.diza-shell .diza-ui-page-header .diza-ui-page-heading h1,
+.diza-shell .diza-dashboard .diza-ui-page-heading h1 { font-family: var(--diza-font-headings); font-size: clamp(23px, 2.1vw, 28px); line-height: 1.2; letter-spacing: -.035em; }
+.diza-shell .diza-ui-page-heading p { line-height: 1.45; }
+@media (max-width: 800px) {
+  .diza-mobile-topbar { display: flex; min-height: 54px; padding: 6px 12px; }
+  .diza-mobile-topbar .diza-mobile-brand small { white-space: nowrap; }
+  .diza-shell .diza-content { padding: 12px 12px calc(92px + env(safe-area-inset-bottom)); }
+  .diza-mobile-nav { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 2px; padding-inline: 5px; }
+  .diza-mobile-nav .diza-mobile-link, .diza-mobile-nav .diza-mobile-link[type="button"] { font-size: clamp(9px, 2.6vw, 12px); line-height: 1.2; min-height: 58px; padding: 5px 1px; white-space: normal; overflow-wrap: anywhere; }
+  .diza-mobile-nav .diza-mobile-link svg { width: 20px; height: 20px; }
+  .diza-mobile-link span { max-width: 100%; }
+  .diza-shell .diza-ui-page-header .diza-ui-page-heading h1 { font-size: 23px; }
+}
+@media (max-width: 360px) { .diza-shell .diza-content { padding-inline: 10px; } }

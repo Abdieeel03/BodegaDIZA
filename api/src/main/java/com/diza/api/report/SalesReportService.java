@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 /** Consulta analítica: nunca crea tickets, importa datos ni modifica existencias. */
 @Service
 public class SalesReportService {
+    private record DaySku(LocalDate fecha, String sku) {}
     private final JdbcTemplate jdbc;
     public SalesReportService(JdbcTemplate jdbc) { this.jdbc = jdbc; }
 
@@ -57,21 +58,51 @@ public class SalesReportService {
         if (sku != null && !sku.isBlank()) { where.append(" and sku = ?"); args.add(sku.trim()); }
         if (!origen.equals("todos")) { where.append(" and origen = ?"); args.add(origen); }
         // Primero se agregan los detalles por día/producto. La página nunca limita los indicadores.
-        List<SalesReportResponse.Row> rows = jdbc.query("select * from (" + source + ") sales" + where
+        List<SalesReportResponse.Row> sourceRows = jdbc.query("select * from (" + source + ") sales" + where
             + " order by fecha desc, sku, origen", (rs, n) -> new SalesReportResponse.Row(
                 rs.getDate("fecha").toLocalDate(), rs.getString("sku"), rs.getString("nombre"),
                 rs.getString("origen"), rs.getBigDecimal("cantidad"), rs.getString("unidad"),
                 rs.getBigDecimal("importe"), rs.getBigDecimal("stock_cierre")), args.toArray());
 
+        // El staging conocido contiene la importación histórica de estas ventas.
+        // Una coincidencia única en fecha/SKU/cantidad/importe se cuenta una vez.
+        // Las coincidencias ambiguas no se resuelven por aproximación.
+        Map<DaySku, List<SalesReportResponse.Row>> byDaySku = new LinkedHashMap<>();
+        for (var row : sourceRows) {
+            byDaySku.computeIfAbsent(new DaySku(row.fecha(), row.sku()), key -> new ArrayList<>()).add(row);
+        }
+        Set<DaySku> reconciled = new HashSet<>();
+        int overlaps = 0, conflicts = 0;
+        if (origen.equals("todos")) {
+            for (var entry : byDaySku.entrySet()) {
+                var historicRows = entry.getValue().stream().filter(row -> row.origen().equals("historico")).toList();
+                var operationalRows = entry.getValue().stream().filter(row -> row.origen().equals("operativo")).toList();
+                boolean overlap = !historicRows.isEmpty() && !operationalRows.isEmpty();
+                if (overlap) overlaps++;
+                if (historicRows.size() > 1 || operationalRows.size() > 1) {
+                    conflicts++;
+                } else if (overlap) {
+                    var h = historicRows.getFirst();
+                    var o = operationalRows.getFirst();
+                    if (h.cantidad() != null && o.cantidad() != null && h.importe() != null && o.importe() != null
+                        && h.cantidad().compareTo(o.cantidad()) == 0 && h.importe().compareTo(o.importe()) == 0) {
+                        reconciled.add(entry.getKey());
+                    } else {
+                        conflicts++;
+                    }
+                }
+            }
+        }
+        // No se modifica ninguna fuente. Los filtros de origen siguen devolviendo los datos de esa fuente.
+        List<SalesReportResponse.Row> rows = sourceRows.stream().filter(row ->
+            !row.origen().equals("historico") || !reconciled.contains(new DaySku(row.fecha(), row.sku()))).toList();
         Map<LocalDate, BigDecimal[]> trend = new TreeMap<>();
-        Map<String, Set<String>> originsByDay = new HashMap<>();
         Map<String, SalesReportResponse.Ranking> ranking = new HashMap<>();
         BigDecimal historical = BigDecimal.ZERO, operational = BigDecimal.ZERO;
         for (var row : rows) {
             boolean historic = row.origen().equals("historico");
             if (historic) historical = historical.add(row.importe());
             else operational = operational.add(row.importe());
-            originsByDay.computeIfAbsent(row.fecha() + "|" + row.sku(), key -> new HashSet<>()).add(row.origen());
             LocalDate period = switch (agrupacion) {
                 case "mes" -> row.fecha().withDayOfMonth(1);
                 case "semana" -> row.fecha().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
@@ -83,11 +114,12 @@ public class SalesReportService {
             ranking.compute(row.sku(), (key, previous) -> new SalesReportResponse.Ranking(
                 key, row.nombre(), row.importe().add(previous == null ? BigDecimal.ZERO : previous.importe())));
         }
-        int overlaps = (int) originsByDay.values().stream().filter(origins -> origins.size() > 1).count();
-        // Coincidencia no significa duplicado: no elegir una fuente ni sumar sin conciliación.
-        BigDecimal total = overlaps == 0 ? historical.add(operational) : null;
-        var points = trend.entrySet().stream().map(e -> new SalesReportResponse.Point(e.getKey(), e.getValue()[0], e.getValue()[1])).toList();
-        var top = overlaps == 0 ? ranking.values().stream()
+        // Si quedan conflictos no se publica una serie consolidada ni un ranking parcial engañoso.
+        BigDecimal total = conflicts == 0 ? historical.add(operational) : null;
+        var points = conflicts == 0 ? trend.entrySet().stream()
+            .map(e -> new SalesReportResponse.Point(e.getKey(), e.getValue()[0], e.getValue()[1])).toList()
+            : List.<SalesReportResponse.Point>of();
+        var top = conflicts == 0 ? ranking.values().stream()
             .sorted(Comparator.comparing(SalesReportResponse.Ranking::importe).reversed()
                 .thenComparing(SalesReportResponse.Ranking::sku)).limit(5).toList() : List.<SalesReportResponse.Ranking>of();
         String catalogSql = "select sku, max(nombre) as nombre from (select sku, nombre from public.productos"
@@ -105,7 +137,7 @@ public class SalesReportService {
         int lastPage = Math.max(0, (rows.size() - 1) / tamanio);
         int actualPage = Math.min(pagina, lastPage);
         int start = actualPage * tamanio;
-        return new SalesReportResponse(total, historical, operational, tickets, ranking.size(), overlaps, hasHistory,
+        return new SalesReportResponse(total, historical, operational, tickets, ranking.size(), overlaps, reconciled.size(), conflicts, hasHistory,
             points, rows.subList(start, Math.min(start + tamanio, rows.size())), catalog, top, rows.size(), actualPage, tamanio);
     }
 }

@@ -45,11 +45,12 @@ export function BusinessOverview({ revision }: { revision: number }) {
       <div className="diza-business-actions"><Link to="/ventas?registrar=1" className="diza-period-link">Registrar venta</Link><Link to="/inventario" className="diza-dashboard-text-link">Inventario</Link><Link to="/prediccion-demanda/compras" className="diza-dashboard-text-link">Planificar compras</Link></div>
     </div>
     <div className="diza-dashboard-kpis">
-      <StatCard label="Ventas de hoy" value={metric(summary.data?.day.total)} note="Total del día" />
-      <StatCard label="Ventas del mes" value={metric(summary.data?.month.total)} note="Desde el primer día hasta hoy" />
+      <StatCard label="Ventas de hoy" value={metric(summary.data?.day.total)} note={summary.data?.day.total === null ? "Por conciliar" : "Total del día"} />
+      <StatCard label="Ventas del mes" value={metric(summary.data?.month.total)} note={summary.data?.month.total === null ? "Por conciliar" : "Desde el primer día hasta hoy"} />
       <StatCard label="Tickets de hoy" value={summary.status === 'loading' ? 'Consultando…' : summary.data?.day.tickets ?? '—'} />
       <StatCard label="Productos agotados" value={alertsResource.status === 'loading' ? 'Consultando…' : alertsResource.data ? stockAlerts.filter(item => Number(item.stockActual) <= 0).length : '—'} note="Stock disponible actual" />
     </div>
+    {summary.data && (summary.data.day.total === null || summary.data.month.total === null) && <p className="diza-dashboard-notice" role="status">Hay ventas sin conciliar. Consulta el reporte para revisar las diferencias.</p>}
     {summary.status === 'error' && <DataFeedback status="error" title="Resumen de ventas no disponible" description={summary.error ?? undefined} onRetry={reload} />}
     <div className="diza-dashboard-analytics">
       <section className="diza-dashboard-panel" aria-labelledby="business-sales-title">
@@ -58,7 +59,7 @@ export function BusinessOverview({ revision }: { revision: number }) {
         </div>
         {history.status === 'loading' ? <DataFeedback status="loading" title="Consultando evolución" /> : history.status === 'error'
           ? <DataFeedback status="error" description={history.error ?? undefined} onRetry={reload} /> : history.data && (
-            <SalesHistoryChart points={history.data.tendencia} grouping={period === 'mes' ? 'dia' : 'mes'} />
+            history.data.total === null ? <p className="diza-dashboard-notice" role="status">Gráfico no disponible: existen ventas sin conciliar.</p> : <SalesHistoryChart points={history.data.tendencia} grouping={period === 'mes' ? 'dia' : 'mes'} />
           )}
         <Link to={salesLink} className="diza-dashboard-panel-action">Ver reporte de ventas <span aria-hidden="true">→</span></Link>
       </section>
@@ -76,7 +77,7 @@ export function BusinessOverview({ revision }: { revision: number }) {
     </div>
     {history.data && <section className="diza-dashboard-panel diza-business-ranking" aria-labelledby="business-ranking-title">
       <div className="diza-dashboard-panel-heading"><div><h3 id="business-ranking-title">Productos con mayor importe vendido</h3><p>{period === 'mes' ? 'Este mes' : 'Últimos 6 meses'}</p></div></div>
-      {!history.data.ranking.length ? <p className="diza-kpi-note">Todavía no hay ventas para este período.</p>
+      {history.data.total === null ? <p className="diza-kpi-note">Ranking no disponible hasta conciliar las ventas.</p> : !history.data.ranking.length ? <p className="diza-kpi-note">Todavía no hay ventas para este período.</p>
         : <ol>{history.data.ranking.map(item => <li key={item.sku}><Link to={`${salesLink}&sku=${encodeURIComponent(item.sku)}`}><span>{item.nombre}<small>{item.sku}</small></span><strong>{formatMoney(item.importe)}</strong></Link></li>)}</ol>}
     </section>}
   </section>;

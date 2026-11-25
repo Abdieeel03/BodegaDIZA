@@ -62,22 +62,23 @@ export function UnifiedSalesReport({ revision }: { revision: number }) {
       : status === 'loading' ? <DataFeedback status="loading" title="Consultando ventas" />
       : status === 'error' ? <DataFeedback status="error" description={error ?? undefined} onRetry={retry} />
       : data && <>
+        {data.total === null && <p className="diza-test-error" role="alert">Hay {data.conflictos ?? data.coincidencias} grupos de ventas sin conciliar. El total y el gráfico consolidado no están disponibles hasta resolver las diferencias. Los registros se conservan.</p>}
         <div className="diza-stat-grid">
-          <StatCard label="Total de ventas" value={data.total === null ? '—' : formatMoney(data.total)} note="Importe del período seleccionado" />
+          <StatCard label="Total de ventas" value={data.total === null ? '—' : formatMoney(data.total)} note={data.total === null ? "Por conciliar" : "Importe del período seleccionado"} />
           <StatCard label="Tickets" value={data.tickets} note={`${data.tickets === 1 ? 'Ticket registrado' : 'Tickets registrados'} en el período`} />
           <StatCard label="Productos con ventas" value={data.productos} note={`${data.filas} registros diarios`} />
         </div>
         <section className="diza-test-panel"><h2>Evolución de ventas</h2>
-          <SalesHistoryChart points={data.tendencia} grouping={grouping} />
+          {data.total === null ? <p className="diza-kpi-note">Gráfico no disponible: existen registros sin conciliar.</p> : <SalesHistoryChart points={data.tendencia} grouping={grouping} />}
         </section>
         <section className="diza-test-panel"><h2>Detalle de ventas por día y producto</h2>
-          <p className="diza-kpi-note">Los tickets se agrupan por producto y día.</p>
+          <p className="diza-kpi-note">Los tickets se agrupan por producto y día.{data.conciliadas > 0 ? ` ${data.conciliadas} coincidencias históricas se cuentan una sola vez.` : ""}</p>
           <TableFrame label="Ventas diarias"><table className="diza-test-table">
-            <thead><tr>{['Fecha', 'Producto', 'Cantidad', 'Importe'].map(label => <th scope="col" key={label}>{label}</th>)}</tr></thead>
-            <tbody>{data.registros.map(row => <tr key={`${row.fecha}-${row.sku}-${row.origen}`}>
+            <thead><tr>{(data.total === null ? ['Fecha', 'Producto', 'Cantidad', 'Importe', 'Origen'] : ['Fecha', 'Producto', 'Cantidad', 'Importe']).map(label => <th scope="col" key={label}>{label}</th>)}</tr></thead>
+            <tbody>{data.registros.map((row, index) => <tr key={`${row.fecha}-${row.sku}-${row.origen}-${index}`}>
               <td>{salesDateLabel(row.fecha)}</td><td><strong>{row.nombre}</strong><small className="diza-sales-sku">{row.sku}</small></td>
               <td>{Number(row.cantidad).toLocaleString('es-PE', { maximumFractionDigits: 3 })} {row.unidad?.toLowerCase() ?? 'unid.'}</td>
-              <td>{formatMoney(row.importe)}</td>
+              <td>{formatMoney(row.importe)}</td>{data.total === null && <td>{row.origen === "historico" ? "Histórico" : "Operativo"}</td>}
             </tr>)}</tbody>
           </table></TableFrame>
           {!data.filas && <DataFeedback status="empty" title="Sin ventas para estos filtros" description="Prueba otro período o producto." />}

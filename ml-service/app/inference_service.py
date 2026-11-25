@@ -6,7 +6,7 @@ from .database import load_from_db
 from .preprocessing import prepare_products,prepare_sales
 from .forecasting import HORIZON,predict_horizon,to_prediction_objects
 from .replenishment import recommend
-from .stockout_classifier import predict_stockout_risk
+from .stockout_classifier import predict_stockout_risk, TARGET_VERSION
 from .storage import ModelStore
 
 
@@ -36,9 +36,11 @@ class InferenceService:
         frame=predict_horizon(model,training['modelName'],sales,last,last+timedelta(days=1),HORIZON)
         predictions=to_prediction_objects(frame)
         replenishments=recommend(predictions,products)
-        classifier=self.store.trusted_classifier(training['id'])
-        if classifier is not None:
-            replenishments=predict_stockout_risk(classifier,sales,products,replenishments)
+        # No reutilizar el antiguo clasificador heurístico con el nuevo contrato.
+        classifier = None
+        if (training.get('classification') or {}).get('targetVersion') == TARGET_VERSION:
+            classifier=self.store.trusted_classifier(training['id'])
+        replenishments=predict_stockout_risk(classifier,sales,products,replenishments)
         result={
             'trainingId':training['id'],'modelName':training['modelName'],
             'forecastFromDate':(last+timedelta(days=1)).date().isoformat(),

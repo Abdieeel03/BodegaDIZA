@@ -44,6 +44,22 @@ public class Compra {
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal total;
 
+    @ManyToOne
+    @JoinColumn(name = "usuario_pedido_id")
+    private com.diza.api.user.Usuario usuarioPedido;
+
+    @Column(name = "fecha_recepcion")
+    private LocalDateTime fechaRecepcion;
+
+    public void confirmarPor(com.diza.api.user.Usuario usuario) { this.usuarioPedido = usuario; }
+    public com.diza.api.user.Usuario getUsuarioPedido() { return usuarioPedido; }
+    public LocalDateTime getFechaRecepcion() { return fechaRecepcion; }
+    public void marcarRecibida(LocalDateTime fecha) {
+        if (estado != EstadoCompra.PENDIENTE) throw new com.diza.api.common.BusinessException("El pedido ya no está pendiente");
+        estado = EstadoCompra.RECIBIDA;
+        fechaRecepcion = fecha;
+    }
+
     protected Compra() {
     }
 

@@ -37,5 +37,15 @@ public record ProductoRequest(
     UnidadMedida unidadMedida,
 
     @Valid
-    LoteInicialRequest loteInicial
-) {}
+    LoteInicialRequest loteInicial,
+
+    @DecimalMin(value = "0.01", message = "El costo debe ser positivo")
+    @jakarta.validation.constraints.Digits(integer = 10, fraction = 2, message = "El costo admite hasta dos decimales")
+    BigDecimal precioCosto
+) {
+    public ProductoRequest(String sku, String nombre, String descripcion, Long categoriaId,
+        Long proveedorId, BigDecimal precioVenta, BigDecimal stockMinimo, UnidadMedida unidadMedida,
+        LoteInicialRequest loteInicial) {
+        this(sku, nombre, descripcion, categoriaId, proveedorId, precioVenta, stockMinimo, unidadMedida, loteInicial, null);
+    }
+}

@@ -23,7 +23,9 @@ export interface ClassificationMetrics {
   precision: number;
   recall: number;
   f1: number;
-  rocAuc: number;
+  rocAuc: number | null;
+  brierScore?: number;
+  confusionMatrix?: { tn: number; fp: number; fn: number; tp: number };
 }
 
 export interface ClassificationSummary {
@@ -31,7 +33,11 @@ export interface ClassificationSummary {
   metrics: ClassificationMetrics;
   observationsCount: number;
   positiveRate: number;
-  horizonEvents: number;
+  horizonEvents?: number;
+  horizonDays?: number;
+  source?: string;
+  evaluationScope?: string;
+  partitions?: { test: { n: number; positive: number; negative: number; from: string; to: string } };
 }
 
 export interface TrainingResult {
@@ -41,10 +47,13 @@ export interface TrainingResult {
   trainedAt: IsoDateTime;
   forecastFromDate?: string | null;
   forecastToDate?: string | null;
+  forecastSalesCutoffDate?: string | null;
+  forecastGeneratedAt?: IsoDateTime | null;
   metrics: PredictionMetrics;
   productsCount: number;
   observationsCount: number;
   validationRowsRejected: number;
+  salesCutoffDate?: string | null;
   hillClimbing?: HillClimbingSummary | null;
   classification?: ClassificationSummary | null;
 }
@@ -74,6 +83,11 @@ export interface ReplenishmentRecommendation {
   daysOfStockRemaining?: number | null;
 }
 
+export interface ReplenishmentSnapshot {
+  items: ReplenishmentRecommendation[];
+  inventoryAsOf: IsoDateTime;
+}
+
 export interface ReplenishmentOptimizationItem {
   productId: string;
   productName: string;
@@ -84,6 +98,8 @@ export interface ReplenishmentOptimizationItem {
   unmetUnits: number;
   unitCost: number;
   totalCost: number;
+  supplier: string;
+  stockoutProbability: number | null;
 }
 
 export interface ReplenishmentOptimizationResult {
@@ -93,5 +109,11 @@ export interface ReplenishmentOptimizationResult {
   budgetRemaining: number;
   iterations: number;
   coverageScore: number;
+  initialCoverageScore: number;
+  totalNeededUnits: number;
+  totalAllocatedUnits: number;
+  totalUnmetUnits: number;
+  coveragePercent: number | null;
+  searchLimited: boolean;
   items: ReplenishmentOptimizationItem[];
 }

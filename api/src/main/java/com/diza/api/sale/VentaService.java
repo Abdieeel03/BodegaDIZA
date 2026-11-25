@@ -60,12 +60,12 @@ public class VentaService {
         Usuario usuario = usuarioRepository.findByEmail(userEmail)
             .orElseThrow(() -> new BusinessException("Usuario autenticado no encontrado"));
 
-        LocalDate hoy = LocalDate.now();
+        LocalDate hoy = LocalDate.now(java.time.ZoneId.of("America/Lima"));
         List<AsignacionLote> asignaciones = new ArrayList<>();
         BigDecimal totalVenta = BigDecimal.ZERO;
 
         for (ItemVentaRequest item : request.items()) {
-            Producto producto = productoRepository.findById(item.productoId())
+            Producto producto = productoRepository.findForUpdate(item.productoId())
                 .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado con ID: " + item.productoId()));
 
             if (!producto.isActivo()) {
@@ -84,8 +84,8 @@ public class VentaService {
                     throw new BusinessException("El lote " + lote.getCodigoLote() + " no pertenece al producto " + producto.getNombre());
                 }
 
-                if (lote.getFechaVencimiento().isBefore(hoy)) {
-                    throw new BusinessException("El lote " + lote.getCodigoLote() + " se encuentra vencido desde " + lote.getFechaVencimiento());
+                if (!lote.esVendible(hoy)) {
+                    throw new BusinessException("El lote " + lote.getCodigoLote() + " no es vendible: vencido, pendiente o sin política autorizada");
                 }
 
                 if (lote.getCantidadDisponible().compareTo(item.cantidad()) < 0) {
@@ -93,6 +93,7 @@ public class VentaService {
                         + ". Disponible: " + lote.getCantidadDisponible() + ", Solicitado: " + item.cantidad());
                 }
 
+                lote.descontarStock(item.cantidad());
                 BigDecimal subtotal = precioUnitario.multiply(item.cantidad());
                 asignaciones.add(new AsignacionLote(producto, lote, item.cantidad(), precioUnitario, subtotal));
                 totalVenta = totalVenta.add(subtotal);
@@ -113,6 +114,7 @@ public class VentaService {
                         break;
                     }
                     BigDecimal tomar = lote.getCantidadDisponible().min(restante);
+                    lote.descontarStock(tomar);
                     BigDecimal subtotal = precioUnitario.multiply(tomar);
                     asignaciones.add(new AsignacionLote(producto, lote, tomar, precioUnitario, subtotal));
                     totalVenta = totalVenta.add(subtotal);
@@ -127,7 +129,6 @@ public class VentaService {
         List<DetalleVenta> detallesGuardados = new ArrayList<>();
         for (AsignacionLote asignacion : asignaciones) {
             LoteProducto lote = asignacion.lote();
-            lote.descontarStock(asignacion.cantidad());
             loteProductoRepository.save(lote);
 
             DetalleVenta detalle = new DetalleVenta(
@@ -189,8 +190,8 @@ public class VentaService {
 
     @Transactional(readOnly = true)
     public ResumenVentasResponse obtenerResumen(LocalDate desde, LocalDate hasta) {
-        LocalDate fechaInicio = desde != null ? desde : LocalDate.now();
-        LocalDate fechaFin = hasta != null ? hasta : LocalDate.now();
+        LocalDate fechaInicio = desde != null ? desde : LocalDate.now(java.time.ZoneId.of("America/Lima"));
+        LocalDate fechaFin = hasta != null ? hasta : LocalDate.now(java.time.ZoneId.of("America/Lima"));
 
         LocalDateTime inicio = fechaInicio.atStartOfDay();
         LocalDateTime fin = fechaFin.atTime(LocalTime.MAX);

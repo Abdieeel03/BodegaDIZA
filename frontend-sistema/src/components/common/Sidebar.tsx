@@ -1,6 +1,7 @@
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { PredictionMenu } from './PredictionMenu';
+import { Navbar } from './Navbar';
 import { predictionSections } from '../../pages/prediction/predictionNavigation';
 import { UiIcon, type UiIconName } from './UiIcon';
 
@@ -23,8 +24,8 @@ const menuItems: MenuItem[] = [
     mobileLabel: 'Predicción',
     icon: 'prediction',
   },
-  { label: 'Próximos a vencer', mobileLabel: 'Vence', icon: 'calendar' },
-  { label: 'Alertas', mobileLabel: 'Alertas', icon: 'warning' },
+  { to: '/proximos-a-vencer', label: 'Próximos a vencer', mobileLabel: 'Vence', icon: 'calendar' },
+  { to: '/alertas', label: 'Alertas', mobileLabel: 'Alertas', icon: 'warning' },
 ];
 
 const mobileItems = menuItems.filter(
@@ -64,7 +65,6 @@ export const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
           <span className="diza-brand-monogram" aria-hidden="true">BD</span>
           <span className="diza-sidebar-brand-text">
             <strong>BodegaDIZA</strong>
-            <small>Tu bodega, mejor gestionada</small>
           </span>
         </Link>
         <button
@@ -118,10 +118,7 @@ export const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
         })}
       </nav>
 
-      <div className="diza-sidebar-footer" title="BodegaDIZA · Panel de gestión">
-        <UiIcon name="store" size={20} />
-        <span className="diza-sidebar-footer-text">Panel de gestión</span>
-      </div>
+      <Navbar placement="sidebar" />
     </aside>
 
     <nav className="diza-mobile-nav" aria-label="Navegación principal móvil">

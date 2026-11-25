@@ -4,7 +4,7 @@ import unicodedata
 import pandas as pd
 
 SALE_REQUIRED = {'fecha','id_producto','cantidad_vendida'}
-PRODUCT_REQUIRED = {'id_producto','nombre_producto','categoria','stock_actual','stock_minimo_seguridad','precio_venta_unitario','proveedor'}
+PRODUCT_REQUIRED = {'id_producto','nombre_producto','categoria','stock_actual','stock_minimo_seguridad','precio_venta_unitario'}
 PROVIDER_REQUIRED = {'codigo_referencia','nombre'}
 
 
@@ -22,7 +22,7 @@ def _required(frame: pd.DataFrame, columns: set[str], name: str) -> None:
 def prepare_products(frame: pd.DataFrame) -> pd.DataFrame:
     _required(frame, PRODUCT_REQUIRED, 'productos')
     df = frame.copy()
-    for col in ['id_producto','nombre_producto','categoria','proveedor']:
+    for col in ['id_producto','nombre_producto','categoria'] + (['proveedor'] if 'proveedor' in df else []):
         df[col] = df[col].astype('string').str.strip()
         if df[col].isna().any() or df[col].eq('').any():
             raise ValueError(f'Productos: el campo {col} no puede estar vacío')
@@ -39,7 +39,7 @@ def prepare_products(frame: pd.DataFrame) -> pd.DataFrame:
 
 def prepare_providers(frame: pd.DataFrame | None, products: pd.DataFrame) -> pd.DataFrame:
     if frame is None:
-        distinct = sorted(products['proveedor'].unique())
+        distinct = sorted(products['proveedor'].unique()) if 'proveedor' in products else []
         return pd.DataFrame({'codigo_referencia': [None]*len(distinct),'nombre':distinct})
     _required(frame, PROVIDER_REQUIRED, 'proveedores')
     df = frame.copy()
@@ -49,7 +49,7 @@ def prepare_providers(frame: pd.DataFrame | None, products: pd.DataFrame) -> pd.
         raise ValueError('Proveedores: código y nombre son obligatorios')
     if df['codigo_referencia'].duplicated().any() or df['nombre'].map(norm).duplicated().any():
         raise ValueError('Proveedores: existen códigos o nombres duplicados')
-    unknown = sorted(set(products['proveedor'].map(norm)) - set(df['nombre'].map(norm)))
+    unknown = sorted(set(products['proveedor'].map(norm)) - set(df['nombre'].map(norm))) if 'proveedor' in products else []
     if unknown:
         raise ValueError(f'Proveedores no encontrados en su catálogo: {unknown}')
     return df.reset_index(drop=True)

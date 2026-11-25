@@ -19,8 +19,8 @@ public record DetalleCompraResponse(
             detalle.getProducto().getId(),
             detalle.getProducto().getNombre(),
             detalle.getProducto().getSku(),
-            detalle.getLote().getId(),
-            detalle.getLote().getCodigoLote(),
+            detalle.getLote() == null ? null : detalle.getLote().getId(),
+            detalle.getLote() == null ? null : detalle.getLote().getCodigoLote(),
             detalle.getCantidad(),
             detalle.getCostoUnitario(),
             detalle.getSubtotal()

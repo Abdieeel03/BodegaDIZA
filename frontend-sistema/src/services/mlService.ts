@@ -4,6 +4,7 @@ import type {
   DemandPrediction,
   ReplenishmentOptimizationResult,
   ReplenishmentRecommendation,
+  ReplenishmentSnapshot,
   TrainingResult,
 } from '../types';
 
@@ -40,6 +41,13 @@ export const mlService = {
   async getLatestReplenishments(): Promise<ReplenishmentRecommendation[]> {
     const response = await apiClient.get<ApiResponse<ReplenishmentRecommendation[]>>(
       '/ml/replenishments/latest'
+    );
+    return unwrap(response.data);
+  },
+
+  async getLatestReplenishmentSnapshot(): Promise<ReplenishmentSnapshot> {
+    const response = await apiClient.get<ApiResponse<ReplenishmentSnapshot>>(
+      '/ml/replenishments/latest/snapshot'
     );
     return unwrap(response.data);
   },

@@ -9,6 +9,7 @@ export interface InventoryProduct {
   proveedorId?: number;
   unidadMedida?: string;
   stock: number;
+  stockFisico?: number;
   stockMinimo: number;
   precioCosto: number | null;
   precioVenta: number;

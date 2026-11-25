@@ -16,9 +16,24 @@ public record ProductoResponse(
     UnidadMedida unidadMedida,
     boolean activo,
     BigDecimal stockTotal,
-    boolean bajoStock
+    boolean bajoStock,
+    BigDecimal stockFisico,
+    BigDecimal stockVendible,
+    boolean permiteSinVencimiento,
+    String justificacionSinVencimiento,
+    BigDecimal precioCosto
 ) {
-    public static ProductoResponse of(Producto producto, BigDecimal stockTotal) {
+    public ProductoResponse(Long id, String sku, String nombre, String descripcion,
+        CategoriaResponse categoria, ProveedorResponse proveedor, BigDecimal precioVenta,
+        BigDecimal stockMinimo, UnidadMedida unidadMedida, boolean activo, BigDecimal stockTotal,
+        boolean bajoStock, BigDecimal stockFisico, BigDecimal stockVendible,
+        boolean permiteSinVencimiento, String justificacionSinVencimiento) {
+        this(id, sku, nombre, descripcion, categoria, proveedor, precioVenta, stockMinimo, unidadMedida,
+            activo, stockTotal, bajoStock, stockFisico, stockVendible, permiteSinVencimiento,
+            justificacionSinVencimiento, null);
+    }
+
+    public static ProductoResponse of(Producto producto, BigDecimal stockTotal, BigDecimal stockFisico) {
         BigDecimal stock = stockTotal != null ? stockTotal : BigDecimal.ZERO;
         boolean bajo = stock.compareTo(producto.getStockMinimo()) <= 0;
         return new ProductoResponse(
@@ -33,7 +48,12 @@ public record ProductoResponse(
             producto.getUnidadMedida(),
             producto.isActivo(),
             stock,
-            bajo
+            bajo,
+            stockFisico,
+            stock,
+            producto.isPermiteSinVencimiento(),
+            producto.getJustificacionSinVencimiento(),
+            producto.getPrecioCosto()
         );
     }
 }

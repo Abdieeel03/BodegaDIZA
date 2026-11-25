@@ -38,6 +38,11 @@ public class MlController {
         return ResponseEntity.ok(ApiResponse.success(mlServiceClient.train(salesFile, productsFile)));
     }
 
+    @GetMapping("/trainings/latest")
+    public ResponseEntity<ApiResponse<TrainingResponse>> getLatestTraining() {
+        return ResponseEntity.ok(ApiResponse.success(mlServiceClient.getLatestTraining()));
+    }
+
     @GetMapping("/trainings/{trainingId}")
     public ResponseEntity<ApiResponse<TrainingResponse>> getTraining(@PathVariable String trainingId) {
         return ResponseEntity.ok(ApiResponse.success(mlServiceClient.getTraining(trainingId)));
@@ -51,6 +56,11 @@ public class MlController {
     @GetMapping("/replenishments/latest")
     public ResponseEntity<ApiResponse<List<ReplenishmentResponse>>> getLatestReplenishments() {
         return ResponseEntity.ok(ApiResponse.success(mlReplenishmentService.latest()));
+    }
+
+    @GetMapping("/replenishments/latest/snapshot")
+    public ResponseEntity<ApiResponse<ReplenishmentSnapshotResponse>> getLatestReplenishmentSnapshot() {
+        return ResponseEntity.ok(ApiResponse.success(mlReplenishmentService.latestSnapshot()));
     }
 
     @GetMapping("/replenishments/optimize")

@@ -67,7 +67,7 @@ export function BusinessOverview({ revision }: { revision: number }) {
         {alertsResource.status === 'loading' && <p role="status" className="diza-kpi-note">Consultando existencias, vencimientos y reposición…</p>}
         {alertsResource.status === 'error' && <div className="diza-dashboard-notice" role="status"><p>No se pudieron consultar las alertas operativas. Los demás avisos siguen disponibles.</p><Button variant="secondary" size="sm" onClick={reload}>Reintentar</Button></div>}
         <ul className="diza-business-alerts">{alerts.slice(0, 4).map(alert => <li key={alert.id}>
-          <StatusBadge tone={alert.priority === 'urgent' ? 'danger' : 'warning'}>{alert.priority === 'urgent' ? 'Urgente' : 'Revisar'}</StatusBadge>
+          <StatusBadge tone={alert.priority === 'critical' ? 'danger' : alert.priority === 'warning' ? 'warning' : 'info'}>{alert.priority === 'critical' ? 'Crítica' : alert.priority === 'warning' ? 'Advertencia' : 'Preventiva'}</StatusBadge>
           <strong>{alert.title}</strong><p>{alert.message}</p>
         </li>)}</ul>
         {alertsResource.status === 'success' && alerts.length === 0 && <p className="diza-kpi-note">Sin alertas de stock ni vencimientos en los próximos 7 días.</p>}

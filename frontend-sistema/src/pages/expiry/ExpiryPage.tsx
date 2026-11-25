@@ -26,12 +26,13 @@ const expiryInfo = (lot: ExpiringLot) => ({ ...statuses[lot.estadoVencimiento], 
 export function ExpiryPage() {
   const [params] = useSearchParams();
   const { user } = useAuth();
-  const [horizon, setHorizon] = useState(7);
+  const [targetLot, setTargetLot] = useState(params.get('loteId') ?? '');
+  const [horizon, setHorizon] = useState(params.has('loteId') ? 0 : 7);
   const [editing, setEditing] = useState<ExpiringLot | null>(null);
   const [success, setSuccess] = useState('');
   const loadLots = useCallback(() => getExpiryAlerts(0), []);
   const source = useRemoteResource(loadLots, true);
-  const [search, setSearch] = useState(params.get('sku') ?? '');
+  const [search, setSearch] = useState(params.get('lote') ?? params.get('sku') ?? '');
   const [category, setCategory] = useState('');
   const [status, setStatus] = useState<ExpiryFilter>('all');
   const lots = source.data ?? [];
@@ -42,13 +43,13 @@ export function ExpiryPage() {
       const matchesSearch = !term || `${lot.productoNombre} ${lot.productoSku} ${lot.productoCategoria} ${lot.codigoLote}`.toLocaleLowerCase('es-PE').includes(term);
       const matchesCategory = !category || lot.productoCategoria === category;
       const matchesStatus = status === 'all' || expiryInfo(lot).filter === status;
-      return matchesSearch && matchesCategory && matchesStatus && (horizon === 0 || lot.diasParaVencer === null || lot.diasParaVencer <= horizon);
+      return (!targetLot || String(lot.id) === targetLot) && matchesSearch && matchesCategory && matchesStatus && (horizon === 0 || lot.diasParaVencer === null || lot.diasParaVencer <= horizon);
     });
-  }, [lots, search, category, status, horizon]);
+  }, [lots, search, category, status, horizon, targetLot]);
   const expired = lots.filter(lot => expiryInfo(lot).filter === 'VENCIDO').length;
   const immediate = lots.filter(lot => ['HOY', 'CRITICO'].includes(expiryInfo(lot).filter)).length;
   const week = lots.filter(lot => expiryInfo(lot).filter === 'PENDIENTE').length;
-  const hasFilters = Boolean(search || category || status !== 'all' || horizon !== 7);
+  const hasFilters = Boolean(targetLot || search || category || status !== 'all' || horizon !== 7);
 
   return <main className="diza-expiry-page">
     <PageHeader
@@ -70,14 +71,14 @@ export function ExpiryPage() {
             <div className="diza-expiry-heading">
               <div><h2 id="expiry-lots-title">Lotes con stock físico</h2><p>{visible.length} {visible.length === 1 ? 'lote coincide' : 'lotes coinciden'} con los filtros.</p></div>
               <label className="diza-expiry-search">Buscar producto, SKU, categoría o lote
-                <input type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Ej.: leche, P001 o L-001" />
+                <input type="search" value={search} onChange={event => { setSearch(event.target.value); setTargetLot(''); }} placeholder="Ej.: leche, P001 o L-001" />
               </label>
             </div>
             <div className="diza-expiry-filters" aria-label="Filtros de vencimiento">
-              <label>Horizonte<select value={horizon} onChange={event => setHorizon(Number(event.target.value))}>{[7, 15, 30, 90, 0].map(days => <option key={days} value={days}>{days === 0 ? 'Todos' : `${days} días`}</option>)}</select></label>
+              <label>Horizonte<select aria-label="Horizonte" value={horizon} onChange={event => setHorizon(Number(event.target.value))}>{[7, 15, 30, 90, 0].map(days => <option key={days} value={days}>{days === 0 ? 'Todos' : `${days} días`}</option>)}</select></label>
               <label>Categoría<select value={category} onChange={event => setCategory(event.target.value)}><option value="">Todas las categorías</option>{categories.map(value => <option key={value} value={value}>{value}</option>)}</select></label>
               <label>Estado<select value={status} onChange={event => setStatus(event.target.value as ExpiryFilter)}><option value="all">Todos</option>{Object.entries(statuses).map(([value, info]) => <option key={value} value={value}>{info.label}</option>)}</select></label>
-              {hasFilters && <button type="button" onClick={() => { setSearch(''); setCategory(''); setStatus('all'); setHorizon(7); }}>Restablecer filtros</button>}
+              {hasFilters && <button type="button" onClick={() => { setTargetLot(''); setSearch(''); setCategory(''); setStatus('all'); setHorizon(7); }}>Restablecer filtros</button>}
             </div>
             {!visible.length ? <DataFeedback status="empty" title={lots.length ? 'No hay lotes con esos filtros' : 'No hay lotes próximos a vencer'} description={lots.length ? 'Prueba con otra búsqueda, categoría o estado.' : 'No hay lotes con stock físico en este horizonte. Los vencidos y pendientes permanecen visibles.'} />
               : <>

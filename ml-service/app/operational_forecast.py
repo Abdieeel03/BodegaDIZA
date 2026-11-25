@@ -31,7 +31,7 @@ class OperationalForecast:
         self._key = None
         self._snapshot = None
 
-    def latest(self) -> dict:
+    def latest(self, *, with_products=False):
         """Leer datos vigentes y calcular solo cuando cambian entradas o modelo.
 
         La caché es por proceso; nunca modifica los artefactos del entrenamiento.
@@ -42,7 +42,8 @@ class OperationalForecast:
             sales, products = load_operational_inputs()
             key = (training['id'], _fingerprint(sales), _fingerprint(products))
             if key == self._key and self._snapshot is not None:
-                return deepcopy(self._snapshot)
+                snapshot = deepcopy(self._snapshot)
+                return (snapshot, products.copy(deep=True)) if with_products else snapshot
 
             forecast = self.inference.by_id(training['id'], sales, products)
             cutoff = date.fromisoformat(forecast['forecastFromDate']) - timedelta(days=1)
@@ -64,4 +65,5 @@ class OperationalForecast:
                 'replenishments': forecast['replenishments'],
             }
             self._key, self._snapshot = key, snapshot
-            return deepcopy(snapshot)
+            result = deepcopy(snapshot)
+            return (result, products.copy(deep=True)) if with_products else result

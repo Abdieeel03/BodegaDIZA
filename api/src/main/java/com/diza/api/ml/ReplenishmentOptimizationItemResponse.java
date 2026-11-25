@@ -9,6 +9,8 @@ public record ReplenishmentOptimizationItemResponse(
     int allocatedUnits,
     int unmetUnits,
     double unitCost,
-    double totalCost
+    double totalCost,
+    String supplier,
+    Double stockoutProbability
 ) {
 }

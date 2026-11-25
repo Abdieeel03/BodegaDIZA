@@ -67,8 +67,8 @@ export const PredictionPage = ({ view = 'summary' }: { view?: PredictionView }) 
   const handleOptimizeBudget = async (event: FormEvent) => {
     event.preventDefault();
     const numericBudget = Number(budgetInput);
-    if (!Number.isFinite(numericBudget) || numericBudget <= 0) {
-      setOptError('Ingresa un presupuesto mayor a cero.');
+    if (!Number.isFinite(numericBudget) || numericBudget <= 0 || numericBudget > 9999999999.99 || Math.abs(numericBudget * 100 - Math.round(numericBudget * 100)) > 0.001) {
+      setOptError('Ingresa un presupuesto positivo con hasta dos decimales.');
       return;
     }
     setOptResult(null);
@@ -285,8 +285,9 @@ export const PredictionPage = ({ view = 'summary' }: { view?: PredictionView }) 
             <label>Presupuesto (S/)
               <input
                 type="number"
-                min="1"
-                step="0.5"
+                min="0.01"
+                max="9999999999.99"
+                step="0.01"
                 value={budgetInput}
                 disabled={optLoading} onChange={e => { setBudgetInput(e.target.value); setOptResult(null); setOptError(''); }}
                 style={{ border: '1px solid #d4deec', borderRadius: 8, padding: '10px 12px', fontSize: 13, width: 140 }}
@@ -306,19 +307,36 @@ export const PredictionPage = ({ view = 'summary' }: { view?: PredictionView }) 
             <article><span>Saldo restante</span><strong>{formatSoles(optResult.budgetRemaining)}</strong></article>
             <article><span>Productos incluidos</span><strong>{optResult.items.filter(item => item.allocatedUnits > 0).length}</strong></article>
           </div>
-          <div className="diza-ml-table-scroll">
-            <table><thead><tr><th>Producto</th><th>Prioridad</th><th>Sugerido</th><th>Compra asignada</th><th>Costo unit.</th><th>Costo total</th><th>Acción</th></tr></thead><tbody>
-              {optResult.items.filter(item => item.allocatedUnits > 0).map(item => <tr key={item.productId}>
-                <td>{readableName(item.productName)}</td>
-                <td><span className={`diza-ml-status diza-ml-${item.alertStatus.toLowerCase()}`}>{priorityLabel[item.alertStatus]}</span></td>
-                <td>{item.recommendedReplenishment}</td>
-                <td><strong>{item.allocatedUnits} unidades</strong></td>
-                <td>{formatSoles(item.unitCost)}</td>
-                <td><strong>{formatSoles(item.totalCost)}</strong></td>
-                <td><Link className="diza-ml-link" to={`/inventario/agregar?modo=restock&sku=${encodeURIComponent(item.productId)}&cantidad=${Math.ceil(Number(item.allocatedUnits))}`}>Reponer</Link></td>
-              </tr>)}
-            </tbody></table>
+          <div className="diza-ml-stats diza-ml-stats-inside" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
+            <article><span>Necesidad total</span><strong>{fmt(optResult.totalNeededUnits, 0)} u.</strong></article>
+            <article><span>Compra asignada</span><strong>{fmt(optResult.totalAllocatedUnits, 0)} u.</strong></article>
+            <article><span>Unidades pendientes</span><strong>{fmt(optResult.totalUnmetUnits, 0)} u.</strong></article>
+            <article><span>Necesidad cubierta</span><strong>{optResult.coveragePercent == null ? '—' : `${fmt(optResult.coveragePercent, 1)}%`}</strong></article>
           </div>
+          {optResult.searchLimited && <p role="status">Se alcanzó el límite de búsqueda. El plan es factible, pero puede mejorarse.</p>}
+          {!optResult.items.length && <p role="status">No hay necesidades de reposición en este momento.</p>}
+          {!!optResult.items.length && <div className="diza-ml-table-scroll">
+            <table><thead><tr><th>Producto</th><th>Prioridad</th><th>Riesgo 3 días</th><th>Sugerido</th><th>Asignado</th><th>Pendiente</th><th>Costo unit.</th><th>Subtotal</th><th>Acción</th></tr></thead>
+              {Array.from(new Set(optResult.items.map(item => item.supplier))).map(supplier => {
+                const group = optResult.items.filter(item => item.supplier === supplier);
+                return <tbody key={supplier}>
+                  <tr><td colSpan={9} style={{ background: '#eef3fb' }}><strong>{supplier || 'Proveedor no disponible'}</strong> · {formatSoles(group.reduce((sum, item) => sum + Math.round(item.totalCost * 100), 0) / 100)}</td></tr>
+                  {group.map(item => <tr key={item.productId}>
+                    <td>{readableName(item.productName)}</td>
+                    <td><span className={`diza-ml-status diza-ml-${item.alertStatus.toLowerCase()}`}>{priorityLabel[item.alertStatus]}</span></td>
+                    <td>{item.stockoutProbability == null ? '—' : `${fmt(item.stockoutProbability * 100, 1)}%`}</td>
+                    <td>{item.recommendedReplenishment}</td>
+                    <td><strong>{item.allocatedUnits}</strong></td>
+                    <td>{item.unmetUnits}</td>
+                    <td>{formatSoles(item.unitCost)}</td>
+                    <td><strong>{formatSoles(item.totalCost)}</strong></td>
+                    <td>{item.allocatedUnits > 0 ? <Link className="diza-ml-link" to={`/inventario/agregar?modo=restock&sku=${encodeURIComponent(item.productId)}&cantidad=${item.allocatedUnits}`}>Reponer</Link> : '—'}</td>
+                  </tr>)}
+                </tbody>;
+              })}
+            </table>
+          </div>}
+          <p><small>Hill Climbing · Utilidad inicial {fmt(optResult.initialCoverageScore, 2)} · Utilidad final {fmt(optResult.coverageScore, 2)} · {optResult.iterations} mejoras locales. La utilidad es un puntaje de priorización, no un porcentaje de precisión.</small></p>
         </>}
       </section>}
     </>}

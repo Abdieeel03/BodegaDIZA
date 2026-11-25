@@ -98,6 +98,8 @@ export interface ReplenishmentOptimizationItem {
   unmetUnits: number;
   unitCost: number;
   totalCost: number;
+  supplier: string;
+  stockoutProbability: number | null;
 }
 
 export interface ReplenishmentOptimizationResult {
@@ -107,5 +109,11 @@ export interface ReplenishmentOptimizationResult {
   budgetRemaining: number;
   iterations: number;
   coverageScore: number;
+  initialCoverageScore: number;
+  totalNeededUnits: number;
+  totalAllocatedUnits: number;
+  totalUnmetUnits: number;
+  coveragePercent: number | null;
+  searchLimited: boolean;
   items: ReplenishmentOptimizationItem[];
 }

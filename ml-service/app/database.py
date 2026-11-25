@@ -37,13 +37,14 @@ def load_products_from_db(conn=None) -> pd.DataFrame:
             p.stock_minimo::float8 AS stock_minimo_seguridad,
             p.precio_venta::float8 AS precio_venta_unitario,
             p.precio_costo::float8 AS costo_compra_unitario,
-            pr.nombre AS proveedor
+            pr.nombre AS proveedor,
+            pr.activo AS proveedor_activo
         FROM public.productos p
         JOIN public.categorias c ON c.id = p.categoria_id
         JOIN public.proveedores pr ON pr.id = p.proveedor_id
         LEFT JOIN public.lotes_producto l ON l.producto_id = p.id
         WHERE p.activo = true
-        GROUP BY p.id, p.sku, p.nombre, c.nombre, p.stock_minimo, p.precio_venta, pr.nombre
+        GROUP BY p.id, p.sku, p.nombre, c.nombre, p.stock_minimo, p.precio_venta, pr.nombre, pr.activo
         ORDER BY p.sku
     """
     with (_connection() if conn is None else nullcontext(conn)) as conn:

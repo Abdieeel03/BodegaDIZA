@@ -170,3 +170,38 @@ def test_no_model_http_returns_404(monkeypatch, tmp_path):
     app = FastAPI()
     app.include_router(route.router, prefix='/trainings')
     assert TestClient(app).get('/trainings/latest/operational').status_code == 404
+
+
+def test_purchase_inputs_share_operational_snapshot(scenario):
+    service, data, _, training, calls, _ = scenario
+    data['products']['costo_compra_unitario'] = 3.45
+    first, catalogue = service.latest(with_products=True)
+    assert first['training']['id'] == training['id']
+    catalogue.loc[0, 'costo_compra_unitario'] = 99
+    cached, catalogue = service.latest(with_products=True)
+    assert cached == first and len(calls) == 1
+    assert catalogue.loc[0, 'costo_compra_unitario'] == 3.45
+    data['products'].loc[0, 'costo_compra_unitario'] = 3.50
+    refreshed, catalogue = service.latest(with_products=True)
+    assert refreshed['training']['id'] == training['id'] and len(calls) == 2
+    assert catalogue.loc[0, 'costo_compra_unitario'] == 3.50
+
+
+def test_purchase_route_uses_same_snapshot(monkeypatch):
+    from datetime import date
+    from types import SimpleNamespace
+    from app.routes import training as route
+    calls = []
+    products = pd.DataFrame([dict(id_producto='P001', nombre_producto='Leche', categoria='Lacteos',
+        stock_actual=1, stock_minimo_seguridad=4, precio_venta_unitario=4.20,
+        costo_compra_unitario=3.45, proveedor='Proveedor')])
+    snapshot = {'training': {'forecastToDate': (date.today()+timedelta(days=2)).isoformat()},
+        'replenishments': [dict(productId='P001', productName='Leche', category='Lacteos', alertStatus='ROJO',
+            recommendedReplenishment=3, stockActual=1, stockMinimoSeguridad=4, stockoutProbability=.9)]}
+    def latest(*, with_products=False):
+        calls.append(with_products)
+        return snapshot, products
+    monkeypatch.setattr(route, 'service', SimpleNamespace(operational=SimpleNamespace(latest=latest)))
+    plan = route.optimize_replenishment(10.35)
+    assert calls == [True] and plan['budgetUsed'] == 10.35
+    assert plan['items'][0]['supplier'] == 'Proveedor'

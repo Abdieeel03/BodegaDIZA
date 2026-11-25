@@ -4,7 +4,6 @@ from starlette.concurrency import run_in_threadpool
 import psycopg
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from ..database import load_products_from_db
 from ..hill_climbing import optimize_replenishment_hill_climbing
 from ..schemas import TrainingResult,PredictionResult,ReplenishmentResult
 from ..services.training_service import TrainingService
@@ -57,10 +56,10 @@ def latest_comparison():
 def optimize_replenishment(budget:float=Query(...,gt=0,description='Presupuesto máximo en soles')):
     from ..preprocessing import prepare_products
     try:
-        latest=service.operational.latest()
+        latest, raw_products=service.operational.latest(with_products=True)
         if latest['training']['forecastToDate'] < datetime.now(ZoneInfo('America/Lima')).date().isoformat():
             raise ValueError('El período del pronóstico ha finalizado; verifica las ventas registradas')
-        products=prepare_products(load_products_from_db())
+        products=prepare_products(raw_products)
         return optimize_replenishment_hill_climbing(latest['replenishments'],products,budget)
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404,detail='No hay un modelo entrenado') from exc

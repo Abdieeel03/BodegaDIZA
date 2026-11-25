@@ -11,15 +11,15 @@ def test_sellable_stock_excludes_expired_pending_and_month(monkeypatch, allows_n
     conn = sqlite3.connect(":memory:")
     conn.executescript("""
         CREATE TABLE productos(id INTEGER, sku TEXT, nombre TEXT, categoria_id INTEGER,
-            proveedor_id INTEGER, stock_minimo REAL, precio_venta REAL, activo BOOLEAN, permite_sin_vencimiento BOOLEAN);
+            proveedor_id INTEGER, stock_minimo REAL, precio_venta REAL, precio_costo REAL, activo BOOLEAN, permite_sin_vencimiento BOOLEAN);
         CREATE TABLE categorias(id INTEGER, nombre TEXT);
-        CREATE TABLE proveedores(id INTEGER, nombre TEXT);
+        CREATE TABLE proveedores(id INTEGER, nombre TEXT, activo BOOLEAN);
         CREATE TABLE lotes_producto(producto_id INTEGER, cantidad_disponible REAL,
             precision_vencimiento TEXT, fecha_vencimiento TEXT);
         INSERT INTO categorias VALUES(1, 'Artículos');
-        INSERT INTO proveedores VALUES(1, 'Proveedor de prueba');
+        INSERT INTO proveedores VALUES(1, 'Proveedor de prueba', true);
     """)
-    conn.execute("INSERT INTO productos VALUES(1, 'P1', 'Producto', 1, 1, 2, 5, true, ?)", (allows_none,))
+    conn.execute("INSERT INTO productos VALUES(1, 'P1', 'Producto', 1, 1, 2, 5, 3.5, true, ?)", (allows_none,))
     conn.executemany("INSERT INTO lotes_producto VALUES(1, ?, ?, ?)", [
         (2, None, '2026-11-25'),         # fecha histórica preservada
         (3, 'EXACTA', '2026-11-24'),    # vence hoy: conserva regla existente

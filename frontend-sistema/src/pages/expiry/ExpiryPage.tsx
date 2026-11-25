@@ -27,7 +27,7 @@ export function ExpiryPage() {
   const [params] = useSearchParams();
   const { user } = useAuth();
   const [targetLot, setTargetLot] = useState(params.get('loteId') ?? '');
-  const [horizon, setHorizon] = useState(params.has('loteId') ? 0 : 7);
+  const [horizon, setHorizon] = useState(params.has('loteId') || params.has('lote') || params.has('sku') ? 0 : 7);
   const [editing, setEditing] = useState<ExpiringLot | null>(null);
   const [success, setSuccess] = useState('');
   const loadLots = useCallback(() => getExpiryAlerts(0), []);
@@ -48,13 +48,14 @@ export function ExpiryPage() {
   }, [lots, search, category, status, horizon, targetLot]);
   const expired = lots.filter(lot => expiryInfo(lot).filter === 'VENCIDO').length;
   const immediate = lots.filter(lot => ['HOY', 'CRITICO'].includes(expiryInfo(lot).filter)).length;
-  const week = lots.filter(lot => expiryInfo(lot).filter === 'PENDIENTE').length;
+  const pending = lots.filter(lot => expiryInfo(lot).filter === 'PENDIENTE').length;
+  const within = (days: number) => lots.filter(lot => lot.vendible && lot.diasParaVencer !== null && lot.diasParaVencer >= 0 && lot.diasParaVencer <= days).length;
   const hasFilters = Boolean(targetLot || search || category || status !== 'all' || horizon !== 7);
 
   return <main className="diza-expiry-page">
     <PageHeader
       title="Próximos a vencer"
-      description="Seguimiento del stock físico, incluso vencido o pendiente. Solo los lotes habilitados forman parte del stock vendible."
+      description="Controla vencimientos y lotes bloqueados para la venta."
       actions={<Button variant="secondary" size="sm" loading={source.status === 'loading'} onClick={source.reload}>Recargar</Button>}
     />
     {success && <p role="status">{success}</p>}
@@ -65,7 +66,9 @@ export function ExpiryPage() {
           <div className="diza-expiry-kpis">
             <StatCard label="Vencidos" value={expired} note="Requieren revisión inmediata" />
             <StatCard label="Próximos 3 días" value={immediate} note="Conviene priorizar su salida" />
-            <StatCard label="Pendientes" value={week} note="Bloqueados hasta verificar su vencimiento" />
+            <StatCard label="Próximos 7 días" value={within(7)} note="Incluye los próximos 3 días" />
+            <StatCard label="Próximos 30 días" value={within(30)} note="Incluye los próximos 7 días" />
+            <StatCard label="Pendientes" value={pending} note="Bloqueados hasta verificar" />
           </div>
           <section className="diza-expiry-panel" aria-labelledby="expiry-lots-title">
             <div className="diza-expiry-heading">
@@ -82,7 +85,7 @@ export function ExpiryPage() {
             </div>
             {!visible.length ? <DataFeedback status="empty" title={lots.length ? 'No hay lotes con esos filtros' : 'No hay lotes próximos a vencer'} description={lots.length ? 'Prueba con otra búsqueda, categoría o estado.' : 'No hay lotes con stock físico en este horizonte. Los vencidos y pendientes permanecen visibles.'} />
               : <>
-                <TableFrame label="Lotes próximos a vencer" className="diza-expiry-table-frame"><table className="diza-expiry-table"><thead><tr><th>Producto</th><th>Categoría</th><th>Lote</th><th>Stock físico / vendible</th><th>Vencimiento</th><th>Estado</th><th>Acción</th></tr></thead><tbody>{visible.map(lot => { const info = expiryInfo(lot); return <tr key={lot.id}><td><strong>{lot.productoNombre}</strong><small>{lot.productoSku}</small></td><td>{lot.productoCategoria}</td><td>{lot.codigoLote}</td><td>{Number(lot.cantidadDisponible).toLocaleString('es-PE')} / {lot.vendible ? Number(lot.cantidadDisponible).toLocaleString('es-PE') : '0'}</td><td>{dateLabel(lot)}{lot.advertencia && <small className="diza-expiry-note">{lot.advertencia}</small>}</td><td><StatusBadge tone={info.tone}>{info.label}</StatusBadge></td><td>{user?.rol === 'ADMIN' && <Button size="sm" variant="secondary" onClick={() => { setEditing(lot); setSuccess(''); }}>Regularizar</Button>}</td></tr>; })}</tbody></table></TableFrame>
+                <TableFrame label="Lotes próximos a vencer" className="diza-expiry-table-frame"><table className="diza-expiry-table"><thead><tr><th>Producto</th><th>Categoría</th><th>Lote</th><th>Stock físico / vendible</th><th>Vencimiento</th><th>Estado</th><th>Acción</th></tr></thead><tbody>{visible.map(lot => { const info = expiryInfo(lot); return <tr key={lot.id}><td><strong>{lot.productoNombre}</strong><small>{lot.productoSku}</small></td><td>{lot.productoCategoria}</td><td className="diza-expiry-code">{lot.codigoLote}</td><td>{Number(lot.cantidadDisponible).toLocaleString('es-PE')} / {lot.vendible ? Number(lot.cantidadDisponible).toLocaleString('es-PE') : '0'}</td><td>{dateLabel(lot)}{lot.advertencia && <details className="diza-expiry-observation"><summary>Observación</summary><small className="diza-expiry-note">{lot.advertencia}</small></details>}</td><td><StatusBadge tone={info.tone}>{info.label}</StatusBadge></td><td>{user?.rol === 'ADMIN' && <Button size="sm" variant="secondary" onClick={() => { setEditing(lot); setSuccess(''); }}>Regularizar</Button>}</td></tr>; })}</tbody></table></TableFrame>
                 <div className="diza-expiry-cards">{visible.map(lot => { const info = expiryInfo(lot); return <article key={lot.id}><div><StatusBadge tone={info.tone}>{info.label}</StatusBadge><span>{lot.productoCategoria}</span></div><h3>{lot.productoNombre}</h3><p>{lot.productoSku} · Lote {lot.codigoLote}</p><dl><div><dt>Stock físico / vendible</dt><dd>{Number(lot.cantidadDisponible).toLocaleString('es-PE')} / {lot.vendible ? lot.cantidadDisponible : 0}</dd></div><div><dt>Vencimiento</dt><dd>{dateLabel(lot)}</dd></div></dl>{lot.advertencia && <p className="diza-expiry-note">{lot.advertencia}</p>}{user?.rol === 'ADMIN' && <Button size="sm" variant="secondary" onClick={() => { setEditing(lot); setSuccess(''); }}>Regularizar</Button>}</article>; })}</div>
               </>}
           </section>

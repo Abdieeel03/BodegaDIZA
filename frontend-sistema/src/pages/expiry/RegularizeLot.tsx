@@ -62,15 +62,16 @@ export function RegularizeLot({ lot, onClose, onSaved }: { lot: ExpiringLot; onC
     {error && <p role="alert" className="diza-test-error">{error}</p>}
     <form onSubmit={e => { void save(e); }}>
       <fieldset disabled={saving} className="diza-create-grid">
-        <FormField controlId="regularize-quantity" label="Cantidad a regularizar" required hint="Indica una cantidad menor para dividir el lote.">
+        <label className="diza-create-check diza-create-wide"><input type="checkbox" checked={split} onChange={e => setQuantity(e.target.checked ? '' : String(lot.cantidadDisponible))} />Dividir lote</label>
+        <FormField controlId="regularize-quantity" label="Cantidad a regularizar" required hint="Cantidad del lote que tendrá el vencimiento corregido.">
           <input id="regularize-quantity" type="number" required min="0.001" max={lot.cantidadDisponible} step="0.001" value={quantity} onChange={e => setQuantity(e.target.value)} />
         </FormField>
         {split && <FormField controlId="regularize-code" label="Código del nuevo lote" required>
           <input id="regularize-code" required maxLength={100} value={code} onChange={e => setCode(e.target.value)} />
         </FormField>}
         <VencimientoFields prefix="regularize" value={expiry} onChange={setExpiry} allowsNone={lot.permiteSinVencimiento} />
-        <FormField controlId="regularize-reason" label="Motivo y evidencia de la corrección" required>
-          <textarea id="regularize-reason" required maxLength={500} value={reason} onChange={e => setReason(e.target.value)} placeholder="Ej.: fecha verificada en etiqueta del fabricante" />
+        <FormField controlId="regularize-reason" label="Motivo de la corrección" required>
+          <textarea id="regularize-reason" required maxLength={500} value={reason} onChange={e => setReason(e.target.value)} placeholder="Ej.: fecha verificada en la etiqueta" />
         </FormField>
       </fieldset>
       <p>{split ? `Quedarán ${Number((lot.cantidadDisponible - Number(quantity)).toFixed(3))} en el lote original y ${quantity} en el nuevo.` : 'Se corregirá la fecha de todo el stock actual del lote.'} El stock físico total y los tickets históricos se conservan.</p>

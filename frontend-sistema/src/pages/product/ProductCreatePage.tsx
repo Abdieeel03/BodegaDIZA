@@ -6,7 +6,7 @@ import type { ApiResponse } from '../../types';
 import '../demo/demo.css';
 import '../../components/period/period-controls.css';
 import './product-create.css';
-import { VencimientoFields, pendingExpiry, type Vencimiento } from '../expiry/VencimientoFields';
+import { VencimientoFields, type Vencimiento } from '../expiry/VencimientoFields';
 
 type Category = { id: number; nombre: string; activa: boolean };
 type Supplier = { id: number; nombre: string; activo: boolean };
@@ -22,16 +22,21 @@ function unwrap<T>(r: ApiResponse<T>): T {
 }
 
 const toNumber = (s: string) => Number(s);
+const exactExpiry = (): Vencimiento => ({ precision: 'EXACTA', fecha: null, mes: null });
+// Código interno editable; no representa un código confirmado por el fabricante.
+const newLotCode = () => {
+  const random = crypto.getRandomValues(new Uint32Array(2));
+  return `INT-${Date.now().toString(36).toUpperCase()}-${Array.from(random, n => n.toString(16).padStart(8, '0')).join('').toUpperCase()}`;
+};
 
-export const ProductCreatePage = () => {
+export const ProductCreatePage = ({ receiptMode = false }: { receiptMode?: boolean }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const initialMode: Mode = searchParams.get('modo') === 'restock' ? 'restock' : 'new';
+  const mode: Mode = receiptMode || searchParams.get('modo') === 'restock' ? 'restock' : 'new';
   const paramProductId = searchParams.get('productoId') ?? '';
   const paramSku = searchParams.get('sku') ?? '';
   const paramAmount = searchParams.get('cantidad') ?? '';
 
-  const [mode, setMode] = useState<Mode>(initialMode);
   const [categories, setCategories] = useState<Category[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -52,13 +57,13 @@ export const ProductCreatePage = () => {
   const [withLot, setWithLot] = useState(false);
   const [lotCode, setLotCode] = useState('');
   const [lotAmount, setLotAmount] = useState('');
-  const [expiry, setExpiry] = useState<Vencimiento>(pendingExpiry);
+  const [expiry, setExpiry] = useState<Vencimiento>(exactExpiry);
 
   // Campos de reposición de producto existente
   const [restockProductId, setRestockProductId] = useState('');
-  const [restockLotCode, setRestockLotCode] = useState('');
+  const [restockLotCode, setRestockLotCode] = useState(newLotCode);
   const [restockAmount, setRestockAmount] = useState(() => (Number(paramAmount) > 0 ? paramAmount : ''));
-  const [restockExpiry, setRestockExpiry] = useState<Vencimiento>(pendingExpiry);
+  const [restockExpiry, setRestockExpiry] = useState<Vencimiento>(exactExpiry);
   const [extraLots, setExtraLots] = useState<{ key: number; code: string; amount: string; expiry: Vencimiento }[]>([]);
   const [nextKey, setNextKey] = useState(1);
   const [restockReason, setRestockReason] = useState('Reposición de stock');
@@ -152,38 +157,21 @@ export const ProductCreatePage = () => {
   };
 
   const selectedProduct = products.find(p => String(p.id) === restockProductId);
+  const totalReceipt = [restockAmount, ...extraLots.map(row => row.amount)]
+    .reduce((sum, amount) => sum + (Number.isFinite(Number(amount)) && Number(amount) > 0 ? Number(amount) : 0), 0);
 
   return (
     <main className="diza-test-page">
       <PageHeader
         eyebrow="INVENTARIO"
-        title={mode === 'new' ? 'Agregar producto' : 'Reponer stock'}
+        title={mode === 'new' ? 'Agregar producto' : 'Recibir mercadería'}
         description={mode === 'new'
-          ? 'Registra un producto nuevo o cambia a Reposición para sumar stock a uno existente.'
-          : 'Registra una nueva entrada de lote para un producto existente en tu inventario.'}
+          ? 'Registra un producto en el catálogo.'
+          : 'Registra entradas directas de stock por lote.'}
         actions={<Link className="diza-test-link" to="/inventario">← Volver al inventario</Link>}
       />
 
-      <div className="diza-create-tabs" role="tablist" aria-label="Tipo de registro en inventario">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={mode === 'new'}
-          className={`diza-create-tab ${mode === 'new' ? 'is-active' : ''}`}
-          onClick={() => { setMode('new'); setError(''); }}
-        >
-          Nuevo producto
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={mode === 'restock'}
-          className={`diza-create-tab ${mode === 'restock' ? 'is-active' : ''}`}
-          onClick={() => { setMode('restock'); setError(''); }}
-        >
-          Reponer producto existente
-        </button>
-      </div>
+      {mode === 'restock' && <p className="diza-receipt-context">Para recibir un pedido confirmado, utiliza <Link to="/prediccion-demanda/compras">Planificar compras</Link>. Esta pantalla registra entradas directas de inventario.</p>}
 
       {error && <p className="diza-test-error" role="alert">{error}</p>}
 
@@ -268,24 +256,24 @@ export const ProductCreatePage = () => {
       ) : (
         <form className="diza-create-form" onSubmit={e => { void saveRestock(e); }}>
           <section className="diza-test-panel" aria-labelledby="restock-product-heading">
-            <h2 id="restock-product-heading">Entrada de stock</h2>
+            <h2 id="restock-product-heading">Producto y primer lote</h2>
             <p className="diza-kpi-note">
               {selectedProduct
-                ? `Stock actual de ${selectedProduct.nombre}: ${Number(selectedProduct.stockTotal).toLocaleString('es-PE', { maximumFractionDigits: 3 })} ${selectedProduct.unidadMedida.toLowerCase()}.`
+                ? `Stock vendible de ${selectedProduct.nombre}: ${Number(selectedProduct.stockTotal).toLocaleString('es-PE', { maximumFractionDigits: 3 })} ${selectedProduct.unidadMedida.toLowerCase()}.`
                 : 'Selecciona un producto para sumar un nuevo lote al inventario.'}
             </p>
             <div className="diza-create-grid">
               <FormField controlId="restock-product" label="Producto existente" required className="diza-create-wide">
-                <select id="restock-product" required value={restockProductId} onChange={e => { setRestockProductId(e.target.value); setRestockExpiry(pendingExpiry()); setExtraLots([]); }}>
+                <select id="restock-product" required value={restockProductId} onChange={e => { setRestockProductId(e.target.value); setRestockExpiry(exactExpiry()); setRestockLotCode(newLotCode()); setRestockAmount(''); setExtraLots([]); }}>
                   <option value="">Selecciona un producto</option>
                   {products.map(p => (
                     <option key={p.id} value={p.id}>
-                      {p.sku} · {p.nombre} · Stock actual: {Number(p.stockTotal).toLocaleString('es-PE', { maximumFractionDigits: 3 })}
+                      {p.sku} · {p.nombre} · Vendible: {Number(p.stockTotal).toLocaleString('es-PE', { maximumFractionDigits: 3 })}
                     </option>
                   ))}
                 </select>
               </FormField>
-              <FormField controlId="restock-lot-code" label="Código de lote" required>
+              <FormField controlId="restock-lot-code" label="Código de lote" required hint="Código interno editable. Si existe un código del fabricante, puedes ingresarlo.">
                 <input id="restock-lot-code" required maxLength={100} value={restockLotCode}
                   onChange={e => setRestockLotCode(e.target.value)} placeholder="Ej. LOTE-2026-11" />
               </FormField>
@@ -309,8 +297,9 @@ export const ProductCreatePage = () => {
             </div>
             <Button type="button" variant="secondary" disabled={saving} onClick={() => setExtraLots(items => items.filter(item => item.key !== row.key))}>Quitar lote {index + 2}</Button>
           </section>)}
-          <Button type="button" variant="secondary" disabled={saving || extraLots.length >= 99} onClick={() => { setExtraLots(items => [...items, { key: nextKey, code: '', amount: '', expiry: pendingExpiry() }]); setNextKey(value => value + 1); }}>Añadir otro lote</Button>
-          <p className="diza-kpi-note">Todos los lotes se registran juntos. Usa códigos distintos para fechas distintas. Las fechas pendientes, mes/año y vencidas no habilitan ventas.</p>
+          <Button type="button" variant="secondary" disabled={saving || extraLots.length >= 99} onClick={() => { setExtraLots(items => [...items, { key: nextKey, code: newLotCode(), amount: '', expiry: exactExpiry() }]); setNextKey(value => value + 1); }}>Añadir otro lote</Button>
+          <div className="diza-receipt-total" aria-live="polite"><span><strong>{1 + extraLots.length}</strong> {extraLots.length ? 'lotes' : 'lote'}</span><span>Total a recibir: <strong>{totalReceipt.toLocaleString('es-PE', { maximumFractionDigits: 3 })}</strong> {selectedProduct?.unidadMedida.toLowerCase() ?? 'unidades'}</span></div>
+          <p className="diza-kpi-note">Usa códigos distintos para fechas distintas. Los lotes vencidos, pendientes o de mes/año no habilitan ventas.</p>
           <div className="diza-create-actions">
             <Link to="/inventario" className="diza-period-link">Cancelar</Link>
             <Button type="submit" loading={saving} disabled={!ready || products.length === 0}>

@@ -39,7 +39,8 @@ export const AppRoutes = () => {
             <Route path="/ventas/importar-historico" element={<Navigate to="/ventas" replace />} />
             <Route path="/datos-prueba" element={<Navigate to="/ventas" replace />} />
             <Route path="/inventario" element={<InventoryPage />} />
-            <Route path="/inventario/agregar" element={<ProductCreatePage />} />
+            <Route path="/inventario/agregar" element={<ProductCreatePage key="product-create" />} />
+            <Route path="/inventario/recibir" element={<ProductCreatePage key="inventory-receipt" receiptMode />} />
             <Route path="/inventario/movimientos" element={<InventoryMovementsPage />} />
             <Route path="/inventario/carga-masiva" element={<BulkInventoryCsvPage />} />
 

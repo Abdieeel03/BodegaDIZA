@@ -5,6 +5,7 @@ import './index.css'
 import App from './App.tsx'
 import './styles/density.css'
 import './styles/final-shell.css'
+import './styles/final-operations.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

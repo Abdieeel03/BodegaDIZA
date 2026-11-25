@@ -3,7 +3,14 @@ import type { ClassificationSummary } from '../../types';
 type Bin = { from: number; to: number; n: number; meanProbability: number; observedRate: number };
 type Candidate = { n: number; metrics: { f1: number; accuracy: number; rocAuc: number | null; brierScore?: number } };
 const pct = (n: number) => `${(n * 100).toFixed(1)}%`;
-const names: Record<string, string> = { logistic_regression: 'Regresión logística', decision_tree: 'Árbol de decisión', random_forest: 'Random Forest', hist_gradient_boosting: 'HistGradientBoosting' };
+const names: Record<string, string> = {
+  logistic_regression: 'Regresión logística',
+  decision_tree: 'Árbol de decisión', decision_tree_classifier: 'Árbol de decisión',
+  random_forest: 'Random Forest', random_forest_classifier: 'Random Forest',
+  hist_gradient_boosting: 'HistGradientBoosting', gradient_boosting_classifier: 'HistGradientBoosting',
+  ridge: 'Regresión Ridge', media_reciente: 'Media reciente',
+};
+export const modelDisplayName = (name: string) => names[name] ?? name.replaceAll('_', ' ');
 
 export function ClassificationDiagnostics({ classification }: { classification: ClassificationSummary }) {
   // El contrato Java conserva el mapa de clasificación completo. No se completan datos ausentes.
@@ -37,6 +44,6 @@ export function ClassificationDiagnostics({ classification }: { classification: 
         <details><summary>Consultar valores por intervalo</summary><div className="diza-diagnostic-scroll"><table className="diza-diagnostic-table"><thead><tr><th>Intervalo</th><th>Casos</th><th>Estimado</th><th>Observado</th></tr></thead><tbody>{bins.map(b => <tr key={b.from}><td>{Math.round(b.from*100)}–{Math.round(b.to*100)}%</td><td>{b.n}</td><td>{pct(b.meanProbability)}</td><td>{pct(b.observedRate)}</td></tr>)}</tbody></table></div></details></> : <p>No hay datos de calibración disponibles.</p>}
       </section>
     </div>
-    {candidates.length > 0 && <section className="diza-diagnostic-card diza-candidates"><h3>Comparación de clasificadores</h3><p>Validación temporal: selección por F1, con ROC-AUC y Brier como criterios de desempate. No corresponde a la prueba final.</p><div className="diza-diagnostic-scroll"><table className="diza-diagnostic-table"><thead><tr><th>Algoritmo</th><th>F1</th><th>Exactitud</th><th>ROC-AUC</th><th>Brier</th><th>Casos</th></tr></thead><tbody>{candidates.map(([name,c]) => <tr key={name}><td>{names[name] ?? name.replaceAll('_',' ')}{name === data.modelName && <small className="diza-selected-model">Seleccionado</small>}</td><td>{pct(c.metrics.f1)}</td><td>{pct(c.metrics.accuracy)}</td><td>{c.metrics.rocAuc?.toFixed(3) ?? '—'}</td><td>{c.metrics.brierScore?.toFixed(3) ?? '—'}</td><td>{c.n}</td></tr>)}</tbody></table></div></section>}
+    {candidates.length > 0 && <section className="diza-diagnostic-card diza-candidates"><h3>Comparación de clasificadores</h3><p>Validación temporal: selección por F1, con ROC-AUC y Brier como criterios de desempate. No corresponde a la prueba final.</p><div className="diza-diagnostic-scroll"><table className="diza-diagnostic-table"><thead><tr><th>Algoritmo</th><th>F1</th><th>Exactitud</th><th>ROC-AUC</th><th>Brier</th><th>Casos</th></tr></thead><tbody>{candidates.map(([name,c]) => <tr key={name}><td>{modelDisplayName(name)}{name === data.modelName && <small className="diza-selected-model">Seleccionado</small>}</td><td>{pct(c.metrics.f1)}</td><td>{pct(c.metrics.accuracy)}</td><td>{c.metrics.rocAuc?.toFixed(3) ?? '—'}</td><td>{c.metrics.brierScore?.toFixed(3) ?? '—'}</td><td>{c.n}</td></tr>)}</tbody></table></div></section>}
   </>;
 }

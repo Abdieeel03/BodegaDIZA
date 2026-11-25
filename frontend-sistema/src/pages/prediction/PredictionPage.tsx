@@ -323,7 +323,7 @@ export const PredictionPage = ({ view = 'summary' }: { view?: PredictionView }) 
             <article><span>Necesidad cubierta</span><strong>{optResult.coveragePercent == null ? '—' : `${fmt(optResult.coveragePercent, 1)}%`}</strong></article>
           </div>
           <div className="diza-purchase-progress">
-            <div><strong>Uso del presupuesto</strong><span>{fmt(budgetPercent, 1)}%</span><progress max={100} value={budgetPercent} aria-label="Uso del presupuesto"/><small>{formatSoles(optResult.budgetUsed)} de {formatSoles(optResult.budget)}</small></div>
+            <div><strong>Uso del presupuesto</strong><span>{fmt(budgetPercent, 2)}%</span><progress max={100} value={budgetPercent} aria-label="Uso del presupuesto"/><small>{formatSoles(optResult.budgetUsed)} de {formatSoles(optResult.budget)}</small></div>
             <div><strong>Cobertura de necesidades</strong><span>{optResult.coveragePercent == null ? '—' : `${fmt(optResult.coveragePercent,1)}%`}</span><progress max={100} value={optResult.coveragePercent == null ? 0 : Math.max(0,Math.min(100,optResult.coveragePercent))} aria-label="Cobertura de necesidades"/><small>{optResult.totalAllocatedUnits} de {optResult.totalNeededUnits} unidades · {optResult.totalUnmetUnits} pendientes</small></div>
           </div>
           {optResult.searchLimited && <p role="status">Se alcanzó el límite de búsqueda. El plan es factible, pero puede mejorarse.</p>}

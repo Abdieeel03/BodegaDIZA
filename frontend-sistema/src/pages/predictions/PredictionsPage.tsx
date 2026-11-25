@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { ApiError, type TrainingResult } from '../../types';
 import { mlService } from '../../services/mlService';
 import { Button } from '../../components/ui';
-import { ClassificationDiagnostics } from './ClassificationDiagnostics';
+import { ClassificationDiagnostics, modelDisplayName } from './ClassificationDiagnostics';
 import './predictions-ml.css';
 
 type ModelTrainingPanelProps = {
@@ -123,7 +123,7 @@ export const ModelTrainingPanel = ({ onCompleted }: ModelTrainingPanelProps) => 
           <div><span>Último entrenamiento</span><strong>{formatDateTime(result.trainedAt)}</strong></div>
           <div><span>Productos</span><strong>{result.productsCount}</strong></div>
           <div><span>Observaciones</span><strong>{result.observationsCount}</strong></div>
-          <div><span>Modelo seleccionado</span><strong>{result.modelName.replaceAll('_', ' ')}</strong></div>
+          <div><span>Modelo seleccionado</span><strong>{modelDisplayName(result.modelName)}</strong></div>
         </div>
 
         <section className="diza-model-technical" aria-labelledby="diza-model-metrics-title">
@@ -139,7 +139,7 @@ export const ModelTrainingPanel = ({ onCompleted }: ModelTrainingPanelProps) => 
             <p>Parámetros: {Object.entries(result.hillClimbing.bestParams).map(([key, value]) => `${key}=${value}`).join(' · ')}</p>
           </div>}
           {result.classification && <div className="diza-model-technical-detail">
-            <strong>Clasificador de riesgo de agotamiento: {result.classification.modelName.replaceAll('_', ' ')}</strong>
+            <strong>Clasificador de riesgo de agotamiento: {modelDisplayName(result.classification.modelName)}</strong>
             {result.classification.horizonDays && <p>Riesgo de insuficiencia en {result.classification.horizonDays} días sin reposición · Evaluación temporal independiente.</p>}
             <div className="diza-model-metrics">
               <div><span>F1-Score</span><strong>{(result.classification.metrics.f1 * 100).toFixed(1)}%</strong></div>

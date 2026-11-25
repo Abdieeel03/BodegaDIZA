@@ -55,3 +55,42 @@
 .diza-receipt-product { margin:12px 0; padding:12px; background:var(--diza-color-surface); border:1px solid var(--diza-color-border); border-radius:8px; }
 .diza-receipt-lot { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,120px),1fr)); gap:8px; align-items:end; margin:10px 0; padding:10px; border:1px solid var(--diza-color-border); border-radius:6px; }
 .diza-receipt-form .diza-ml-link { min-height:40px; }
+
+/* Bloque 05D.2: ajustes finales de presentación. */
+.diza-business-ranking ol { grid-template-columns: repeat(auto-fit, minmax(min(100%, 145px), 1fr)); gap: 10px; }
+.diza-business-ranking li { padding: 11px; }
+.diza-business-ranking a > strong { font-variant-numeric: tabular-nums; }
+@media (min-width: 1200px) {
+  .diza-business-ranking ol { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+.diza-dashboard .diza-dashboard-panel[aria-labelledby="diza-demand-chart-title"],
+.prediction-module .prediction-summary-graph, .diza-diagnostic-grid > .diza-diagnostic-card { align-self: start; }
+.diza-diagnostic-grid { align-items: start; }
+.diza-confusion th, .diza-confusion td { overflow-wrap: anywhere; }
+.diza-purchase-progress > div > span { font-variant-numeric: tabular-nums; }
+@media (max-width: 800px) {
+  .diza-mobile-topbar .diza-mobile-brand, .diza-mobile-topbar .diza-mobile-brand-copy { min-width: 0; }
+  .diza-mobile-topbar .diza-mobile-brand small { white-space: normal; overflow-wrap: anywhere; }
+  .diza-mobile-topbar .diza-topbar-actions { flex-shrink: 0; }
+  .diza-dashboard .diza-dashboard-section-heading { flex-wrap: wrap; }
+  .diza-dashboard .diza-business-actions { gap: 8px; }
+  .diza-diagnostic-table { min-width: 470px; }
+  .diza-diagnostic-scroll { min-width: 0; }
+  .diza-model-screen .diza-model-kpis, .diza-model-screen .diza-model-metrics { grid-template-columns: repeat(auto-fit, minmax(min(100%, 125px), 1fr)); }
+  .prediction-module .prediction-actions > a, .prediction-module .prediction-actions > button { min-width: 0; }
+  .prediction-module .prediction-summary-date { white-space: normal; }
+  .diza-purchase-review, .diza-receipt-form, .diza-order-detail { min-width: 0; }
+}
+@media (max-width: 600px) {
+  .diza-business-ranking ol { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .diza-business-ranking a > strong { font-size: 15px; }
+  .diza-confusion th, .diza-confusion td { padding: 6px; }
+  .diza-confusion td strong { font-size: 20px; }
+  .diza-confusion td small { font-size: 11px; }
+  .diza-purchase-progress > div { min-width: 0; }
+  .diza-order-summary > strong:first-child { flex-basis: 100%; }
+}
+@media (max-width: 360px) {
+  .diza-business-ranking ol { grid-template-columns: 1fr; }
+  .prediction-module .diza-ml-stats { grid-template-columns: minmax(0,1fr) !important; }
+}

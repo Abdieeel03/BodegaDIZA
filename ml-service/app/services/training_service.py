@@ -10,6 +10,7 @@ from ..schemas import TrainingResult,PredictionResult,ReplenishmentResult
 from ..storage import ModelStore
 from ..training_engine import TrainingEngine
 from ..operational_forecast import OperationalForecast
+from ..stockout_scenarios import simulation_enabled_for_db
 
 class TrainingService:
     def __init__(self,model_dir:str|Path|None=None):
@@ -28,7 +29,8 @@ class TrainingService:
                        if suppliers_file else None)
         else:
             sales,products,suppliers=await run_in_threadpool(load_from_db)
-        output=await run_in_threadpool(self.engine.train,sales,products,suppliers)
+        simulate = sales_file is None and simulation_enabled_for_db()
+        output=await run_in_threadpool(self.engine.train,sales,products,suppliers,simulate_stockout=simulate)
         return TrainingResult.model_validate(output['training'])
 
     def get_training(self,training_id:str)->TrainingResult:

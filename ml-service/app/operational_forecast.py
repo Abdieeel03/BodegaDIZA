@@ -10,6 +10,7 @@ import pandas as pd
 from .database import load_operational_inputs
 from .inference_service import InferenceService
 from .storage import ModelStore
+from .stockout_classifier import TARGET_VERSION
 
 
 def _fingerprint(frame: pd.DataFrame) -> bytes:
@@ -49,6 +50,8 @@ class OperationalForecast:
             if original_cutoff and cutoff < date.fromisoformat(original_cutoff):
                 raise ValueError('El historial operativo termina antes del corte del modelo entrenado; verifica la fuente de datos')
             metadata = dict(training)
+            if (metadata.get('classification') or {}).get('targetVersion') != TARGET_VERSION:
+                metadata['classification'] = None
             metadata.update(
                 forecastGeneratedAt=datetime.now(timezone.utc).isoformat(),
                 forecastSalesCutoffDate=cutoff.isoformat(),

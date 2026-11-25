@@ -139,13 +139,22 @@ export const ModelTrainingPanel = ({ onCompleted }: ModelTrainingPanelProps) => 
           </div>}
           {result.classification && <div className="diza-model-technical-detail">
             <strong>Clasificador de riesgo de agotamiento: {result.classification.modelName.replaceAll('_', ' ')}</strong>
+            {result.classification.horizonDays && <p>Riesgo de insuficiencia en {result.classification.horizonDays} días sin reposición · Evaluación temporal independiente.</p>}
             <div className="diza-model-metrics">
               <div><span>F1-Score</span><strong>{(result.classification.metrics.f1 * 100).toFixed(1)}%</strong></div>
               <div><span>Exactitud</span><strong>{(result.classification.metrics.accuracy * 100).toFixed(1)}%</strong></div>
               <div><span>Sensibilidad</span><strong>{(result.classification.metrics.recall * 100).toFixed(1)}%</strong></div>
               <div><span>Precisión</span><strong>{(result.classification.metrics.precision * 100).toFixed(1)}%</strong></div>
-              <div><span>ROC-AUC</span><strong>{result.classification.metrics.rocAuc.toFixed(3)}</strong></div>
+              <div><span>ROC-AUC</span><strong>{result.classification.metrics.rocAuc?.toFixed(3) ?? '—'}</strong></div>
+              {result.classification.metrics.brierScore != null && <div><span>Brier Score</span><strong>{result.classification.metrics.brierScore.toFixed(3)}</strong></div>}
             </div>
+            {result.classification.partitions && <p>Prueba final: {result.classification.partitions.test.n} casos · {result.classification.partitions.test.positive} positivos · {result.classification.partitions.test.negative} negativos.</p>}
+            {result.classification.metrics.confusionMatrix && <div className="diza-model-metrics">
+              <div><span>Verdaderos negativos</span><strong>{result.classification.metrics.confusionMatrix.tn}</strong></div>
+              <div><span>Falsos positivos</span><strong>{result.classification.metrics.confusionMatrix.fp}</strong></div>
+              <div><span>Falsos negativos</span><strong>{result.classification.metrics.confusionMatrix.fn}</strong></div>
+              <div><span>Verdaderos positivos</span><strong>{result.classification.metrics.confusionMatrix.tp}</strong></div>
+            </div>}
           </div>}
         </section>
       </div>}

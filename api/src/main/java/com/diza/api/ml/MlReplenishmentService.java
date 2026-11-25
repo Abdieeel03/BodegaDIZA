@@ -84,18 +84,12 @@ public class MlReplenishmentService {
 
         Double stockoutProbability = prediction.stockoutProbability();
         String stockoutRiskLevel = prediction.stockoutRiskLevel();
-        if (stockoutProbability != null) {
-            if (currentStock.signum() == 0) {
-                stockoutProbability = 1.0;
-            } else if (Math.abs(currentStock.doubleValue() - prediction.stockActual()) > 1e-6) {
-                if ("ROJO".equals(status)) {
-                    stockoutProbability = Math.max(stockoutProbability, 0.85);
-                } else if ("VERDE".equals(status) && currentStock.doubleValue() > prediction.stockActual()) {
-                    stockoutProbability = Math.min(stockoutProbability, 0.25);
-                }
-            }
-            stockoutRiskLevel = stockoutProbability >= 0.65 ? "ALTO"
-                : stockoutProbability >= 0.35 ? "MEDIO" : "BAJO";
+        // FastAPI ya calculó la probabilidad con stock vendible. Si el inventario
+        // cambió entre lecturas, no sustituirla por porcentajes arbitrarios.
+        if (Math.abs(currentStock.doubleValue() - prediction.stockActual()) > 1e-6
+            || Math.abs(currentMinimum.doubleValue() - prediction.stockMinimoSeguridad()) > 1e-6) {
+            stockoutProbability = null;
+            stockoutRiskLevel = null;
         }
 
         return new ReplenishmentResponse(

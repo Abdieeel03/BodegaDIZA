@@ -23,7 +23,9 @@ export interface ClassificationMetrics {
   precision: number;
   recall: number;
   f1: number;
-  rocAuc: number;
+  rocAuc: number | null;
+  brierScore?: number;
+  confusionMatrix?: { tn: number; fp: number; fn: number; tp: number };
 }
 
 export interface ClassificationSummary {
@@ -31,7 +33,11 @@ export interface ClassificationSummary {
   metrics: ClassificationMetrics;
   observationsCount: number;
   positiveRate: number;
-  horizonEvents: number;
+  horizonEvents?: number;
+  horizonDays?: number;
+  source?: string;
+  evaluationScope?: string;
+  partitions?: { test: { n: number; positive: number; negative: number; from: string; to: string } };
 }
 
 export interface TrainingResult {

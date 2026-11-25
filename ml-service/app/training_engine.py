@@ -58,7 +58,7 @@ class TrainingEngine:
     def __init__(self,store:ModelStore):self.store=store
 
     def train(self,sales_input:pd.DataFrame,products_input:pd.DataFrame,
-              providers_input:pd.DataFrame|None=None)->dict:
+              providers_input:pd.DataFrame|None=None, simulate_stockout:bool=False)->dict:
         products=prepare_products(products_input)
         providers=prepare_providers(providers_input,products)
         sales,rejected=prepare_sales(sales_input,products)
@@ -105,12 +105,13 @@ class TrainingEngine:
         future=predict_horizon(full_model,selected,sales,last_date,last_date+timedelta(days=1))
         predictions=to_prediction_objects(future)
         replenishments=recommend(predictions,products)
-        classifier,classification_report=train_stockout_classifier(sales,products)
+        classifier,classification_report=train_stockout_classifier(sales,products,simulate=simulate_stockout)
         replenishments=predict_stockout_risk(classifier,sales,products,replenishments)
         now=datetime.now(timezone.utc).isoformat()
         training_id=str(uuid4())
         coverage_info=coverage(sales)
         coverage_info['evaluationDetails']=evaluation_details
+        coverage_info['classificationAvailability']='AVAILABLE' if classification_report else 'INSUFFICIENT_LABELED_DATA'
         coverage_info['demandChanges']=[
             {'productId':str(sku), **demand_shift(group,last_date)}
             for sku, group in sales.groupby('id_producto',sort=True)

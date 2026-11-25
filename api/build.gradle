@@ -58,3 +58,20 @@ tasks.named('asciidoctor') {
 	inputs.dir snippetsDir
 	dependsOn test
 }
+
+// Servidor real para Playwright, con H2 disponible SOLO en el classpath de test.
+// La configuración independiente no importa .env ni conecta a PostgreSQL.
+tasks.register('bootE2e', JavaExec) {
+	group = 'verification'
+	description = 'Inicia la API aislada para pruebas funcionales de navegador'
+	classpath = sourceSets.test.runtimeClasspath
+	mainClass = 'com.diza.api.ApiApplication'
+	javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) }
+	jvmArgs '-Duser.timezone=America/Lima'
+	args '--spring.config.location=classpath:application-e2e.properties',
+		 '--spring.datasource.url=jdbc:h2:mem:diza_e2e;MODE=PostgreSQL;DB_CLOSE_DELAY=-1',
+		 '--spring.datasource.driver-class-name=org.h2.Driver',
+		 '--spring.jpa.database-platform=org.hibernate.dialect.H2Dialect',
+		 '--spring.jpa.hibernate.ddl-auto=create-drop',
+		 '--server.address=127.0.0.1', '--server.port=18081'
+}

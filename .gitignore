@@ -21,5 +21,11 @@ BodegaDIZA_Inventario_Web_Movil/
 *.pkl
 *.backup
 *.zip
+# Evidencias regenerables de pruebas (pueden contener sesiones y datos).
+**/playwright-report/
+**/test-results/
 # NO sube el snapshot a Git sin auditoria y aprobacion manual.
 demo-db/bodega_diza_test_demo.dump
+
+# Configuracion local de IntelliJ
+.idea/

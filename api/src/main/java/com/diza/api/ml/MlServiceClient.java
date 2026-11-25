@@ -42,6 +42,19 @@ public class MlServiceClient {
             .block());
     }
 
+    public record LatestComparison(TrainingResponse training) {}
+
+    public TrainingResponse getLatestTraining() {
+        return request(() -> {
+            LatestComparison comparison = webClient.get()
+                .uri("/trainings/latest/comparison")
+                .retrieve()
+                .bodyToMono(LatestComparison.class)
+                .block();
+            return comparison == null ? null : comparison.training();
+        });
+    }
+
     public TrainingResponse getTraining(String trainingId) {
         return request(() -> webClient.get()
             .uri("/trainings/{trainingId}", trainingId)

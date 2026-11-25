@@ -38,6 +38,11 @@ public class MlController {
         return ResponseEntity.ok(ApiResponse.success(mlServiceClient.train(salesFile, productsFile)));
     }
 
+    @GetMapping("/trainings/latest")
+    public ResponseEntity<ApiResponse<TrainingResponse>> getLatestTraining() {
+        return ResponseEntity.ok(ApiResponse.success(mlServiceClient.getLatestTraining()));
+    }
+
     @GetMapping("/trainings/{trainingId}")
     public ResponseEntity<ApiResponse<TrainingResponse>> getTraining(@PathVariable String trainingId) {
         return ResponseEntity.ok(ApiResponse.success(mlServiceClient.getTraining(trainingId)));

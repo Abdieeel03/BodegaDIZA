@@ -1,2 +1,3 @@
+# Instalar el servicio completo, incluido psycopg[binary], antes de ejecutar pytest.
 -r requirements.txt
 pytest==8.4.2

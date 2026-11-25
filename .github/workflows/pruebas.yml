@@ -1,0 +1,52 @@
+name: Pruebas automáticas
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  api-y-funcionalidad:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '10'
+      - name: Instalar frontend
+        working-directory: frontend-sistema
+        run: pnpm install --frozen-lockfile
+      - name: Instalar Chromium
+        working-directory: frontend-sistema
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Pruebas existentes de Java
+        working-directory: api
+        run: sh ./gradlew test --console=plain
+      - name: Compilar frontend
+        working-directory: frontend-sistema
+        run: pnpm build
+      - name: Pruebas funcionales con API y base temporal
+        working-directory: frontend-sistema
+        run: pnpm test
+      - name: Guardar reportes y evidencias
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultados-pruebas
+          retention-days: 14
+          path: |
+            api/build/reports/tests/test/
+            api/build/test-results/test/
+            frontend-sistema/playwright-report/
+            frontend-sistema/test-results/

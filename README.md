@@ -12,6 +12,10 @@ Las claves de cada integrante se generan localmente en `.env.equipo`, **nunca se
 <!-- DIZA_EQUIPO_DEMO_END -->
 # BodegaDIZA · Prototipo avanzado (APF3)
 
+**Pruebas automáticas de funcionalidad:** consulta [PRUEBAS_AUTOMATICAS.md](PRUEBAS_AUTOMATICAS.md). Tras instalar las dependencias, ejecuta `.\EJECUTAR_PRUEBAS.ps1` para correr Java y 20 casos de Playwright con API real y base temporal; agrega `-MostrarNavegador` para la exposición.
+
+**Pruebas de Machine Learning:** con Python 3.12 y los CSV de prueba disponibles, ejecuta `.\ml-service\PROBAR_ML.ps1`. El comando prepara el entorno virtual e instala todas las dependencias, incluido `psycopg[binary]`, antes de probar. Para incluir ML en la ejecución general, usa `.\EJECUTAR_PRUEBAS.ps1 -IncluirML`.
+
 Sistema de **gestión de inventario, ventas y predicción de demanda a 7 días** para una bodega. Integra **React + TypeScript (frontend)**, **Java 21 + Spring Boot 4 (API)**, **PostgreSQL 16 (persistencia operativa)** y **Python 3.12 + FastAPI + scikit-learn (Machine Learning)**.
 
 > **Estado de esta entrega:** prototipo funcional para revisión académica. Las pruebas Python y la compilación React se ejecutaron satisfactoriamente en el entorno de desarrollo de la rama `feature/cielo`; **cada integrante debe repetirlas después de clonar**. Esta guía no certifica un despliegue en producción. Los datos CSV históricos, las ventas operativas y el modelo entrenado son fuentes distintas.

@@ -60,6 +60,22 @@ El instalador crea una **copia de seguridad completa del código anterior de ml-
 
 ## Entrenamiento local desde Python
 
+Para preparar el entorno y ejecutar únicamente las pruebas, desde la raíz del proyecto:
+
+```powershell
+.\ml-service\PROBAR_ML.ps1
+```
+
+Este comando utiliza `.venv` con Python 3.12, instala **todo** `requirements-dev.txt` (incluye `requirements.txt` y `psycopg[binary]`), comprueba las dependencias y ejecuta la suite. El resultado se guarda en `ml-service/test-results/pytest.xml`. Necesita los tres CSV de prueba en `ml-service/data/`; no descarga ni inventa esos datos.
+
+Si Python 3.12 no está registrado en el lanzador `py`, se puede indicar su ejecutable al crear el entorno:
+
+```powershell
+.\ml-service\PROBAR_ML.ps1 -PythonExe 'C:\ruta\a\Python312\python.exe'
+```
+
+No basta con instalar `pytest`, `numpy` y `pandas` por separado: la prueba `test_http_routes` también importa el controlador de PostgreSQL. Un error `ModuleNotFoundError: psycopg` indica que debe completarse la instalación de las dependencias del servicio en el mismo entorno que ejecuta pytest. El comando anterior instala el controlador declarado y detiene la ejecución si la instalación falla; no omite la prueba HTTP.
+
 Desde la carpeta `ml-service` del repositorio, usa Python 3.12 y un entorno virtual:
 
 ```powershell
